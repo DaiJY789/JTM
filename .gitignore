@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+
+# Runtime/generated data
+conversations/
+logs/
+outputs/
+
+# Local env files
+.env

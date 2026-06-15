@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>惊堂木</title>
+    <link rel="icon" type="image/png" href="/static/logo.png" />
+    <link rel="apple-touch-icon" href="/static/logo.png" />
+    <link rel="stylesheet" href="/static/styles.css?v=20260615-polish-layout" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div class="brand-block">
+            <div class="brand-title">
+              <img class="brand-logo" src="/static/logo.png" alt="惊堂木" />
+              <h1>惊堂木</h1>
+            </div>
+            <p>支持文本、图片、图文一致性的多模态虚假信息检测</p>
+          </div>
+          <div class="top-actions">
+            <button class="secondary-action" id="newConversationBtn" type="button">新对话</button>
+          </div>
+        </header>
+
+        <section class="conversation-list-panel" aria-label="历史记录">
+          <div class="conversation-list-header">
+            <span class="control-label" id="conversationListTitle">历史记录</span>
+            <button class="secondary-action" id="refreshConversationsBtn" type="button">刷新</button>
+          </div>
+          <div class="conversation-list" id="conversationList">暂无历史对话</div>
+        </section>
+
+        <section class="control-band" aria-label="参数设置">
+          <div class="control-group">
+            <span class="control-label">Mode</span>
+            <div class="segmented" data-field="mode">
+              <button class="segment active" type="button" data-value="auto">auto</button>
+              <button class="segment" type="button" data-value="text_only">text</button>
+              <button class="segment" type="button" data-value="image_only">image</button>
+              <button class="segment" type="button" data-value="multimodal">multimodal</button>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <span class="control-label">Language</span>
+            <div class="segmented compact" data-field="language">
+              <button class="segment active" type="button" data-value="zh">zh</button>
+              <button class="segment" type="button" data-value="en">en</button>
+            </div>
+          </div>
+
+        </section>
+
+        <section class="input-workbench" aria-label="输入区">
+          <div class="input-grid">
+            <div class="input-left-stack">
+              <div class="panel input-panel">
+                <label for="textInput">新闻文本</label>
+                <textarea id="textInput" rows="9" placeholder="输入新闻正文、事实陈述或配图对应的新闻文本"></textarea>
+              </div>
+
+              <div class="panel prompt-panel">
+                <label for="questionInput">对话输入</label>
+                <div class="prompt-row">
+                  <input id="questionInput" type="text" placeholder="首次检测可留空，之后可继续追问" />
+                  <button class="primary-action" id="submitBtn" type="button">开始检测</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel media-panel">
+              <label>图片预览</label>
+              <div class="preview" id="imagePreview">
+                <span>未选择图片</span>
+              </div>
+
+              <div class="media-input-row">
+                <div class="file-picker-field">
+                  <label class="file-button" for="imageInput">选择图片</label>
+                  <input id="imageInput" class="file-input" type="file" accept="image/*" />
+                </div>
+                <div class="url-input-field">
+                  <input id="imageUrlInput" type="url" placeholder="https://example.com/image.jpg" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="result-layout">
+          <div class="panel conversation-history">
+            <div class="result-header">
+              <h2 id="historyTitle">对话历史</h2>
+            </div>
+            <div id="conversationHistory" class="history-list">暂无历史</div>
+          </div>
+
+          <div class="result-stack">
+            <div class="panel result-summary">
+              <div class="result-header">
+                <h2>检测结果</h2>
+                <div class="result-meta">
+                  <span id="resultRuntime">-</span>
+                  <span class="status-pill idle" id="statusPill">idle</span>
+                </div>
+              </div>
+              <dl class="metric-list">
+                <div>
+                  <dt id="labelTitle">标签</dt>
+                  <dd id="resultLabel">-</dd>
+                </div>
+                <div>
+                  <dt id="aiTitle">伪造类型</dt>
+                  <dd id="aiScore">-</dd>
+                </div>
+                <div>
+                  <dt id="confidenceTitle">置信度</dt>
+                  <dd id="resultConfidence">-</dd>
+                </div>
+              </dl>
+              <pre class="summary-box" id="summaryBox">等待输入</pre>
+            </div>
+
+            <div class="panel json-panel">
+              <div class="result-header">
+                <h2>结构化输出</h2>
+                <button class="secondary-action" id="copyBtn" type="button">复制 JSON</button>
+              </div>
+              <pre class="json-output" id="jsonOutput">{}</pre>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="/static/app.js?v=20260615-remove-fact-checking"></script>
+  </body>
+</html>
