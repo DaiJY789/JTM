@@ -1,0 +1,37 @@
+[
+  {
+    "id": "covid_microchips",
+    "source": "FactCheck.org / AFP Fact Check",
+    "source_url": "https://www.factcheck.org/2021/07/scicheck-spoof-video-furthers-microchip-conspiracy-theory/",
+    "text": "Social media posts claim that COVID-19 vaccines contain microchips used to track people.",
+    "question": "Is the claim that COVID-19 vaccines contain tracking microchips true?"
+  },
+  {
+    "id": "voting_machines_2020",
+    "source": "PolitiFact / FactCheck.org",
+    "source_url": "https://www.politifact.com/factchecks/2020/nov/13/facebook-posts/no-evidence-dominion-voting-systems-caused-widespr/",
+    "text": "A viral claim says voting machines switched large numbers of votes in the 2020 U.S. presidential election.",
+    "question": "Did voting machines switch large numbers of votes in the 2020 U.S. presidential election?"
+  },
+  {
+    "id": "maui_energy_weapon",
+    "source": "AP / FactCheck.org / AFP Fact Check",
+    "source_url": "https://www.factcheck.org/2023/08/scicheck-high-winds-drought-conditions-led-to-maui-fires-no-evidence-intentionally-set/",
+    "text": "Posts online claim that the Maui wildfires were caused by a directed energy weapon rather than natural and human factors.",
+    "question": "Were the Maui wildfires caused by a directed energy weapon?"
+  },
+  {
+    "id": "climate_no_warming",
+    "source": "NASA / NOAA",
+    "source_url": "https://science.nasa.gov/climate-change/faq/has-earth-continued-to-warm-since-1998/",
+    "text": "A claim circulating online says global warming stopped after 1998 and recent climate change is therefore a hoax.",
+    "question": "Did global warming stop after 1998?"
+  },
+  {
+    "id": "who_pandemic_treaty",
+    "source": "Reuters / FactCheck.org",
+    "source_url": "https://www.factcheck.org/2023/03/scicheck-who-pandemic-treaty-draft-reaffirms-nations-sovereignty-to-dictate-health-policy/",
+    "text": "Online posts claim that the World Health Organization pandemic treaty would give the WHO power to override national sovereignty.",
+    "question": "Would the WHO pandemic treaty override national sovereignty?"
+  }
+]
