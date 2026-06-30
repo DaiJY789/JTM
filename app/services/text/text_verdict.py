@@ -6,7 +6,7 @@ from typing import Any
 from app.agents.models import ModelFactory
 from app.core.config import Settings, settings
 from app.core.language import is_zh, normalize_language
-from app.prompts.text import TEXT_VERDICT_JSON_PROMPT_EN, TEXT_VERDICT_JSON_PROMPT_ZH
+from app.agents.prompts.text import TEXT_VERDICT_JSON_PROMPT_EN, TEXT_VERDICT_JSON_PROMPT_ZH
 
 VerdictEvaluator = Callable[[str, float | None], str]
 

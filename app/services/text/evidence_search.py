@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from app.core.language import normalize_language
-from app.tools.text.search import BoChaSearchTool
+from app.agents.tools.text.search import BoChaSearchTool
 
 SearchRunner = Callable[[str, str], Any]
 

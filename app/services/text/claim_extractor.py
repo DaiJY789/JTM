@@ -5,7 +5,7 @@ from typing import Any
 from app.agents.models import ModelFactory
 from app.core.config import Settings, settings
 from app.core.language import is_zh, normalize_language
-from app.prompts.text import CLAIM_EXTRACTION_PROMPT_EN, CLAIM_EXTRACTION_PROMPT_ZH
+from app.agents.prompts.text import CLAIM_EXTRACTION_PROMPT_EN, CLAIM_EXTRACTION_PROMPT_ZH
 
 
 class ClaimExtractor:

@@ -5,7 +5,7 @@ import requests
 
 from app.core.config import settings
 from app.core.language import is_zh
-from app.tools.foundation import TextTool
+from app.agents.tools.foundation import TextTool
 
 
 class BoChaSearchTool(TextTool):

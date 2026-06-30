@@ -5,11 +5,12 @@ import re
 from io import BytesIO
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from PIL import Image
 
 from app.core.language import is_zh, normalize_language
-from app.prompts.multimodal import MULTIMODAL_ALIGNMENT_PROMPT_EN, MULTIMODAL_ALIGNMENT_PROMPT_ZH
+from app.agents.prompts.multimodal import MULTIMODAL_ALIGNMENT_PROMPT_EN, MULTIMODAL_ALIGNMENT_PROMPT_ZH
 from app.services.vision.image_io import ImageService
 
 
@@ -42,7 +43,10 @@ class MultimodalAlignmentService:
     ) -> dict[str, Any]:
         language = normalize_language(language)
         prompt = self._build_prompt(text, question, text_result or {}, image_result or {}, language)
-        raw = self._call_vision_model(prompt, image_content, image_url, language)
+        try:
+            raw = self._call_vision_model(prompt, image_content, image_url, language)
+        except Exception as exc:
+            return self._fallback_unavailable(exc, language)
         parsed = self._parse_json(raw) or self._parse_legacy_text(raw)
         return self._normalize_result(parsed, raw, language)
 
@@ -103,12 +107,39 @@ class MultimodalAlignmentService:
             data_url = self._bytes_to_data_url(image_content)
             return {"type": "image_url", "image_url": {"url": data_url}} if data_url else None
         if image_url:
-            candidate = Path(image_url)
+            cleaned_url = image_url.strip()
+            if not cleaned_url:
+                return None
+            candidate = Path(cleaned_url)
             if candidate.exists():
                 data_url = self._path_to_data_url(candidate)
                 return {"type": "image_url", "image_url": {"url": data_url}} if data_url else None
-            return {"type": "image_url", "image_url": {"url": image_url}}
+            parsed = urlparse(cleaned_url)
+            if parsed.scheme in {"http", "https"} and parsed.netloc:
+                return {"type": "image_url", "image_url": {"url": cleaned_url}}
+            if parsed.scheme == "data" and cleaned_url.startswith("data:image/"):
+                return {"type": "image_url", "image_url": {"url": cleaned_url}}
         return None
+
+    def _fallback_unavailable(self, exc: Exception, language: str) -> dict[str, Any]:
+        message = (
+            "图文一致性模型调用失败，已保留文本和图像单模态检测结果。"
+            if is_zh(language)
+            else "The image-text consistency model call failed; text and image single-modal results were kept."
+        )
+        detail = str(exc).strip()
+        if detail:
+            message = f"{message} {detail}"
+        return self._normalize_result(
+            {
+                "label": "Cannot_Determine",
+                "consistency_score": 0.5,
+                "reasoning": message,
+                "limitations": [message],
+            },
+            "",
+            language,
+        )
 
     def _bytes_to_data_url(self, content: bytes) -> str:
         try:

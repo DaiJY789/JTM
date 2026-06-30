@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api.detect_routes import detect_router
+from app.api.routes import detect_router
 from app.core.config import apply_runtime_environment, settings
 from app.core.logging import setup_logging
 

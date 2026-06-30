@@ -11,11 +11,15 @@ from app.schemas.detection import DetectionMode, DetectionResponse
 from app.services.conversation_history import ConversationHistoryStore
 from app.services.detection_orchestrator import DetectionOrchestrator
 from app.services.followup_analysis import FollowupAnalysisService
+from app.services.webpage_extraction import WebpageExtractionError, WebpageExtractionService
 
 detect_router = APIRouter()
 conversation_store = ConversationHistoryStore()
 followup_service = FollowupAnalysisService()
+webpage_extraction_service = WebpageExtractionService()
 
+
+# Shared helpers
 
 def parse_history(history: str) -> list:
     try:
@@ -106,19 +110,21 @@ def load_stored_image_content(conversation_id: str, latest_input: dict) -> bytes
     return None
 
 
+# Conversation routes
+
 @detect_router.get("/conversations")
-async def list_conversations_api():
+async def list_conversations():
     return {"conversations": conversation_store.list_conversations()}
 
 
 @detect_router.get("/conversations/{conversation_id}")
-async def get_conversation_api(conversation_id: str):
+async def get_conversation(conversation_id: str):
     resolved_conversation_id = conversation_store.ensure_id(conversation_id)
     return conversation_store.snapshot(resolved_conversation_id)
 
 
 @detect_router.delete("/conversations/{conversation_id}")
-async def delete_conversation_api(conversation_id: str):
+async def delete_conversation(conversation_id: str):
     deleted = conversation_store.delete(conversation_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="未找到该对话。")
@@ -126,15 +132,17 @@ async def delete_conversation_api(conversation_id: str):
 
 
 @detect_router.get("/conversations/{conversation_id}/assets/{asset_path:path}")
-async def get_conversation_asset_api(conversation_id: str, asset_path: str):
+async def get_conversation_asset(conversation_id: str, asset_path: str):
     path = conversation_store.asset_path(conversation_id, asset_path)
     if not path:
         raise HTTPException(status_code=404, detail="未找到该资源。")
     return FileResponse(path)
 
 
+# Follow-up route
+
 @detect_router.post("/followup", response_model=DetectionResponse)
-async def followup_api(
+async def followup(
     question: str = Form(..., description="Follow-up question about the latest detection result."),
     conversation_id: Optional[str] = Form(None, description="Conversation id with an existing detection result."),
     language: str = Form("zh", description="Output language: zh or en."),
@@ -199,6 +207,8 @@ async def followup_api(
     return DetectionResponse.model_validate(result)
 
 
+# Detection route
+
 @detect_router.post(
     "/detect",
     response_model=DetectionResponse,
@@ -250,13 +260,22 @@ async def followup_api(
                                 "question": "Does the image support the news text?",
                             },
                         },
+                        "webpage": {
+                            "summary": "Webpage multimodal analysis",
+                            "value": {
+                                "mode": "auto",
+                                "language": "zh",
+                                "webpage_url": "https://example.com/news-page",
+                                "question": "分析这个网页中图文信息是否真实可信。",
+                            },
+                        },
                     }
                 }
             }
         }
     },
 )
-async def detect_api(
+async def detect(
     text: Optional[str] = Form(
         None,
         description="News text, claim, title, or article body to analyze.",
@@ -268,6 +287,10 @@ async def detect_api(
     image_url: Optional[str] = Form(
         None,
         description="Remote image URL. Use this instead of image upload when the image is already online.",
+    ),
+    webpage_url: Optional[str] = Form(
+        None,
+        description="Webpage URL. The backend extracts page text and representative images for multimodal analysis.",
     ),
     question: Optional[str] = Form(
         None,
@@ -293,16 +316,31 @@ async def detect_api(
 ):
     """Run text, image, or multimodal misinformation detection."""
     started_at = time.perf_counter()
-    if not (text or question or image or image_url):
-        raise HTTPException(status_code=400, detail="text、question、image 或 image_url 至少需要提供一个。")
-    if mode in {DetectionMode.IMAGE_ONLY, DetectionMode.MULTIMODAL} and not (image or image_url):
-        raise HTTPException(status_code=400, detail=f"{mode.value} 模式需要提供 image 或 image_url。")
-    if mode == DetectionMode.TEXT_ONLY and not (text or question):
-        raise HTTPException(status_code=400, detail="text_only 模式需要提供 text 或 question。")
-    if mode == DetectionMode.MULTIMODAL and not (text or question):
-        raise HTTPException(status_code=400, detail="multimodal 模式需要提供 text 或 question 作为图文对齐文本。")
+    webpage_context = None
+    extracted_text = ""
+    extracted_image_url = ""
+    if webpage_url:
+        try:
+            webpage_context = webpage_extraction_service.extract(webpage_url)
+        except WebpageExtractionError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        extracted_parts = [webpage_context.title, webpage_context.text]
+        extracted_text = "\n\n".join(part for part in extracted_parts if part).strip()
+        extracted_image_url = webpage_context.image_url
 
+    effective_text = (text or "").strip() or extracted_text
     image_content = await image.read() if image else None
+    effective_image_url = None if image_content else ((image_url or "").strip() or extracted_image_url or None)
+
+    if not (effective_text or question or image_content or effective_image_url):
+        raise HTTPException(status_code=400, detail="text、question、image、image_url 或 webpage_url 至少需要提供一个。")
+    if mode in {DetectionMode.IMAGE_ONLY, DetectionMode.MULTIMODAL} and not (image_content or effective_image_url):
+        raise HTTPException(status_code=400, detail=f"{mode.value} 模式需要提供 image、image_url 或含图片的 webpage_url。")
+    if mode == DetectionMode.TEXT_ONLY and not (effective_text or question):
+        raise HTTPException(status_code=400, detail="text_only 模式需要提供 text、question 或含文本的 webpage_url。")
+    if mode == DetectionMode.MULTIMODAL and not (effective_text or question):
+        raise HTTPException(status_code=400, detail="multimodal 模式需要提供 text、question 或含文本的 webpage_url 作为图文对齐文本。")
+
     resolved_conversation_id = conversation_store.ensure_id(conversation_id)
     image_asset = conversation_store.save_uploaded_image(
         resolved_conversation_id,
@@ -314,14 +352,38 @@ async def detect_api(
     backend_history = conversation_store.get(resolved_conversation_id)
     combined_history = [*backend_history, *request_history]
     result = orchestrator.detect(
-        text=text,
+        text=effective_text,
         image_content=image_content,
-        image_url=image_url,
+        image_url=effective_image_url,
         question=question,
         mode=mode,
         history=combined_history,
         language=language,
     )
+    if webpage_context:
+        result.setdefault("raw", {})["webpage"] = {
+            "url": webpage_context.url,
+            "final_url": webpage_context.final_url,
+            "title": webpage_context.title,
+            "text": webpage_context.text,
+            "image_url": webpage_context.image_url,
+            "images": webpage_context.images,
+            "metadata": webpage_context.metadata,
+        }
+        result.setdefault("evidence", []).insert(
+            0,
+            {
+                "type": "webpage_source",
+                "source": "WebpageExtractionService",
+                "url": webpage_context.final_url,
+                "title": webpage_context.title,
+                "content": {
+                    "text_preview": webpage_context.text[:500],
+                    "image_url": webpage_context.image_url,
+                    "image_count": len(webpage_context.images),
+                },
+            },
+        )
     result["runtime_seconds"] = round(time.perf_counter() - started_at, 3)
     result["conversation_id"] = resolved_conversation_id
     result["conversation_history"] = conversation_store.append_turn(
@@ -329,11 +391,20 @@ async def detect_api(
         {
             "mode": str(mode.value if isinstance(mode, DetectionMode) else mode),
             "language": language,
-            "text": text or "",
+            "text": effective_text or "",
             "question": result.get("question") or question or "",
-            "image_url": image_url or "",
-            "has_image": bool(image_content),
+            "image_url": effective_image_url or "",
+            "webpage_url": webpage_context.url if webpage_context else webpage_url or "",
+            "has_image": bool(image_content or effective_image_url),
             "image_asset": image_asset,
+            "webpage": {
+                "final_url": webpage_context.final_url,
+                "title": webpage_context.title,
+                "image_url": webpage_context.image_url,
+                "image_count": len(webpage_context.images),
+            }
+            if webpage_context
+            else {},
         },
         result,
     )

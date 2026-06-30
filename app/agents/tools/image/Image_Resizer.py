@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from PIL import Image
-from app.tools.foundation import (
+from app.agents.tools.foundation import (
     BaseTool,
     OpenAIFunctionParametersSchema,
     OpenAIFunctionPropertySchema,
