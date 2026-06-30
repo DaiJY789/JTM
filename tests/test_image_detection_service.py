@@ -3,8 +3,8 @@ import time
 
 from app.services.vision.image import ImageDetectionService
 from app.services.vision.forensic_pipeline import ImageForensicPipeline
-from app.prompts.image import IMAGE_FORENSIC_PROMPT_EN
-from config import Settings
+from app.agents.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
+from app.core.config import Settings
 
 from PIL import Image
 
@@ -59,6 +59,30 @@ def test_image_error_result_is_cannot_determine(tmp_path):
 
     assert result["label"] == "Cannot_Determine"
     assert result["image_verdict"]["label"] == "Cannot_Determine"
+
+
+def test_default_pipeline_disables_c2pa_and_unconfigured_external_tools(tmp_path):
+    pipeline = ImageForensicPipeline(config=Settings(vision_output_dir=str(tmp_path / "vision")), evaluator=lambda prompt: "{}")
+
+    assert "C2PA_Provenance_Checker" not in pipeline.tool_names
+    assert "TruFor_Detector" not in pipeline.tool_names
+    assert "CATNet_Detector" not in pipeline.tool_names
+    assert "DIRE_Detector" not in pipeline.tool_names
+    assert "SRM_Filter" in pipeline.tool_names
+    assert "Spectrum_Grid_Analyzer" in pipeline.tool_names
+
+
+def test_default_pipeline_keeps_configured_external_tools(tmp_path):
+    pipeline = ImageForensicPipeline(
+        config=Settings(
+            vision_output_dir=str(tmp_path / "vision"),
+            vision_trufor_command="python trufor.py --image {image_path}",
+        ),
+        evaluator=lambda prompt: "{}",
+    )
+
+    assert "TruFor_Detector" in pipeline.tool_names
+    assert "C2PA_Provenance_Checker" not in pipeline.tool_names
 
 
 class StubVisionTool:
@@ -218,7 +242,7 @@ def test_image_forensic_pipeline_selects_first_tool_by_context():
     assert pipeline._choose_first_tool({}) == "SRM_Filter"
 
 
-def test_image_forensic_pipeline_calibrates_model_probability_and_confidence():
+def test_image_forensic_pipeline_keeps_model_probability_and_confidence_when_tools_are_weak():
     pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
     tool_calls = [
         {
@@ -234,8 +258,25 @@ def test_image_forensic_pipeline_calibrates_model_probability_and_confidence():
     probability = pipeline._calibrate_probability("真实图像", 0.9, tool_calls, [], {})
     confidence = pipeline._calibrate_confidence("合成图像", 0.95, tool_calls, [])
 
-    assert probability <= 0.45
-    assert confidence <= 0.72
+    assert probability == 0.9
+    assert confidence == 0.95
+
+
+def test_image_forensic_pipeline_caps_real_probability_when_tools_strongly_conflict():
+    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    tool_calls = [
+        {
+            "tool": "Noise_Analyzer",
+            "summary": {
+                "success": True,
+                "evidence_scores": {"noise_inconsistency_score": 0.86},
+            },
+        }
+    ]
+
+    probability = pipeline._calibrate_probability("真实图像", 0.9, tool_calls, [], {})
+
+    assert probability == 0.58
 
 
 def test_image_forensic_pipeline_prompt_exposes_gate_context(tmp_path):
@@ -250,6 +291,10 @@ def test_image_forensic_pipeline_prompt_exposes_gate_context(tmp_path):
     prompt = pipeline._build_interaction_prompt([], "这张图片是真的假的？", "zh", False, context)
 
     assert "条件工具规则" in prompt
+    assert "视觉判断优先" in prompt
+    assert "绶带、衣服、标牌、海报" in prompt
+    assert "内容意图问题不影响真实性" in prompt
+    assert "visual_analysis" in prompt
     assert "CFA_Validator" not in pipeline._eligible_remaining_tools([], context)
 
 
@@ -261,6 +306,13 @@ def test_english_image_prompt_uses_english_labels_only():
     assert "存在伪造" not in IMAGE_FORENSIC_PROMPT_EN
     assert "AI生成" not in IMAGE_FORENSIC_PROMPT_EN
     assert "完全AI生成" not in IMAGE_FORENSIC_PROMPT_EN
+
+
+def test_image_prompt_treats_visible_text_as_image_semantics():
+    assert "画面内可读文字" in IMAGE_FORENSIC_PROMPT_ZH
+    assert "不能把它解释成“内容意图问题，不影响图像真实性”" in IMAGE_FORENSIC_PROMPT_ZH
+    assert "Readable text" in IMAGE_FORENSIC_PROMPT_EN
+    assert "content intent" in IMAGE_FORENSIC_PROMPT_EN
 
 
 def test_image_forensic_pipeline_keeps_regions_for_synthetic_image(tmp_path):

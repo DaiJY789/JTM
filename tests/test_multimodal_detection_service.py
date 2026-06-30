@@ -50,6 +50,48 @@ def test_alignment_service_normalizes_json_payload():
     assert result["mismatched_elements"] == ["天气"]
 
 
+def test_alignment_service_rejects_invalid_image_url_without_model_call():
+    class ModelFactory:
+        def qwen_vision_client(self, timeout=None):
+            raise AssertionError("model should not be called for invalid image_url")
+
+    class ImageServiceStub:
+        config = type("Config", (), {"vision_verdict_timeout_seconds": 3, "qwen_vision_model": "qwen3-vl-plus"})()
+        model_factory = ModelFactory()
+
+    service = MultimodalAlignmentService(ImageServiceStub())
+
+    result = service.evaluate("新闻文本", image_url="blob:http://localhost/image", language="zh")
+
+    assert result["label"] == "Partially_Consistent"
+    assert result["reasoning"]
+
+
+def test_alignment_service_falls_back_when_model_rejects_image_url():
+    class Completion:
+        def create(self, **kwargs):
+            raise RuntimeError("The provided URL does not appear to be valid.")
+
+    class Client:
+        chat = type("Chat", (), {"completions": Completion()})()
+
+    class ModelFactory:
+        def qwen_vision_client(self, timeout=None):
+            return Client()
+
+    class ImageServiceStub:
+        config = type("Config", (), {"vision_verdict_timeout_seconds": 3, "qwen_vision_model": "qwen3-vl-plus"})()
+        model_factory = ModelFactory()
+
+    service = MultimodalAlignmentService(ImageServiceStub())
+
+    result = service.evaluate("新闻文本", image_url="https://example.com/image.jpg", language="zh")
+
+    assert result["label"] == "Partially_Consistent"
+    assert "图文一致性模型调用失败" in result["reasoning"]
+    assert result["limitations"]
+
+
 def test_multimodal_verdict_prioritizes_image_false():
     service = MultimodalVerdictService(evaluator=lambda *_: "")
 

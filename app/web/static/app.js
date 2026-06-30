@@ -217,6 +217,7 @@ function newConversation() {
   localStorage.setItem(CONVERSATION_ID_KEY, state.conversationId);
   $("#textInput").value = "";
   $("#questionInput").value = "";
+  $("#webpageUrlInput").value = "";
   $("#imageUrlInput").value = "";
   $("#imageInput").value = "";
   clearImageObjectUrl();
@@ -229,10 +230,12 @@ function newConversation() {
 function setPrimaryInputsLocked(locked) {
   state.primaryInputLocked = Boolean(locked);
   const textInput = $("#textInput");
+  const webpageUrlInput = $("#webpageUrlInput");
   const imageUrlInput = $("#imageUrlInput");
   const imageInput = $("#imageInput");
   const fileButton = document.querySelector(".file-button");
   if (textInput) textInput.readOnly = state.primaryInputLocked;
+  if (webpageUrlInput) webpageUrlInput.readOnly = state.primaryInputLocked;
   if (imageUrlInput) imageUrlInput.readOnly = state.primaryInputLocked;
   if (imageInput) imageInput.disabled = state.primaryInputLocked;
   if (fileButton) {
@@ -317,6 +320,7 @@ function titleFromCurrentInput() {
   const imageFile = $("#imageInput")?.files?.[0];
   const candidates = [
     $("#textInput")?.value,
+    $("#webpageUrlInput")?.value,
     $("#questionInput")?.value,
     $("#imageUrlInput")?.value,
     imageFile?.name,
@@ -367,7 +371,8 @@ function normalizeConversation(raw, existing = {}) {
   };
 }
 
-function upsertConversation(raw) {
+function upsertConversation(raw, options = {}) {
+  const insertPosition = options.insertPosition || "top";
   const existingIndex = state.conversations.findIndex(
     (item) => item.conversation_id === (raw?.conversation_id || raw?.conversation?.conversation_id),
   );
@@ -377,10 +382,11 @@ function upsertConversation(raw) {
   if (!isConversationMeaningful(normalized)) return;
   if (existingIndex >= 0) {
     state.conversations.splice(existingIndex, 1, normalized);
+  } else if (insertPosition === "bottom") {
+    state.conversations.push(normalized);
   } else {
     state.conversations.unshift(normalized);
   }
-  state.conversations.sort((first, second) => (second.updated_at || 0) - (first.updated_at || 0));
   state.conversations = state.conversations.slice(0, MAX_CONVERSATION_LIST_ITEMS);
   saveConversationIndex();
 }
@@ -434,7 +440,7 @@ async function syncConversationList() {
     if (!response.ok) return;
     const payload = await response.json();
     state.conversations = [];
-    (payload.conversations || []).forEach((item) => upsertConversation(item));
+    (payload.conversations || []).forEach((item) => upsertConversation(item, { insertPosition: "bottom" }));
     saveConversationIndex();
     renderConversation();
   } catch {
@@ -559,6 +565,7 @@ function restoreInputPreview(latestInput) {
   $("#imageInput").value = "";
   $("#textInput").value = latestInput.text || "";
   $("#questionInput").value = "";
+  $("#webpageUrlInput").value = latestInput.webpage_url || "";
   $("#imageUrlInput").value = latestInput.image_url || "";
   const imageAssetUrl = latestInput.image_asset?.url || "";
   if (imageAssetUrl) {
@@ -569,7 +576,11 @@ function restoreInputPreview(latestInput) {
     renderEmptyPreview();
   }
   const hasRestoredPrimary = Boolean(
-    $("#textInput").value.trim() || $("#imageUrlInput").value.trim() || imageAssetUrl || latestInput.has_image,
+    $("#textInput").value.trim() ||
+      $("#webpageUrlInput").value.trim() ||
+      $("#imageUrlInput").value.trim() ||
+      imageAssetUrl ||
+      latestInput.has_image,
   );
   setPrimaryInputsLocked(hasRestoredPrimary && hasDetectionResult());
   if (state.primaryInputLocked) {
@@ -579,18 +590,37 @@ function restoreInputPreview(latestInput) {
 
 async function deleteConversation(conversationId) {
   if (!conversationId) return;
+  state.conversations = state.conversations.filter((item) => item.conversation_id !== conversationId);
+  saveConversationIndex();
+  if (state.conversationId === conversationId) {
+    startEmptyConversation();
+  } else {
+    renderConversation();
+  }
   try {
     await fetch(`/conversations/${encodeURIComponent(conversationId)}`, { method: "DELETE" });
   } catch {
     // Local cleanup still keeps the UI responsive if the backend item was already gone.
   }
-  state.conversations = state.conversations.filter((item) => item.conversation_id !== conversationId);
-  saveConversationIndex();
-  if (state.conversationId === conversationId) {
-    newConversation();
-  } else {
-    renderConversation();
-  }
+}
+
+function startEmptyConversation() {
+  state.conversationId = createConversationId();
+  state.conversationHistory = [];
+  state.lastResult = {};
+  state.lastInputSignature = "";
+  setPrimaryInputsLocked(false);
+  localStorage.setItem(CONVERSATION_ID_KEY, state.conversationId);
+  $("#textInput").value = "";
+  $("#questionInput").value = "";
+  $("#webpageUrlInput").value = "";
+  $("#imageUrlInput").value = "";
+  $("#imageInput").value = "";
+  clearImageObjectUrl();
+  renderEmptyPreview();
+  setResult({}, { persist: false });
+  setStatus("idle", "idle");
+  renderConversation();
 }
 
 function renderConversationHistory(language) {
@@ -722,6 +752,7 @@ function setResult(result, options = {}) {
   if (shouldPersist) {
     upsertConversationFromResult(result);
   }
+  renderExtractedWebpageInput(result);
   const language = state.language === "en" ? "en" : "zh";
   const copy = uiText[language];
   $("#labelTitle").textContent = copy.label;
@@ -736,6 +767,30 @@ function setResult(result, options = {}) {
   updateSubmitButtonLabel();
   renderConversation();
   drawSuspiciousRegions(result);
+}
+
+function renderExtractedWebpageInput(result) {
+  const webpage = result?.raw?.webpage;
+  if (!webpage || typeof webpage !== "object") return;
+  const extractedText = [webpage.title, webpage.text].filter(Boolean).join("\n\n").trim();
+  const extractedImageUrl = String(webpage.image_url || "").trim();
+  const sourceUrl = String(webpage.url || webpage.final_url || "").trim();
+
+  if (sourceUrl) {
+    $("#webpageUrlInput").value = sourceUrl;
+  }
+  if (extractedText) {
+    $("#textInput").value = extractedText;
+  }
+  if (extractedImageUrl) {
+    $("#imageUrlInput").value = extractedImageUrl;
+    if (!$("#imageInput").files[0]) {
+      renderImagePreviewFromUrl(extractedImageUrl);
+    }
+  }
+  if (state.primaryInputLocked) {
+    state.lastInputSignature = currentInputSignature();
+  }
 }
 
 function renderForensicMetrics(result, language) {
@@ -1093,7 +1148,6 @@ function localizeToolNames(text, language) {
     CFA_Validator: "相机成像一致性检查",
     Spectrum_Grid_Analyzer: "整体生成痕迹检查",
     Facial_Biological_Auditor: "人脸结构检查",
-    C2PA_Provenance_Checker: "来源凭证检查",
     TruFor_Detector: "深度伪造检查",
     CATNet_Detector: "压缩痕迹检查",
     DIRE_Detector: "AI生成痕迹检查",
@@ -1105,7 +1159,6 @@ function localizeToolNames(text, language) {
     CFA_Validator: "camera-consistency check",
     Spectrum_Grid_Analyzer: "synthetic-pattern check",
     Facial_Biological_Auditor: "face-structure check",
-    C2PA_Provenance_Checker: "provenance check",
     TruFor_Detector: "deep-forgery check",
     CATNet_Detector: "compression-trace check",
     DIRE_Detector: "AI-generation trace check",
@@ -1201,11 +1254,13 @@ function buildFormData() {
   const formData = new FormData();
   const text = $("#textInput").value.trim();
   const question = resolvedQuestionForSubmit();
+  const webpageUrl = $("#webpageUrlInput").value.trim();
   const imageUrl = $("#imageUrlInput").value.trim();
   const imageFile = $("#imageInput").files[0];
 
   if (text) formData.append("text", text);
   if (question) formData.append("question", question);
+  if (webpageUrl) formData.append("webpage_url", webpageUrl);
   if (imageUrl) formData.append("image_url", imageUrl);
   if (imageFile) formData.append("image", imageFile);
   formData.append("mode", state.mode);
@@ -1228,6 +1283,7 @@ function currentInputSignature() {
   return JSON.stringify({
     mode: state.mode,
     text: $("#textInput").value.trim(),
+    webpage_url: $("#webpageUrlInput").value.trim(),
     image_url: $("#imageUrlInput").value.trim(),
     image_file: imageFile ? `${imageFile.name}:${imageFile.size}:${imageFile.lastModified}` : "",
   });
@@ -1246,13 +1302,24 @@ function shouldUseFollowup() {
 }
 
 function hasPrimaryInput() {
-  return Boolean($("#textInput").value.trim() || $("#imageUrlInput").value.trim() || $("#imageInput").files[0]);
+  return Boolean(
+    $("#textInput").value.trim() ||
+      $("#webpageUrlInput").value.trim() ||
+      $("#imageUrlInput").value.trim() ||
+      $("#imageInput").files[0],
+  );
 }
 
 function defaultQuestionForCurrentInput() {
   const language = state.language === "en" ? "en" : "zh";
   const hasImage = Boolean($("#imageInput").files[0] || $("#imageUrlInput").value.trim());
   const hasText = Boolean($("#textInput").value.trim());
+  const hasWebpage = Boolean($("#webpageUrlInput").value.trim());
+  if (hasWebpage) {
+    return language === "en"
+      ? "Analyze whether the multimodal information on this webpage is credible."
+      : "分析这个网页中的文本、图片及图文关系是否真实可信。";
+  }
   if (hasImage && hasText) {
     return language === "en"
       ? "Please assess whether this text and image are credible, and analyze whether the image and text are consistent."
@@ -1410,7 +1477,7 @@ async function submitDetection() {
 }
 
 function bindConversationDraftTitle() {
-  ["#textInput", "#questionInput", "#imageUrlInput"].forEach((selector) => {
+  ["#textInput", "#questionInput", "#webpageUrlInput", "#imageUrlInput"].forEach((selector) => {
     $(selector).addEventListener("input", () => {
       persistCurrentConversationDraft();
       updateSubmitButtonLabel();
@@ -1442,6 +1509,7 @@ $("#refreshConversationsBtn").addEventListener("click", syncConversationList);
 $("#conversationList").addEventListener("click", (event) => {
   const deleteButton = event.target.closest(".conversation-delete");
   if (deleteButton) {
+    event.preventDefault();
     event.stopPropagation();
     deleteConversation(deleteButton.dataset.conversationId);
     return;

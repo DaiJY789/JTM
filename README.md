@@ -34,8 +34,8 @@
   - 未知
 - 伪造图像必须输出至少一个可疑区域；合成图像也可以标记局部生成异常。
 - 支持多轮工具调用，同一轮中的独立工具可以并行执行。
-- 支持 C2PA / Content Credentials 来源凭证检查。
-- 可按需接入 TruFor、CAT-Net 和 DIRE 等外部模型。
+- 暂停使用 C2PA / Content Credentials 来源凭证检查。
+- TruFor、CAT-Net 和 DIRE 等外部模型仅在显式配置命令后启用。
 
 图像分类定义：
 
@@ -143,7 +143,7 @@ QWEN_VISION_MODEL=qwen3-vl-plus
 BOCHA_API_KEY=
 ```
 
-应用通过环境变量读取配置。当前代码不会在直接运行模块时自动加载 `.env`，因此启动服务时需要使用下方的 `--env-file .env` 参数，或提前将变量导入当前终端。
+应用通过环境变量读取配置，并会在本地启动时自动加载项目根目录下的 `.env`。也可以继续使用 `--env-file .env` 显式指定环境文件。
 
 不要将真实密钥提交到版本控制系统；生产环境建议使用密钥管理服务。
 
@@ -183,6 +183,7 @@ set +a
 | `text` | string | 空 | 新闻文本、事实声明或图文检测中的文本 |
 | `image` | file | 空 | 上传的图片 |
 | `image_url` | string | 空 | 网络图片地址，与上传图片二选一 |
+| `webpage_url` | string | 空 | 新闻网页地址；后端会抽取正文和代表图片进行网页级多模态分析 |
 | `question` | string | 自动生成 | 用户问题或检测要求 |
 | `mode` | string | `auto` | `auto`、`text_only`、`image_only`、`multimodal` |
 | `language` | string | `zh` | `zh` 或 `en` |
@@ -200,6 +201,7 @@ set +a
 - 只有文本时进入 `text_only`。
 - 只有图片时进入 `image_only`。
 - 同时包含文本和图片时进入 `multimodal`。
+- 只有网页时会先抽取网页正文和代表图片；如果网页含正文和图片则进入 `multimodal`，只有正文则进入 `text_only`。
 - 显式设置 `mode` 时优先使用指定模式。
 
 文本检测示例：
@@ -228,6 +230,16 @@ curl -X POST http://127.0.0.1:5000/detect \
   -F "language=zh" \
   -F "text=这里输入新闻文本" \
   -F "image=@/path/to/image.jpg"
+```
+
+网页检测示例：
+
+```bash
+curl -X POST http://127.0.0.1:5000/detect \
+  -F "mode=auto" \
+  -F "language=zh" \
+  -F "webpage_url=https://example.com/news-page" \
+  -F "question=分析这个网页中的文本、图片及图文关系是否真实可信。"
 ```
 
 ### `POST /followup`
@@ -324,25 +336,27 @@ curl -X POST http://127.0.0.1:5000/followup \
 - `Noise_Analyzer`：检查局部噪声分布是否一致。
 - `PatchDense_Scanner`：发现可能的复制移动区域。
 - `CFA_Validator`：检查相机成像规律是否存在局部异常。
-- `TruFor_Detector`：外部深度模型，可输出整图分数和定位结果。
-- `CATNet_Detector`：外部深度模型，用于分析压缩链路异常和篡改定位。
+- `TruFor_Detector`：外部深度模型，可输出整图分数和定位结果；仅在 `VISION_TRUFOR_COMMAND` 已配置时启用。
+- `CATNet_Detector`：外部深度模型，用于分析压缩链路异常和篡改定位；仅在 `VISION_CATNET_COMMAND` 已配置时启用。
 
 ### 合成检测工具
 
 - `Spectrum_Grid_Analyzer`：检查频率分布和空间异常。
 - `Facial_Biological_Auditor`：检查人脸结构、生物特征和物理一致性。
-- `DIRE_Detector`：外部模型，用于检测扩散模型生成痕迹。
+- `DIRE_Detector`：外部模型，用于检测扩散模型生成痕迹；仅在 `VISION_DIRE_COMMAND` 已配置时启用。
 
 ### 通用辅助工具
 
-- `C2PA_Provenance_Checker`：读取 C2PA / Content Credentials 来源与编辑声明。
+- `C2PA_Provenance_Checker`：当前默认禁用。
 - `ROI_Extractor`：裁剪局部区域并保留全局坐标映射。
 - `Image_Resizer`：缩放图像并记录比例。
 - `Visual_Enhancer`：增强暗区或亮区，辅助观察细节。
 
 ## C2PA 配置
 
-项目优先使用虚拟环境中的命令：
+当前暂不启用 `C2PA_Provenance_Checker`。以下配置仅作为后续恢复该工具时的参考。
+
+项目可优先使用虚拟环境中的命令：
 
 ```text
 .venv/bin/c2patool {image_path} --crjson
@@ -354,17 +368,11 @@ curl -X POST http://127.0.0.1:5000/followup \
 .venv/bin/c2patool --version
 ```
 
-也可以通过环境变量指定其他命令：
-
-```env
-VISION_C2PA_COMMAND=/path/to/c2patool {image_path} --crjson
-```
-
 没有 C2PA 凭证不等于图片伪造，只表示当前文件中未发现可读取的来源声明。
 
 ## 外部视觉模型配置
 
-TruFor、CAT-Net 和 DIRE 默认按可选工具处理。未配置时会跳过，不影响基础视觉分析流程。
+TruFor、CAT-Net 和 DIRE 未配置时不会注册到可调用工具列表，不影响基础视觉分析流程。
 
 ```env
 VISION_TRUFOR_COMMAND=
@@ -408,6 +416,51 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest tests
 .venv/bin/python -m pytest tests/test_text_detection_service.py
 .venv/bin/python -m pytest tests/test_multimodal_detection_service.py
 ```
+
+## 运行评测
+
+项目提供了一个最小评测基线，用于把样本、期望标签、运行结果和指标固定下来。
+
+样本文件：
+
+```text
+evals/samples/baseline.jsonl
+```
+
+默认不调用真实服务，而是使用样本中的 `mock_response` 验证评测脚本本身：
+
+```bash
+.venv/bin/python -m evals.run_detection_eval
+```
+
+调用本地 `/detect` 服务进行真实评测：
+
+```bash
+.venv/bin/python -m evals.run_detection_eval \
+  --endpoint http://127.0.0.1:5000/detect \
+  --output evals/results/local_baseline.json
+```
+
+真实服务模式默认跳过 `live_enabled=false` 的占位样本。当前基线中的图像、网页样本先用于固定评测格式和回归目标，后续替换为本地图片或稳定 URL 后再开启真实评测。
+
+只运行文本样本：
+
+```bash
+.venv/bin/python -m evals.run_detection_eval --task text_only
+```
+
+列出样本：
+
+```bash
+.venv/bin/python -m evals.run_detection_eval --list
+```
+
+评测报告会输出：
+
+- `pass_rate`：标签、类型和最低置信度要求全部满足的比例。
+- `label_accuracy`：最终标签命中 `accepted_labels` 的比例。
+- `family_accuracy`：标签大类命中的比例，用于观察模型方向是否正确。
+- `by_task`：按文本、图像、多模态、网页任务拆分的指标。
 
 ## 开发说明
 

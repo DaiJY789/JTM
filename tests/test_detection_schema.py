@@ -1,8 +1,11 @@
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import get_detection_orchestrator
+from app.api import routes
 from app.main import app
-from app.api.detect_routes import should_rerun_detection
+from app.api.routes import should_rerun_detection
 from app.schemas.detection import DetectionResponse
+from app.services.webpage_extraction import WebpageExtractionResult
 
 
 def test_detection_response_accepts_multimodal_payload():
@@ -66,7 +69,66 @@ def test_detect_openapi_documents_request_examples():
         "/DetectionResponse"
     )
     assert "Unified endpoint" in operation["description"]
-    assert set(multipart["examples"]) >= {"text_only", "image_only", "multimodal"}
+    assert set(multipart["examples"]) >= {"text_only", "image_only", "multimodal", "webpage"}
+
+
+def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkeypatch):
+    class StubWebpageExtractor:
+        def extract(self, url):
+            return WebpageExtractionResult(
+                url=url,
+                final_url="https://example.com/news",
+                title="网页新闻标题",
+                text="网页正文描述了一张配图。",
+                image_url="https://example.com/image.jpg",
+                images=["https://example.com/image.jpg"],
+                metadata={"text_length": 11, "image_count": 1},
+            )
+
+    class StubOrchestrator:
+        def __init__(self):
+            self.calls = []
+
+        def detect(self, **kwargs):
+            self.calls.append(kwargs)
+            return {
+                "mode": "multimodal",
+                "type": "图文一致",
+                "label": "均无异常",
+                "summary": "网页图文信息暂未发现明显异常。",
+                "confidence": 0.7,
+                "evidence": [],
+                "claims": [],
+                "raw": {},
+                "user_answer": {"judgment": "网页图文信息暂未发现明显异常。"},
+            }
+
+    stub_orchestrator = StubOrchestrator()
+    monkeypatch.setattr(routes, "webpage_extraction_service", StubWebpageExtractor())
+    app.dependency_overrides[get_detection_orchestrator] = lambda: stub_orchestrator
+
+    try:
+        client = TestClient(app)
+        response = client.post(
+            "/detect",
+            data={
+                "mode": "auto",
+                "language": "zh",
+                "webpage_url": "https://example.com/news",
+                "conversation_id": "test-webpage-detect",
+            },
+        )
+    finally:
+        app.dependency_overrides.pop(get_detection_orchestrator, None)
+
+    assert response.status_code == 200
+    payload = response.json()
+    call = stub_orchestrator.calls[0]
+    assert call["text"].startswith("网页新闻标题")
+    assert call["image_url"] == "https://example.com/image.jpg"
+    assert payload["raw"]["webpage"]["final_url"] == "https://example.com/news"
+    assert payload["raw"]["webpage"]["text"] == "网页正文描述了一张配图。"
+    assert payload["evidence"][0]["type"] == "webpage_source"
 
 
 def test_conversation_endpoints_return_history_shape():

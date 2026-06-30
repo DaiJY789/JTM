@@ -1,7 +1,5 @@
 import json
-import os
 import shlex
-import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -282,84 +280,3 @@ class DIREDetector(ExternalCommandDetector):
             description="DIRE 扩散模型生成图像检测。",
             timeout_seconds=timeout_seconds,
         )
-
-
-class C2PAProvenanceChecker:
-    def __init__(self, command_template: str = "c2patool {image_path} --json", timeout_seconds: float = 30.0):
-        self.tool_name = "C2PA_Provenance_Checker"
-        self.command_template = command_template.strip()
-        self.timeout_seconds = timeout_seconds
-
-    def __call__(self, args_str: str) -> dict[str, Any]:
-        start_time = time.time()
-        try:
-            args = json.loads(args_str or "{}")
-        except json.JSONDecodeError:
-            return _response(self.tool_name, start_time, False, "error", "C2PA 来源凭证检查。", error_message="工具参数必须是 JSON 字符串。")
-
-        image_path = str(args.get("image_path") or args.get("image_input") or "")
-        if not image_path or not Path(image_path).exists():
-            return _response(self.tool_name, start_time, False, "error", "C2PA 来源凭证检查。", error_message=f"找不到图像文件: {image_path}")
-        if not self.command_template:
-            return _response(self.tool_name, start_time, False, "unavailable", "C2PA 来源凭证检查。", error_message="未配置 C2PA 命令模板。")
-
-        executable = shlex.split(self.command_template)[0]
-        if shutil.which(executable) is None and not Path(executable).exists():
-            return _response(self.tool_name, start_time, False, "unavailable", "C2PA 来源凭证检查。", error_message=f"未找到 C2PA 工具: {executable}")
-
-        command = self.command_template.format(image_path=shlex.quote(image_path), image_input=shlex.quote(image_path))
-        try:
-            completed = subprocess.run(
-                shlex.split(command),
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_seconds,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
-            return _response(self.tool_name, start_time, False, "error", "C2PA 来源凭证检查。", error_message="C2PA 检查超时。")
-
-        payload = _load_json_text(completed.stdout)
-        result = self._normalize_payload(payload, completed.returncode, completed.stderr)
-        return _response(self.tool_name, start_time, True, "success", "C2PA 来源凭证检查。", result=result)
-
-    def _normalize_payload(self, payload: dict[str, Any], returncode: int, stderr: str) -> dict[str, Any]:
-        manifest_store = payload.get("manifest_store") if isinstance(payload, dict) else {}
-        manifests = manifest_store.get("manifests", {}) if isinstance(manifest_store, dict) else {}
-        active_manifest = manifest_store.get("active_manifest") if isinstance(manifest_store, dict) else ""
-        has_c2pa = bool(manifests or active_manifest)
-        active = manifests.get(active_manifest, {}) if isinstance(manifests, dict) else {}
-        assertions = active.get("assertions", []) if isinstance(active, dict) else []
-        assertion_text = json.dumps(assertions, ensure_ascii=False).lower()
-        declared_ai = any(token in assertion_text for token in ["ai_generated", "ai generated", "generative", "synthetic", "c2pa.created"])
-        edited = any(token in assertion_text for token in ["edited", "actions", "ingredient", "photoshop"])
-        provenance_score = 1.0 if declared_ai else (0.65 if edited else 0.0)
-        summary = (
-            "C2PA manifest declares generative or synthetic content."
-            if declared_ai
-            else ("C2PA manifest is present and indicates editing/provenance actions." if edited else ("C2PA manifest is present." if has_c2pa else "No C2PA manifest was found."))
-        )
-        return {
-            "forensics_report": {
-                "method": "C2PA provenance metadata",
-                "summary": summary,
-                "top_suspicious_regions": [],
-            },
-            "heuristic_scores": {
-                "c2pa_ai_generated_score": provenance_score if declared_ai else 0.0,
-                "c2pa_edit_score": provenance_score if edited and not declared_ai else 0.0,
-            },
-            "evidence_scores": {
-                "c2pa_ai_generated_score": provenance_score if declared_ai else 0.0,
-                "c2pa_edit_score": provenance_score if edited and not declared_ai else 0.0,
-            },
-            "provenance": {
-                "has_c2pa": has_c2pa,
-                "active_manifest": active_manifest,
-                "declared_ai_generated": declared_ai,
-                "declared_edited": edited,
-                "returncode": returncode,
-                "stderr": (stderr or "")[:1000],
-            },
-            "artifacts": {},
-        }

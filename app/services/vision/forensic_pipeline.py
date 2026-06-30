@@ -12,17 +12,17 @@ from PIL import ExifTags, Image, ImageDraw
 from app.agents.models import ModelFactory
 from app.core.config import Settings, settings
 from app.core.language import is_zh, normalize_language
-from app.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
-from app.tools.image.CFA_Validator import CFAValidator
-from app.tools.image.External_Model_Detectors import C2PAProvenanceChecker, CATNetDetector, DIREDetector, TruForDetector
-from app.tools.image.Facial_Biological_Auditor import FacialBiologicalAuditor, _HAS_INSIGHTFACE, _HAS_MEDIAPIPE
-from app.tools.image.Image_Resizer import ImageResizer
-from app.tools.image.Noise_Analyzer import NoiseAnalyzer
-from app.tools.image.PatchDense_Scanner import PatchDenseScanner
-from app.tools.image.ROI_Extractor import ROIExtractor
-from app.tools.image.Spectrum_Grid_Analyzer import SpectrumGridAnalyzer
-from app.tools.image.SRM_Filter import SRMFilter
-from app.tools.image.Visual_Enhancer import VisualEnhancer
+from app.agents.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
+from app.agents.tools.image.CFA_Validator import CFAValidator
+from app.agents.tools.image.External_Model_Detectors import CATNetDetector, DIREDetector, TruForDetector
+from app.agents.tools.image.Facial_Biological_Auditor import FacialBiologicalAuditor, _HAS_INSIGHTFACE, _HAS_MEDIAPIPE
+from app.agents.tools.image.Image_Resizer import ImageResizer
+from app.agents.tools.image.Noise_Analyzer import NoiseAnalyzer
+from app.agents.tools.image.PatchDense_Scanner import PatchDenseScanner
+from app.agents.tools.image.ROI_Extractor import ROIExtractor
+from app.agents.tools.image.Spectrum_Grid_Analyzer import SpectrumGridAnalyzer
+from app.agents.tools.image.SRM_Filter import SRMFilter
+from app.agents.tools.image.Visual_Enhancer import VisualEnhancer
 
 
 class ImageForensicPipeline:
@@ -231,6 +231,8 @@ class ImageForensicPipeline:
             tool_context = (
                 f"language={language}\n用户问题={question or ''}\n已调用工具={used_tools}\n"
                 f"当前可直接调用工具={remaining_tools}\n每轮可并行调用多个互不依赖工具，但总调用数不能超过上限。\n工具门控上下文={json.dumps(self._prompt_image_context(image_context), ensure_ascii=False)}\n"
+                "视觉判断优先：即使已有工具结果，也必须重新直接观察图像，并把工具无法覆盖的语义、几何、物理和常识异常写入 visual_analysis。\n"
+                "文字真实性规则：绶带、衣服、标牌、海报等载体上的文字属于图像语义事实；必须先转写关键文字并检查字体、透视、弯曲、遮挡和材质褶皱贴合，不能说“内容意图问题不影响真实性”。\n"
                 "条件工具规则：Facial_Biological_Auditor 仅在图中可见人脸时调用；"
                 "PatchDense_Scanner 仅在疑似复制移动/克隆区域时调用；"
                 "CFA_Validator 仅在图像来源可确认为真实相机链路时调用。\n"
@@ -250,6 +252,8 @@ class ImageForensicPipeline:
             tool_context = (
                 f"language={language}\nuser_question={question or ''}\ncalled_tools={used_tools}\n"
                 f"currently_callable_tools={remaining_tools}\nMultiple independent tools may be called in parallel each round, but total calls must stay under the limit.\ntool_gate_context={json.dumps(self._prompt_image_context(image_context), ensure_ascii=False)}\n"
+                "Visual judgment first: even when tool evidence exists, inspect the image directly again and include semantic, geometric, physical, and commonsense anomalies not covered by tools in visual_analysis.\n"
+                "Text authenticity rule: text on sashes, clothing, signs, posters, and similar carriers is part of the image's semantic facts; transcribe key text and inspect font, perspective, curvature, occlusion, and material-fold alignment. Do not say content intent is unrelated to authenticity.\n"
                 "Conditional tool rules: call Facial_Biological_Auditor only when a visible human face is present; "
                 "call PatchDense_Scanner only when copy-move/cloned regions are suspected; "
                 "call CFA_Validator only when the image source is confirmed as a real camera pipeline.\n"
@@ -306,7 +310,6 @@ class ImageForensicPipeline:
         if limit == 0:
             return selected
         for tool_name in [
-            "C2PA_Provenance_Checker",
             "TruFor_Detector",
             "DIRE_Detector",
             "CATNet_Detector",
@@ -386,6 +389,9 @@ class ImageForensicPipeline:
         ai_generated_score = self._ai_score(tool_calls)
         provenance = self._provenance_from_tools(tool_calls)
         visual_analysis = str(payload.get("visual_analysis") or payload.get("visual_observation") or "").strip()
+        missing_visual_analysis = not visual_analysis
+        if not visual_analysis:
+            visual_analysis = self._missing_visual_analysis(language)
 
         artifacts = self._collect_artifacts(tool_calls)
         annotated_path = self._annotate_image(image_path, suspicious_regions, session_dir) if suspicious_regions else ""
@@ -395,6 +401,8 @@ class ImageForensicPipeline:
         final_summary = str(payload.get("final_summary") or "").strip() or self._fallback_summary(label, probability, suspicious_regions, language)
         limitations = payload.get("limitations") if isinstance(payload.get("limitations"), list) else []
         limitations = self._merge_consistency_conflicts(limitations, payload.get("consistency_check"), language)
+        if missing_visual_analysis:
+            limitations.append(visual_analysis)
         user_answer = self._normalize_user_answer(
             payload_user_answer,
             final_summary,
@@ -421,6 +429,13 @@ class ImageForensicPipeline:
             "tool_calls": tool_calls,
             "user_answer": user_answer,
         }
+
+    def _missing_visual_analysis(self, language: str) -> str:
+        return (
+            "模型未返回独立的画面视觉分析；请结合 limitations 谨慎解读本次图像判断。"
+            if is_zh(language)
+            else "The model did not return an independent visual analysis; interpret this image verdict with the limitations in mind."
+        )
 
     def _fallback_final_payload(self, tool_calls: list[dict[str, Any]], language: str = "zh", image_context: dict[str, Any] | None = None) -> dict[str, Any]:
         ai_score = self._ai_score(tool_calls)
@@ -460,8 +475,6 @@ class ImageForensicPipeline:
             return "SRM_Filter"
         if "Spectrum_Grid_Analyzer" in self.tool_names:
             return "Spectrum_Grid_Analyzer"
-        if "C2PA_Provenance_Checker" in self.tool_names:
-            return "C2PA_Provenance_Checker"
         if "TruFor_Detector" in self.tool_names:
             return "TruFor_Detector"
         return next(iter(self.tool_names), "Spectrum_Grid_Analyzer")
@@ -490,7 +503,6 @@ class ImageForensicPipeline:
     def _first_tool_reason(self, tool_name: str, language: str) -> str:
         zh_reasons = {
             "PatchDense_Scanner": "阶段A定向粗检：用户问题提示复制移动/克隆风险，优先检查密集偏移一致性。",
-            "C2PA_Provenance_Checker": "阶段A来源粗检：先检查图像是否带有可验证来源凭证或 AI 生成声明。",
             "TruFor_Detector": "阶段A深度粗检：先用 TruFor 获取整图篡改分数与像素级定位线索。",
             "CATNet_Detector": "阶段A深度粗检：先用 CAT-Net 检查 JPEG 压缩伪影链路异常。",
             "DIRE_Detector": "阶段A深度粗检：先用 DIRE 检查扩散模型生成痕迹。",
@@ -499,7 +511,6 @@ class ImageForensicPipeline:
         }
         en_reasons = {
             "PatchDense_Scanner": "Stage A targeted coarse check: the user question suggests copy-move/cloning risk, so inspect dense offset consistency first.",
-            "C2PA_Provenance_Checker": "Stage A provenance check: inspect verifiable source credentials or AI-generation declarations first.",
             "TruFor_Detector": "Stage A deep check: run TruFor for an image-level tamper score and pixel-level localization clues.",
             "CATNet_Detector": "Stage A deep check: run CAT-Net to inspect JPEG compression artifact inconsistencies.",
             "DIRE_Detector": "Stage A deep check: run DIRE to inspect diffusion-generation traces.",
@@ -589,7 +600,6 @@ class ImageForensicPipeline:
         action: dict[str, Any] | None = None,
     ) -> bool:
         if tool_name in {
-            "C2PA_Provenance_Checker",
             "TruFor_Detector",
             "CATNet_Detector",
             "DIRE_Detector",
@@ -947,10 +957,13 @@ class ImageForensicPipeline:
         image_context: dict[str, Any] | None = None,
     ) -> float:
         evidence_probability = self._fallback_probability(tool_calls, image_context)
+        model_probability = self._bounded_float(model_probability, 0.55 if self._is_real_label(label) else 0.65)
         if self._is_real_label(label):
-            return self._bounded_float(min(model_probability, max(evidence_probability, 0.45)), evidence_probability)
+            if evidence_probability >= 0.62:
+                return self._bounded_float(min(model_probability, 0.58), 0.58)
+            return model_probability
 
-        calibrated = max(evidence_probability, model_probability * 0.7)
+        calibrated = max(model_probability, min(1.0, evidence_probability * 0.9))
         if self._is_local_tampering_label(label) and not suspicious_regions:
             calibrated = min(calibrated, 0.6)
         return self._bounded_float(calibrated, evidence_probability)
@@ -965,14 +978,12 @@ class ImageForensicPipeline:
         successful_tools = sum(1 for item in tool_calls if item.get("summary", {}).get("success") is True)
         failed_tools = sum(1 for item in tool_calls if item.get("summary", {}).get("status") == "error")
         calibrated = model_confidence
-        if successful_tools < 2:
-            calibrated = min(calibrated, 0.68)
+        if successful_tools == 0 and tool_calls:
+            calibrated = min(calibrated, 0.8)
         if failed_tools:
-            calibrated = min(calibrated, 0.78)
+            calibrated = min(calibrated, 0.82)
         if self._is_local_tampering_label(label) and not suspicious_regions:
             calibrated = min(calibrated, 0.55)
-        if self._is_ai_label(label) and successful_tools < 2:
-            calibrated = min(calibrated, 0.72)
         return self._bounded_float(calibrated, 0.55 if self._is_real_label(label) else 0.65)
 
     def _infer_forgery_types(self, label: str, tool_calls: list[dict[str, Any]]) -> list[str]:
@@ -1370,24 +1381,8 @@ class ImageForensicPipeline:
         return tool(json.dumps(args, ensure_ascii=False))
 
     def _default_tools(self) -> dict[str, Any]:
-        return {
+        tools = {
             "Spectrum_Grid_Analyzer": SpectrumGridAnalyzer(),
-            "C2PA_Provenance_Checker": C2PAProvenanceChecker(
-                command_template=getattr(self.config, "vision_c2pa_command", "c2patool {image_path} --json"),
-                timeout_seconds=min(30.0, float(getattr(self.config, "vision_external_tool_timeout_seconds", 120.0))),
-            ),
-            "TruFor_Detector": TruForDetector(
-                command_template=getattr(self.config, "vision_trufor_command", ""),
-                timeout_seconds=float(getattr(self.config, "vision_external_tool_timeout_seconds", 120.0)),
-            ),
-            "CATNet_Detector": CATNetDetector(
-                command_template=getattr(self.config, "vision_catnet_command", ""),
-                timeout_seconds=float(getattr(self.config, "vision_external_tool_timeout_seconds", 120.0)),
-            ),
-            "DIRE_Detector": DIREDetector(
-                command_template=getattr(self.config, "vision_dire_command", ""),
-                timeout_seconds=float(getattr(self.config, "vision_external_tool_timeout_seconds", 120.0)),
-            ),
             "SRM_Filter": SRMFilter(),
             "Noise_Analyzer": NoiseAnalyzer(),
             "PatchDense_Scanner": PatchDenseScanner(),
@@ -1397,6 +1392,27 @@ class ImageForensicPipeline:
             "Image_Resizer": ImageResizer(),
             "Visual_Enhancer": VisualEnhancer(),
         }
+        timeout_seconds = float(getattr(self.config, "vision_external_tool_timeout_seconds", 120.0))
+        if self._configured_command(getattr(self.config, "vision_trufor_command", "")):
+            tools["TruFor_Detector"] = TruForDetector(
+                command_template=getattr(self.config, "vision_trufor_command", ""),
+                timeout_seconds=timeout_seconds,
+            )
+        if self._configured_command(getattr(self.config, "vision_catnet_command", "")):
+            tools["CATNet_Detector"] = CATNetDetector(
+                command_template=getattr(self.config, "vision_catnet_command", ""),
+                timeout_seconds=timeout_seconds,
+            )
+        if self._configured_command(getattr(self.config, "vision_dire_command", "")):
+            tools["DIRE_Detector"] = DIREDetector(
+                command_template=getattr(self.config, "vision_dire_command", ""),
+                timeout_seconds=timeout_seconds,
+            )
+        return tools
+
+    def _configured_command(self, value: Any) -> bool:
+        text = str(value or "").strip()
+        return bool(text and text.lower() not in {"none", "null", "false", "0", "disabled"})
 
     def _parse_json(self, raw_output: str) -> dict[str, Any]:
         text = (raw_output or "").strip()

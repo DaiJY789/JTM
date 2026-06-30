@@ -1,5 +1,5 @@
 from app.core.language import is_zh
-from app.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
+from app.agents.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
 
 
 class PromptService:

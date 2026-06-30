@@ -7,7 +7,7 @@ from uuid import uuid4
 
 import numpy as np
 from PIL import Image
-from app.tools.foundation import (
+from app.agents.tools.foundation import (
     BaseTool,
     OpenAIFunctionParametersSchema,
     OpenAIFunctionPropertySchema,
