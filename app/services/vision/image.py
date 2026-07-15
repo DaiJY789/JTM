@@ -14,6 +14,15 @@ from app.services.vision.forensic_pipeline import ImageForensicPipeline
 
 DEFAULT_IMAGE_QUESTION_ZH = "请判断这张图片是真实图像，伪造图像还是合成图像。"
 DEFAULT_IMAGE_QUESTION_EN = "Please determine whether this image is a real image, a forged image, or a synthetic image."
+MAX_REMOTE_IMAGE_BYTES = 15_000_000
+REMOTE_IMAGE_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+    ),
+    "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    "Referer": "https://mp.weixin.qq.com/",
+}
 
 
 class ImageDetectionService:
@@ -126,12 +135,25 @@ class ImageDetectionService:
             if candidate.exists():
                 return str(candidate)
             try:
-                response = requests.get(image_url, timeout=10)
+                response = requests.get(image_url, timeout=10, headers=REMOTE_IMAGE_HEADERS, stream=True)
                 response.raise_for_status()
             except Exception:
                 return ""
-            return self._save_original_image_bytes(response.content, output_dir)
+            content = self._read_limited_image_bytes(response)
+            return self._save_original_image_bytes(content, output_dir) if content else ""
         return ""
+
+    def _read_limited_image_bytes(self, response: requests.Response) -> bytes:
+        chunks = []
+        total = 0
+        for chunk in response.iter_content(chunk_size=64_000):
+            if not chunk:
+                continue
+            total += len(chunk)
+            if total > MAX_REMOTE_IMAGE_BYTES:
+                return b""
+            chunks.append(chunk)
+        return b"".join(chunks)
 
     def _save_original_image_bytes(self, content: bytes, output_dir: Path) -> str:
         try:

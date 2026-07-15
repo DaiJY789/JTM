@@ -694,7 +694,7 @@ function renderImagePreviewFromUrl(url) {
     renderEmptyPreview();
     return;
   }
-  renderImagePreview(url, "image url");
+  renderImagePreview(url, "image url", { noReferrer: true });
 }
 
 function renderEmptyPreview() {
@@ -704,7 +704,7 @@ function renderEmptyPreview() {
   preview.innerHTML = "<span>未选择图片</span>";
 }
 
-function renderImagePreview(src, alt) {
+function renderImagePreview(src, alt, options = {}) {
   state.imagePreviewSource = src;
   const preview = $("#imagePreview");
   preview.classList.add("has-image");
@@ -713,6 +713,13 @@ function renderImagePreview(src, alt) {
   const img = document.createElement("img");
   img.className = "preview-image";
   img.alt = alt;
+  if (options.noReferrer) {
+    img.referrerPolicy = "no-referrer";
+  }
+  img.addEventListener("error", () => {
+    preview.classList.remove("has-image");
+    preview.innerHTML = "<span>图片预览受来源限制，仍可提交后由后端尝试读取。</span>";
+  });
   img.src = src;
   img.addEventListener("load", () => drawSuspiciousRegions(state.lastResult));
   preview.appendChild(img);

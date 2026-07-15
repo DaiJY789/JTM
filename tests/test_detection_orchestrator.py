@@ -1,4 +1,5 @@
 from app.schemas.detection import DetectionMode
+from app.schemas.artifacts import ArtifactRole, ArtifactType, DetectionTask, EvidenceBundle, InputArtifact
 from app.services.detection_orchestrator import DetectionOrchestrator
 
 
@@ -77,3 +78,61 @@ def test_explicit_question_is_preserved():
     result = orchestrator.detect(text="新闻文本", question="请重点判断标题是否真实", language="zh")
 
     assert result["question"] == "请重点判断标题是否真实"
+
+
+def test_detect_task_uses_normalized_artifacts():
+    orchestrator = make_orchestrator()
+    task = DetectionTask(
+        mode=DetectionMode.MULTIMODAL,
+        language="zh",
+        question="判断图文是否一致",
+        history=[{"role": "user", "content": "history"}],
+        evidence_bundle=EvidenceBundle(
+            text_artifacts=[
+                InputArtifact(type=ArtifactType.TEXT, role=ArtifactRole.USER_INPUT, content="新闻文本")
+            ],
+            image_artifacts=[
+                InputArtifact(
+                    type=ArtifactType.IMAGE,
+                    role=ArtifactRole.REMOTE_IMAGE,
+                    source_url="https://example.com/image.jpg",
+                )
+            ],
+        ),
+    )
+
+    result = orchestrator.detect_task(task)
+
+    assert result["question"] == "判断图文是否一致"
+    call_kwargs = orchestrator.multimodal_detection_service.calls[0][1]
+    assert call_kwargs["text"] == "新闻文本"
+    assert call_kwargs["image_url"] == "https://example.com/image.jpg"
+    assert call_kwargs["history"] == [{"role": "user", "content": "history"}]
+    assert result["raw"]["input_artifacts"]["images"][0]["source_url"] == "https://example.com/image.jpg"
+    assert result["raw"]["report"]["input_artifacts"][1]["source_url"] == "https://example.com/image.jpg"
+
+
+def test_detect_report_builds_internal_contract():
+    orchestrator = make_orchestrator()
+    task = DetectionTask(
+        mode=DetectionMode.TEXT_ONLY,
+        language="zh",
+        question="判断真实性",
+        conversation_id="conv-report",
+        evidence_bundle=EvidenceBundle(
+            text_artifacts=[
+                InputArtifact(type=ArtifactType.TEXT, role=ArtifactRole.USER_INPUT, content="新闻文本")
+            ],
+            evidence_items=[
+                {"type": "manual_context", "source": "test", "content": "context"}
+            ],
+        ),
+    )
+
+    report = orchestrator.detect_report(task)
+
+    assert report.mode == DetectionMode.TEXT_ONLY
+    assert report.question == "判断真实性"
+    assert report.conversation_id == "conv-report"
+    assert report.input_artifacts[0].content == "新闻文本"
+    assert report.key_evidence[0].type == "manual_context"
