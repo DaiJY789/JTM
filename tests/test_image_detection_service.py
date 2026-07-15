@@ -50,6 +50,53 @@ def test_materialize_image_preserves_original_jpeg_bytes(tmp_path):
     assert open(path, "rb").read() == content
 
 
+def test_materialize_remote_image_uses_browser_headers(monkeypatch, tmp_path):
+    image_service = StubImageService()
+    image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))
+    service = ImageDetectionService(image_service)
+    buffer = BytesIO()
+    Image.new("RGB", (12, 12), color="white").save(buffer, format="PNG")
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=64000):
+            yield buffer.getvalue()
+
+    def fake_get(url, **kwargs):
+        captured["url"] = url
+        captured["kwargs"] = kwargs
+        return FakeResponse()
+
+    monkeypatch.setattr("app.services.vision.image.requests.get", fake_get)
+
+    path = service._materialize_image(None, "https://mmbiz.qpic.cn/example.jpg")
+
+    assert path.endswith(".png")
+    assert captured["kwargs"]["stream"] is True
+    assert "Mozilla/5.0" in captured["kwargs"]["headers"]["User-Agent"]
+    assert captured["kwargs"]["headers"]["Referer"] == "https://mp.weixin.qq.com/"
+
+
+def test_materialize_remote_image_rejects_oversized_response(monkeypatch, tmp_path):
+    image_service = StubImageService()
+    image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))
+    service = ImageDetectionService(image_service)
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size=64000):
+            yield b"x" * 16_000_000
+
+    monkeypatch.setattr("app.services.vision.image.requests.get", lambda *_, **__: FakeResponse())
+
+    assert service._materialize_image(None, "https://example.com/large.jpg") == ""
+
+
 def test_image_error_result_is_cannot_determine(tmp_path):
     image_service = StubImageService()
     image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))

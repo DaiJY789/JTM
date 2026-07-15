@@ -21,13 +21,20 @@ class WebpageExtractionError(ValueError):
     pass
 
 
+@dataclass
+class LimitedHtml:
+    content: str
+    bytes_read: int
+    truncated: bool = False
+
+
 class WebpageExtractionService:
     """Extract text and representative images from a public webpage."""
 
     def __init__(
         self,
         timeout_seconds: float = 12.0,
-        max_html_bytes: int = 2_000_000,
+        max_html_bytes: int = 5_000_000,
         max_text_chars: int = 6000,
         max_images: int = 8,
     ):
@@ -59,7 +66,7 @@ class WebpageExtractionService:
             raise WebpageExtractionError("网页 URL 未返回 HTML 或文本内容。")
 
         html = self._read_limited_text(response)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = BeautifulSoup(html.content, "html.parser")
         final_url = response.url or normalized_url
         title = self._extract_title(soup)
         text = self._extract_text(soup)
@@ -75,6 +82,9 @@ class WebpageExtractionService:
                 "content_type": content_type,
                 "text_length": len(text),
                 "image_count": len(images),
+                "html_bytes_read": html.bytes_read,
+                "html_truncated": html.truncated,
+                "html_limit_bytes": self.max_html_bytes,
             },
         )
 
@@ -90,19 +100,31 @@ class WebpageExtractionService:
             raise WebpageExtractionError("网页 URL 必须是 http 或 https 地址。")
         return candidate
 
-    def _read_limited_text(self, response: requests.Response) -> str:
+    def _read_limited_text(self, response: requests.Response) -> LimitedHtml:
         chunks = []
         total = 0
+        truncated = False
         for chunk in response.iter_content(chunk_size=64_000):
             if not chunk:
                 continue
-            total += len(chunk)
-            if total > self.max_html_bytes:
-                raise WebpageExtractionError("网页内容过大，无法在 demo 中处理。")
+            remaining = self.max_html_bytes - total
+            if remaining <= 0:
+                truncated = True
+                break
+            if len(chunk) > remaining:
+                chunks.append(chunk[:remaining])
+                total += remaining
+                truncated = True
+                break
             chunks.append(chunk)
+            total += len(chunk)
         content = b"".join(chunks)
         response.encoding = response.encoding or response.apparent_encoding or "utf-8"
-        return content.decode(response.encoding, errors="replace")
+        return LimitedHtml(
+            content=content.decode(response.encoding, errors="replace"),
+            bytes_read=total,
+            truncated=truncated,
+        )
 
     def _extract_title(self, soup: BeautifulSoup) -> str:
         for selector in [

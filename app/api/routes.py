@@ -7,16 +7,20 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
 from app.api.dependencies import get_detection_orchestrator
+from app.schemas.artifacts import DetectionTask
 from app.schemas.detection import DetectionMode, DetectionResponse
+from app.services.artifact_store import ArtifactStore
 from app.services.conversation_history import ConversationHistoryStore
 from app.services.detection_orchestrator import DetectionOrchestrator
 from app.services.followup_analysis import FollowupAnalysisService
-from app.services.webpage_extraction import WebpageExtractionError, WebpageExtractionService
+from app.services.input_builder import DetectionInputBuilder, DetectionInputError
+from app.services.webpage_extraction import WebpageExtractionService
 
 detect_router = APIRouter()
 conversation_store = ConversationHistoryStore()
 followup_service = FollowupAnalysisService()
 webpage_extraction_service = WebpageExtractionService()
+artifact_store = ArtifactStore(conversation_store.log_dir)
 
 
 # Shared helpers
@@ -110,6 +114,26 @@ def load_stored_image_content(conversation_id: str, latest_input: dict) -> bytes
     return None
 
 
+def attach_task_context(result: dict, task: DetectionTask) -> None:
+    bundle = task.evidence_bundle
+    webpage = bundle.webpage_artifact
+    if webpage:
+        metadata = webpage.metadata
+        result.setdefault("raw", {})["webpage"] = {
+            "url": webpage.source_url,
+            "final_url": metadata.get("final_url", ""),
+            "title": metadata.get("title", ""),
+            "text": webpage.content,
+            "image_url": metadata.get("image_url", ""),
+            "images": metadata.get("images", []),
+            "metadata": metadata.get("metadata", {}),
+        }
+    if bundle.evidence_items:
+        evidence = result.setdefault("evidence", [])
+        for item in reversed(bundle.evidence_items):
+            evidence.insert(0, item)
+
+
 # Conversation routes
 
 @detect_router.get("/conversations")
@@ -133,7 +157,7 @@ async def delete_conversation(conversation_id: str):
 
 @detect_router.get("/conversations/{conversation_id}/assets/{asset_path:path}")
 async def get_conversation_asset(conversation_id: str, asset_path: str):
-    path = conversation_store.asset_path(conversation_id, asset_path)
+    path = artifact_store.resolve(conversation_id, asset_path) or conversation_store.asset_path(conversation_id, asset_path)
     if not path:
         raise HTTPException(status_code=404, detail="未找到该资源。")
     return FileResponse(path)
@@ -316,96 +340,47 @@ async def detect(
 ):
     """Run text, image, or multimodal misinformation detection."""
     started_at = time.perf_counter()
-    webpage_context = None
-    extracted_text = ""
-    extracted_image_url = ""
-    if webpage_url:
-        try:
-            webpage_context = webpage_extraction_service.extract(webpage_url)
-        except WebpageExtractionError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        extracted_parts = [webpage_context.title, webpage_context.text]
-        extracted_text = "\n\n".join(part for part in extracted_parts if part).strip()
-        extracted_image_url = webpage_context.image_url
-
-    effective_text = (text or "").strip() or extracted_text
     image_content = await image.read() if image else None
-    effective_image_url = None if image_content else ((image_url or "").strip() or extracted_image_url or None)
-
-    if not (effective_text or question or image_content or effective_image_url):
-        raise HTTPException(status_code=400, detail="text、question、image、image_url 或 webpage_url 至少需要提供一个。")
-    if mode in {DetectionMode.IMAGE_ONLY, DetectionMode.MULTIMODAL} and not (image_content or effective_image_url):
-        raise HTTPException(status_code=400, detail=f"{mode.value} 模式需要提供 image、image_url 或含图片的 webpage_url。")
-    if mode == DetectionMode.TEXT_ONLY and not (effective_text or question):
-        raise HTTPException(status_code=400, detail="text_only 模式需要提供 text、question 或含文本的 webpage_url。")
-    if mode == DetectionMode.MULTIMODAL and not (effective_text or question):
-        raise HTTPException(status_code=400, detail="multimodal 模式需要提供 text、question 或含文本的 webpage_url 作为图文对齐文本。")
-
     resolved_conversation_id = conversation_store.ensure_id(conversation_id)
-    image_asset = conversation_store.save_uploaded_image(
-        resolved_conversation_id,
-        image_content,
-        filename=image.filename if image else None,
-        content_type=image.content_type if image else None,
-    )
     request_history = parse_history(history)
     backend_history = conversation_store.get(resolved_conversation_id)
     combined_history = [*backend_history, *request_history]
-    result = orchestrator.detect(
-        text=effective_text,
-        image_content=image_content,
-        image_url=effective_image_url,
-        question=question,
-        mode=mode,
-        history=combined_history,
-        language=language,
-    )
-    if webpage_context:
-        result.setdefault("raw", {})["webpage"] = {
-            "url": webpage_context.url,
-            "final_url": webpage_context.final_url,
-            "title": webpage_context.title,
-            "text": webpage_context.text,
-            "image_url": webpage_context.image_url,
-            "images": webpage_context.images,
-            "metadata": webpage_context.metadata,
-        }
-        result.setdefault("evidence", []).insert(
-            0,
-            {
-                "type": "webpage_source",
-                "source": "WebpageExtractionService",
-                "url": webpage_context.final_url,
-                "title": webpage_context.title,
-                "content": {
-                    "text_preview": webpage_context.text[:500],
-                    "image_url": webpage_context.image_url,
-                    "image_count": len(webpage_context.images),
-                },
-            },
+    builder = DetectionInputBuilder(webpage_extraction_service, artifact_store)
+    try:
+        task = builder.build(
+            text=text,
+            image_content=image_content,
+            image_filename=image.filename if image else None,
+            image_content_type=image.content_type if image else None,
+            image_url=(image_url or "").strip() or None,
+            webpage_url=webpage_url,
+            question=question,
+            mode=mode,
+            language=language,
+            history=combined_history,
+            conversation_id=resolved_conversation_id,
         )
+    except DetectionInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if hasattr(orchestrator, "detect_task"):
+        result = orchestrator.detect_task(task)
+    else:
+        result = orchestrator.detect(
+            text=task.text,
+            image_content=image_content,
+            image_url=task.image_url or None,
+            question=question,
+            mode=mode,
+            history=combined_history,
+            language=language,
+        )
+        attach_task_context(result, task)
     result["runtime_seconds"] = round(time.perf_counter() - started_at, 3)
     result["conversation_id"] = resolved_conversation_id
     result["conversation_history"] = conversation_store.append_turn(
         resolved_conversation_id,
-        {
-            "mode": str(mode.value if isinstance(mode, DetectionMode) else mode),
-            "language": language,
-            "text": effective_text or "",
-            "question": result.get("question") or question or "",
-            "image_url": effective_image_url or "",
-            "webpage_url": webpage_context.url if webpage_context else webpage_url or "",
-            "has_image": bool(image_content or effective_image_url),
-            "image_asset": image_asset,
-            "webpage": {
-                "final_url": webpage_context.final_url,
-                "title": webpage_context.title,
-                "image_url": webpage_context.image_url,
-                "image_count": len(webpage_context.images),
-            }
-            if webpage_context
-            else {},
-        },
+        {**task.user_input, "question": result.get("question") or task.user_input.get("question", "")},
         result,
     )
     return DetectionResponse.model_validate(result)

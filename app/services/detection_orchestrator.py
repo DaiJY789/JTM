@@ -1,7 +1,11 @@
 from typing import Any
 
 from app.core.language import normalize_language
+from app.schemas.artifacts import DetectionTask
 from app.schemas.detection import DetectionMode
+from app.schemas.report import DetectionReport
+from app.api.adapters.detection_response import DetectionResponseAdapter
+from app.services.report_builder import DetectionReportBuilder
 from app.services.vision.image import ImageDetectionService
 from app.services.multimodal import MultimodalDetectionService
 from app.services.text.text_detection import TextDetectionService
@@ -34,10 +38,14 @@ class DetectionOrchestrator:
         text_detection_service: TextDetectionService,
         image_detection_service: ImageDetectionService,
         multimodal_detection_service: MultimodalDetectionService,
+        report_builder: DetectionReportBuilder | None = None,
+        response_adapter: DetectionResponseAdapter | None = None,
     ):
         self.text_detection_service = text_detection_service
         self.image_detection_service = image_detection_service
         self.multimodal_detection_service = multimodal_detection_service
+        self.report_builder = report_builder or DetectionReportBuilder()
+        self.response_adapter = response_adapter or DetectionResponseAdapter()
 
     def detect(
         self,
@@ -73,6 +81,24 @@ class DetectionOrchestrator:
         )
         result["question"] = resolved_question
         return result
+
+    def detect_task(self, task: DetectionTask) -> dict[str, Any]:
+        report = self.detect_report(task)
+        return self.response_adapter.to_legacy_response(report)
+
+    def detect_report(self, task: DetectionTask) -> DetectionReport:
+        primary_image = task.evidence_bundle.primary_image
+        result = self.detect(
+            text=task.text,
+            image_content=task.image_content,
+            image_url=primary_image.source_url if primary_image else None,
+            question=task.question,
+            mode=task.mode,
+            history=task.history,
+            language=task.language,
+        )
+        self._attach_task_context(result, task)
+        return self.report_builder.build(task, result)
 
     def resolve_mode(
         self,
@@ -110,3 +136,27 @@ class DetectionOrchestrator:
         if mode == DetectionMode.MULTIMODAL:
             return DEFAULT_MULTIMODAL_QUESTION_ZH if language == "zh" else DEFAULT_MULTIMODAL_QUESTION_EN
         return ""
+
+    def _attach_task_context(self, result: dict[str, Any], task: DetectionTask) -> None:
+        bundle = task.evidence_bundle
+        webpage = bundle.webpage_artifact
+        if webpage:
+            metadata = webpage.metadata
+            result.setdefault("raw", {})["webpage"] = {
+                "url": webpage.source_url,
+                "final_url": metadata.get("final_url", ""),
+                "title": metadata.get("title", ""),
+                "text": webpage.content,
+                "image_url": metadata.get("image_url", ""),
+                "images": metadata.get("images", []),
+                "metadata": metadata.get("metadata", {}),
+            }
+        if bundle.evidence_items:
+            evidence = result.setdefault("evidence", [])
+            for item in reversed(bundle.evidence_items):
+                evidence.insert(0, item)
+        result.setdefault("raw", {})["input_artifacts"] = {
+            "text": [item.model_dump(mode="json", exclude={"content"}) for item in bundle.text_artifacts],
+            "images": [item.model_dump(mode="json", exclude={"content"}) for item in bundle.image_artifacts],
+            "webpage": webpage.model_dump(mode="json", exclude={"content"}) if webpage else None,
+        }
