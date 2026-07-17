@@ -33,7 +33,6 @@ class DetectionInputBuilder:
         image_url: str | None,
         webpage_url: str | None,
         question: str | None,
-        mode: DetectionMode,
         language: str,
         history: list[dict[str, Any]],
         conversation_id: str,
@@ -93,9 +92,8 @@ class DetectionInputBuilder:
                 ),
             )
 
-        self._validate(bundle, image_content, question, mode)
+        self._validate(bundle, image_content, question)
         user_input = self._user_input(
-            mode=mode,
             language=language,
             text=bundle.primary_text,
             question=question,
@@ -106,7 +104,7 @@ class DetectionInputBuilder:
             image_artifacts=bundle.image_artifacts,
         )
         return DetectionTask(
-            mode=mode,
+            mode=DetectionMode.AUTO,
             language=language,
             question=(question or "").strip(),
             conversation_id=conversation_id,
@@ -129,19 +127,12 @@ class DetectionInputBuilder:
         bundle: EvidenceBundle,
         image_content: bytes | None,
         question: str | None,
-        mode: DetectionMode,
     ) -> None:
         has_text = bool(bundle.primary_text)
         has_question = bool((question or "").strip())
         has_image = bool(image_content or bundle.primary_image)
         if not (has_text or has_question or has_image):
             raise DetectionInputError("text、question、image、image_url 或 webpage_url 至少需要提供一个。")
-        if mode in {DetectionMode.IMAGE_ONLY, DetectionMode.MULTIMODAL} and not has_image:
-            raise DetectionInputError(f"{mode.value} 模式需要提供 image、image_url 或含图片的 webpage_url。")
-        if mode == DetectionMode.TEXT_ONLY and not (has_text or has_question):
-            raise DetectionInputError("text_only 模式需要提供 text、question 或含文本的 webpage_url。")
-        if mode == DetectionMode.MULTIMODAL and not (has_text or has_question):
-            raise DetectionInputError("multimodal 模式需要提供 text、question 或含文本的 webpage_url 作为图文对齐文本。")
 
     def _webpage_artifact(self, webpage_context: WebpageExtractionResult) -> InputArtifact:
         return InputArtifact(
@@ -174,7 +165,6 @@ class DetectionInputBuilder:
     def _user_input(
         self,
         *,
-        mode: DetectionMode,
         language: str,
         text: str,
         question: str | None,
@@ -185,7 +175,7 @@ class DetectionInputBuilder:
         image_artifacts: list[InputArtifact],
     ) -> dict[str, Any]:
         return {
-            "mode": mode.value,
+            "mode": DetectionMode.AUTO.value,
             "language": language,
             "text": text or "",
             "question": (question or "").strip(),

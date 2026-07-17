@@ -1,6 +1,10 @@
 import base64
 import io
+import mimetypes
 from io import BytesIO
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 
 import requests
 from PIL import Image
@@ -32,6 +36,42 @@ class ImageService:
         buffered = io.BytesIO()
         image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    def build_image_content_part(
+        self,
+        image_content: bytes | None = None,
+        image_url: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Build an OpenAI-compatible image content part from bytes, a local path, or a URL."""
+        if image_content:
+            try:
+                with Image.open(BytesIO(image_content)) as image:
+                    image_format = image.format or "PNG"
+            except Exception:
+                return None
+            mime_type = Image.MIME.get(image_format.upper(), "image/png")
+            encoded = base64.b64encode(image_content).decode("utf-8")
+            return {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{encoded}"}}
+
+        cleaned_url = str(image_url or "").strip()
+        if not cleaned_url:
+            return None
+        candidate = Path(cleaned_url)
+        if candidate.is_file():
+            try:
+                content = candidate.read_bytes()
+            except OSError:
+                return None
+            mime_type = mimetypes.guess_type(candidate.name)[0] or "image/png"
+            encoded = base64.b64encode(content).decode("utf-8")
+            return {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{encoded}"}}
+
+        parsed = urlparse(cleaned_url)
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            return {"type": "image_url", "image_url": {"url": cleaned_url}}
+        if parsed.scheme == "data" and cleaned_url.startswith("data:image/"):
+            return {"type": "image_url", "image_url": {"url": cleaned_url}}
+        return None
 
     def load_image(self, image_path_or_url: str) -> Image.Image | None:
         if image_path_or_url.startswith(("http://", "https://")):

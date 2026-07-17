@@ -1,14 +1,16 @@
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+from app.api.adapters.detection_response import DetectionResponseAdapter
 from app.core.language import normalize_language
 from app.schemas.artifacts import DetectionTask
 from app.schemas.detection import DetectionMode
 from app.schemas.report import DetectionReport
-from app.api.adapters.detection_response import DetectionResponseAdapter
+from app.services.comprehensive_fusion import ComprehensiveFusionService
+from app.services.crossmodal import CrossmodalConsistencyPipeline
 from app.services.report_builder import DetectionReportBuilder
-from app.services.vision.image import ImageDetectionService
-from app.services.multimodal import MultimodalDetectionService
-from app.services.text.text_detection import TextDetectionService
+from app.services.textual.T_pipeline import TextualDetectionPipeline
+from app.services.visual.visual_verdict import VisualVerdictService
 
 
 DEFAULT_TEXT_QUESTION_ZH = "请判断这段文字的真实性。"
@@ -35,15 +37,17 @@ class DetectionOrchestrator:
 
     def __init__(
         self,
-        text_detection_service: TextDetectionService,
-        image_detection_service: ImageDetectionService,
-        multimodal_detection_service: MultimodalDetectionService,
+        textual_pipeline: TextualDetectionPipeline,
+        visual_verdict_service: VisualVerdictService,
+        crossmodal_pipeline: CrossmodalConsistencyPipeline,
+        comprehensive_fusion_service: ComprehensiveFusionService,
         report_builder: DetectionReportBuilder | None = None,
         response_adapter: DetectionResponseAdapter | None = None,
     ):
-        self.text_detection_service = text_detection_service
-        self.image_detection_service = image_detection_service
-        self.multimodal_detection_service = multimodal_detection_service
+        self.textual_pipeline = textual_pipeline
+        self.visual_verdict_service = visual_verdict_service
+        self.crossmodal_pipeline = crossmodal_pipeline
+        self.comprehensive_fusion_service = comprehensive_fusion_service
         self.report_builder = report_builder or DetectionReportBuilder()
         self.response_adapter = response_adapter or DetectionResponseAdapter()
 
@@ -53,34 +57,100 @@ class DetectionOrchestrator:
         image_content: bytes | None = None,
         image_url: str | None = None,
         question: str | None = None,
-        mode: str | DetectionMode = DetectionMode.AUTO,
         history: list | None = None,
         language: str = "zh",
     ) -> dict[str, Any]:
         language = normalize_language(language)
         normalized_text = (text or "").strip()
         normalized_question = (question or "").strip()
-        resolved_mode = self.resolve_mode(normalized_text, bool(image_content or image_url), normalized_question, mode)
+        resolved_mode = self.resolve_mode(normalized_text, bool(image_content or image_url), normalized_question)
         resolved_question = self._resolve_question(normalized_question, resolved_mode, language)
 
         if resolved_mode == DetectionMode.TEXT_ONLY:
-            result = self.text_detection_service.detect(normalized_text or normalized_question, history, language)
+            result = self.textual_pipeline.detect(normalized_text or normalized_question, history, language)
             result["question"] = resolved_question
             return result
         if resolved_mode == DetectionMode.IMAGE_ONLY:
-            result = self.image_detection_service.detect(image_content, image_url, resolved_question or normalized_text, language)
+            result = self.visual_verdict_service.detect(image_content, image_url, resolved_question or normalized_text, language)
             result["question"] = resolved_question
             return result
-        result = self.multimodal_detection_service.detect(
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            textual_future = executor.submit(self.textual_pipeline.detect, normalized_text, history, language)
+            visual_future = executor.submit(
+                self.visual_verdict_service.detect,
+                image_content,
+                image_url,
+                resolved_question,
+                language,
+            )
+            crossmodal_future = executor.submit(
+                self.crossmodal_pipeline.detect,
+                text=normalized_text,
+                image_content=image_content,
+                image_url=image_url,
+                question=resolved_question,
+                language=language,
+            )
+            textual_result = textual_future.result()
+            visual_result = visual_future.result()
+            crossmodal_result = crossmodal_future.result()
+
+        report = self.comprehensive_fusion_service.generate_report(
             text=normalized_text,
             image_content=image_content,
             image_url=image_url,
             question=resolved_question,
-            history=history,
+            textual_result=textual_result,
+            visual_result=visual_result,
+            crossmodal_result=crossmodal_result,
             language=language,
         )
+        result = {
+            "mode": "multimodal",
+            "label": report["label"],
+            "type": report["type"],
+            "summary": report["summary"],
+            "confidence": report["confidence"],
+            "text_verdict": textual_result.get("text_verdict"),
+            "image_verdict": visual_result.get("image_verdict"),
+            "crossmodal_verdict": crossmodal_result,
+            "evidence": self._merge_evidence(textual_result, visual_result, crossmodal_result),
+            "claims": textual_result.get("claims", []),
+            "report": report,
+            "raw": {
+                "textual_detection": textual_result,
+                "visual_detection": visual_result,
+                "crossmodal_consistency": crossmodal_result,
+                "comprehensive_fusion": report,
+            },
+            "user_answer": report["user_answer"],
+        }
         result["question"] = resolved_question
         return result
+
+    def _merge_evidence(
+        self,
+        textual_result: dict[str, Any],
+        visual_result: dict[str, Any],
+        crossmodal_result: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        evidence = list(textual_result.get("evidence", []) or [])
+        evidence.extend(visual_result.get("evidence", []) or [])
+        if crossmodal_result.get("matched_elements") or crossmodal_result.get("mismatched_elements"):
+            evidence.append(
+                {
+                    "type": "crossmodal_consistency",
+                    "source": "CrossmodalConsistencyPipeline",
+                    "content": {
+                        "label": crossmodal_result.get("label"),
+                        "matched_elements": crossmodal_result.get("matched_elements", []),
+                        "mismatched_elements": crossmodal_result.get("mismatched_elements", []),
+                        "missing_elements": crossmodal_result.get("missing_elements", []),
+                        "reasoning": crossmodal_result.get("reasoning", ""),
+                    },
+                }
+            )
+        return evidence
 
     def detect_task(self, task: DetectionTask) -> dict[str, Any]:
         report = self.detect_report(task)
@@ -93,7 +163,6 @@ class DetectionOrchestrator:
             image_content=task.image_content,
             image_url=primary_image.source_url if primary_image else None,
             question=task.question,
-            mode=task.mode,
             history=task.history,
             language=task.language,
         )
@@ -105,12 +174,7 @@ class DetectionOrchestrator:
         text: str,
         has_image: bool,
         question: str,
-        mode: str | DetectionMode = DetectionMode.AUTO,
     ) -> DetectionMode:
-        requested_mode = DetectionMode(mode)
-        if requested_mode != DetectionMode.AUTO:
-            return requested_mode
-
         if has_image and self._is_image_only_text(text, question):
             return DetectionMode.IMAGE_ONLY
         if has_image and text:

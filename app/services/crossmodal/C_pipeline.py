@@ -1,20 +1,13 @@
-import base64
 import json
-import mimetypes
 import re
-from io import BytesIO
-from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
-
-from PIL import Image
 
 from app.core.language import is_zh, normalize_language
-from app.agents.prompts.multimodal import MULTIMODAL_ALIGNMENT_PROMPT_EN, MULTIMODAL_ALIGNMENT_PROMPT_ZH
-from app.services.vision.image_io import ImageService
+from app.agents.prompts.crossmodal import CROSSMODAL_CONSISTENCY_PROMPT_EN, CROSSMODAL_CONSISTENCY_PROMPT_ZH
+from app.services.visual.image_io import ImageService
 
 
-class MultimodalAlignmentService:
+class CrossmodalConsistencyPipeline:
     LABELS = {"Consistent", "Partially_Consistent", "Inconsistent"}
     LABEL_ALIASES = {
         "Mismatch": "Inconsistent",
@@ -31,18 +24,16 @@ class MultimodalAlignmentService:
     def __init__(self, image_service: ImageService):
         self.image_service = image_service
 
-    def evaluate(
+    def detect(
         self,
         text: str,
         image_content: bytes | None = None,
         image_url: str | None = None,
         question: str | None = None,
-        text_result: dict[str, Any] | None = None,
-        image_result: dict[str, Any] | None = None,
         language: str = "zh",
     ) -> dict[str, Any]:
         language = normalize_language(language)
-        prompt = self._build_prompt(text, question, text_result or {}, image_result or {}, language)
+        prompt = self._build_prompt(text, question, language)
         try:
             raw = self._call_vision_model(prompt, image_content, image_url, language)
         except Exception as exc:
@@ -54,24 +45,12 @@ class MultimodalAlignmentService:
         self,
         text: str,
         question: str | None,
-        text_result: dict[str, Any],
-        image_result: dict[str, Any],
         language: str,
     ) -> str:
-        base_prompt = MULTIMODAL_ALIGNMENT_PROMPT_ZH if is_zh(language) else MULTIMODAL_ALIGNMENT_PROMPT_EN
+        base_prompt = CROSSMODAL_CONSISTENCY_PROMPT_ZH if is_zh(language) else CROSSMODAL_CONSISTENCY_PROMPT_EN
         context = {
             "news_text": text,
             "user_question": question or "",
-            "text_verdict": {
-                "label": text_result.get("label"),
-                "summary": text_result.get("summary"),
-                "claims": text_result.get("claims", [])[:3],
-            },
-            "image_verdict": {
-                "label": image_result.get("label"),
-                "summary": image_result.get("summary"),
-                "suspicious_regions": image_result.get("image_verdict", {}).get("suspicious_regions", []),
-            },
         }
         return f"{base_prompt}\n\nINPUT_JSON:\n{json.dumps(context, ensure_ascii=False)}"
 
@@ -82,14 +61,14 @@ class MultimodalAlignmentService:
         image_url: str | None,
         language: str,
     ) -> str:
-        image_part = self._image_content_part(image_content, image_url)
+        image_part = self.image_service.build_image_content_part(image_content, image_url)
         if not image_part:
             return ""
         client = self.image_service.model_factory.qwen_vision_client(
             timeout=getattr(self.image_service.config, "vision_verdict_timeout_seconds", None)
         )
-        system_prompt = "你是惊堂木图文一致性分析模块，只输出 JSON。" if is_zh(language) else (
-            "You are Jingtangmu's image-text consistency module. Output JSON only."
+        system_prompt = "你是惊堂木跨模态一致性检查模块，只输出 JSON。" if is_zh(language) else (
+            "You are Jingtangmu's cross-modal consistency checker. Output JSON only."
         )
         completion = client.chat.completions.create(
             model=self.image_service.config.qwen_vision_model,
@@ -101,25 +80,6 @@ class MultimodalAlignmentService:
             max_tokens=1800,
         )
         return completion.choices[0].message.content or ""
-
-    def _image_content_part(self, image_content: bytes | None, image_url: str | None) -> dict[str, Any] | None:
-        if image_content:
-            data_url = self._bytes_to_data_url(image_content)
-            return {"type": "image_url", "image_url": {"url": data_url}} if data_url else None
-        if image_url:
-            cleaned_url = image_url.strip()
-            if not cleaned_url:
-                return None
-            candidate = Path(cleaned_url)
-            if candidate.exists():
-                data_url = self._path_to_data_url(candidate)
-                return {"type": "image_url", "image_url": {"url": data_url}} if data_url else None
-            parsed = urlparse(cleaned_url)
-            if parsed.scheme in {"http", "https"} and parsed.netloc:
-                return {"type": "image_url", "image_url": {"url": cleaned_url}}
-            if parsed.scheme == "data" and cleaned_url.startswith("data:image/"):
-                return {"type": "image_url", "image_url": {"url": cleaned_url}}
-        return None
 
     def _fallback_unavailable(self, exc: Exception, language: str) -> dict[str, Any]:
         message = (
@@ -141,25 +101,6 @@ class MultimodalAlignmentService:
             language,
         )
 
-    def _bytes_to_data_url(self, content: bytes) -> str:
-        try:
-            with Image.open(BytesIO(content)) as image:
-                image_format = image.format or "PNG"
-        except Exception:
-            return ""
-        mime_type = Image.MIME.get(image_format.upper(), "image/png")
-        encoded = base64.b64encode(content).decode("utf-8")
-        return f"data:{mime_type};base64,{encoded}"
-
-    def _path_to_data_url(self, path: Path) -> str:
-        try:
-            content = path.read_bytes()
-        except OSError:
-            return ""
-        mime_type = mimetypes.guess_type(path.name)[0] or "image/png"
-        encoded = base64.b64encode(content).decode("utf-8")
-        return f"data:{mime_type};base64,{encoded}"
-
     def _parse_json(self, raw_output: str) -> dict[str, Any]:
         text = (raw_output or "").strip()
         candidates = [text]
@@ -179,7 +120,7 @@ class MultimodalAlignmentService:
 
     def _parse_legacy_text(self, analysis: str) -> dict[str, Any]:
         return {
-            "label": self._extract_alignment_label(analysis),
+            "label": self._extract_crossmodal_label(analysis),
             "matched_elements": self._extract_list_field(analysis, "Matched_Elements"),
             "mismatched_elements": self._extract_list_field(analysis, "Mismatched_Elements"),
             "reasoning": self._extract_block(analysis, "Reasoning"),
@@ -188,7 +129,7 @@ class MultimodalAlignmentService:
     def _normalize_result(self, parsed: dict[str, Any], raw: str, language: str) -> dict[str, Any]:
         label = str(parsed.get("label") or "Cannot_Determine").strip()
         if label not in self.LABELS:
-            label = self.LABEL_ALIASES.get(label, self._extract_alignment_label(label))
+            label = self.LABEL_ALIASES.get(label, self._extract_crossmodal_label(label))
         consistency_score = self._bounded_float(parsed.get("consistency_score"), self._default_score(label))
         reasoning = str(parsed.get("reasoning") or raw or self._fallback_reasoning(label, language)).strip()
         return {
@@ -204,7 +145,7 @@ class MultimodalAlignmentService:
             "limitations": self._string_list(parsed.get("limitations")),
         }
 
-    def _extract_alignment_label(self, analysis: str) -> str:
+    def _extract_crossmodal_label(self, analysis: str) -> str:
         labels = [
             "Partially_Consistent",
             "Inconsistent",

@@ -88,7 +88,7 @@ def run_example(text_service, example: dict[str, Any]) -> dict[str, Any]:
     claims = text_service.evidence_search_service.attach_evidence(claims, evidence)
 
     step_start = time.perf_counter()
-    result = text_service.text_verdict_service.evaluate(
+    result = text_service.textual_verdict_service.evaluate(
         text=example["text"],
         claims=claims,
         evidence=evidence,
@@ -123,7 +123,7 @@ def run_example(text_service, example: dict[str, Any]) -> dict[str, Any]:
 
 def main() -> None:
     orchestrator = get_detection_orchestrator()
-    text_service = orchestrator.text_detection_service
+    text_service = orchestrator.textual_pipeline
     model_config = {
         "llm_api": "deepseek_openai_compatible",
         "llm_base_url": settings.deepseek_base_url,

@@ -1,6 +1,6 @@
 from threading import Event, Lock
 
-from app.services.text.evidence_search import EvidenceSearchService
+from app.services.textual.evidence_search import EvidenceSearchService
 
 
 def test_enrich_claims_adds_normalized_evidence():

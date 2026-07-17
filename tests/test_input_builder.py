@@ -1,4 +1,3 @@
-from app.schemas.detection import DetectionMode
 from app.services.artifact_store import ArtifactStore
 from app.services.input_builder import DetectionInputBuilder, DetectionInputError
 from app.services.webpage_extraction import WebpageExtractionResult
@@ -28,7 +27,6 @@ def test_input_builder_normalizes_webpage_into_task(tmp_path):
         image_url=None,
         webpage_url="https://example.com/news",
         question="判断网页图文是否可信",
-        mode=DetectionMode.AUTO,
         language="zh",
         history=[],
         conversation_id="conv",
@@ -52,7 +50,6 @@ def test_input_builder_persists_uploaded_image(tmp_path):
         image_url=None,
         webpage_url=None,
         question="这张图是真的吗？",
-        mode=DetectionMode.IMAGE_ONLY,
         language="zh",
         history=[],
         conversation_id="conv",
@@ -63,24 +60,23 @@ def test_input_builder_persists_uploaded_image(tmp_path):
     assert task.evidence_bundle.image_artifacts[0].local_path
 
 
-def test_input_builder_rejects_missing_required_image(tmp_path):
+def test_input_builder_rejects_empty_input(tmp_path):
     builder = DetectionInputBuilder(StubWebpageExtractor(), ArtifactStore(tmp_path))
 
     try:
         builder.build(
-            text="只有文本",
+            text=None,
             image_content=None,
             image_filename=None,
             image_content_type=None,
             image_url=None,
             webpage_url=None,
             question=None,
-            mode=DetectionMode.IMAGE_ONLY,
             language="zh",
             history=[],
             conversation_id="conv",
         )
     except DetectionInputError as exc:
-        assert "image" in str(exc)
+        assert "至少需要提供一个" in str(exc)
     else:
         raise AssertionError("DetectionInputError was not raised")
