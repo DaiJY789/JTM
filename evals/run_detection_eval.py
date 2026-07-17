@@ -193,7 +193,7 @@ def mock_detector(sample: EvalSample) -> dict[str, Any]:
 def endpoint_detector(endpoint: str, timeout: float) -> Callable[[EvalSample], dict[str, Any]]:
     def detect(sample: EvalSample) -> dict[str, Any]:
         payload = dict(sample.input)
-        payload.setdefault("mode", sample.input.get("mode") or sample.task)
+        payload.pop("mode", None)
         payload.setdefault("language", sample.language)
 
         files = None

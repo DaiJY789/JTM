@@ -9,32 +9,41 @@ class StubService:
 
     def detect(self, *args, **kwargs):
         self.calls.append((args, kwargs))
-        return {"mode": "stub"}
+        if kwargs.get("text") and (kwargs.get("image_content") or kwargs.get("image_url")):
+            return {"mode": "multimodal"}
+        if args and isinstance(args[0], str):
+            return {"mode": "text_only"}
+        return {"mode": "image_only"}
+
+    def generate_report(self, **kwargs):
+        self.calls.append(((), kwargs))
+        return {
+            "label": "均无异常",
+            "type": "图文一致",
+            "summary": "综合报告",
+            "confidence": 0.8,
+            "risk_level": "low",
+            "user_answer": {"judgment": "综合报告", "reason_analysis": "", "notes": []},
+        }
 
 
 def make_orchestrator():
-    stub = StubService()
-    return DetectionOrchestrator(stub, stub, stub)
+    return DetectionOrchestrator(StubService(), StubService(), StubService(), StubService())
 
 
 def test_auto_routes_text_only_without_image():
     orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("新闻文本", False, "", DetectionMode.AUTO) == DetectionMode.TEXT_ONLY
+    assert orchestrator.resolve_mode("新闻文本", False, "") == DetectionMode.TEXT_ONLY
 
 
 def test_auto_routes_generic_image_question_to_image_only():
     orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("", True, "这张图片是真的假的？", DetectionMode.AUTO) == DetectionMode.IMAGE_ONLY
+    assert orchestrator.resolve_mode("", True, "这张图片是真的假的？") == DetectionMode.IMAGE_ONLY
 
 
 def test_auto_routes_short_news_title_with_image_to_multimodal():
     orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("特朗普被捕", True, "", DetectionMode.AUTO) == DetectionMode.MULTIMODAL
-
-
-def test_explicit_mode_wins():
-    orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("新闻文本", True, "", DetectionMode.IMAGE_ONLY) == DetectionMode.IMAGE_ONLY
+    assert orchestrator.resolve_mode("特朗普被捕", True, "") == DetectionMode.MULTIMODAL
 
 
 def test_text_only_sets_default_question_zh():
@@ -43,7 +52,7 @@ def test_text_only_sets_default_question_zh():
     result = orchestrator.detect(text="新闻文本", language="zh")
 
     assert result["question"] == "请判断这段文字的真实性。"
-    assert orchestrator.text_detection_service.calls[0][0][0] == "新闻文本"
+    assert orchestrator.textual_pipeline.calls[0][0][0] == "新闻文本"
 
 
 def test_text_only_sets_default_question_en():
@@ -60,7 +69,7 @@ def test_image_only_sets_default_question_zh():
     result = orchestrator.detect(image_content=b"image bytes", language="zh")
 
     assert result["question"] == "请判断这张图片是真实图像，伪造图像还是合成图像。"
-    assert orchestrator.image_detection_service.calls[0][0][2] == "请判断这张图片是真实图像，伪造图像还是合成图像。"
+    assert orchestrator.visual_verdict_service.calls[0][0][2] == "请判断这张图片是真实图像，伪造图像还是合成图像。"
 
 
 def test_multimodal_sets_default_question_zh():
@@ -69,7 +78,8 @@ def test_multimodal_sets_default_question_zh():
     result = orchestrator.detect(text="新闻文本", image_content=b"image bytes", language="zh")
 
     assert result["question"] == "请判断这段文字和这张图片是否真实可信，并分析图文是否一致。"
-    assert orchestrator.multimodal_detection_service.calls[0][1]["question"] == "请判断这段文字和这张图片是否真实可信，并分析图文是否一致。"
+    assert orchestrator.crossmodal_pipeline.calls[0][1]["question"] == "请判断这段文字和这张图片是否真实可信，并分析图文是否一致。"
+    assert result["report"]["summary"] == "综合报告"
 
 
 def test_explicit_question_is_preserved():
@@ -83,7 +93,6 @@ def test_explicit_question_is_preserved():
 def test_detect_task_uses_normalized_artifacts():
     orchestrator = make_orchestrator()
     task = DetectionTask(
-        mode=DetectionMode.MULTIMODAL,
         language="zh",
         question="判断图文是否一致",
         history=[{"role": "user", "content": "history"}],
@@ -104,10 +113,10 @@ def test_detect_task_uses_normalized_artifacts():
     result = orchestrator.detect_task(task)
 
     assert result["question"] == "判断图文是否一致"
-    call_kwargs = orchestrator.multimodal_detection_service.calls[0][1]
+    call_kwargs = orchestrator.crossmodal_pipeline.calls[0][1]
     assert call_kwargs["text"] == "新闻文本"
     assert call_kwargs["image_url"] == "https://example.com/image.jpg"
-    assert call_kwargs["history"] == [{"role": "user", "content": "history"}]
+    assert orchestrator.textual_pipeline.calls[0][0][1] == [{"role": "user", "content": "history"}]
     assert result["raw"]["input_artifacts"]["images"][0]["source_url"] == "https://example.com/image.jpg"
     assert result["raw"]["report"]["input_artifacts"][1]["source_url"] == "https://example.com/image.jpg"
 
@@ -115,7 +124,6 @@ def test_detect_task_uses_normalized_artifacts():
 def test_detect_report_builds_internal_contract():
     orchestrator = make_orchestrator()
     task = DetectionTask(
-        mode=DetectionMode.TEXT_ONLY,
         language="zh",
         question="判断真实性",
         conversation_id="conv-report",

@@ -8,8 +8,8 @@ import requests
 from PIL import Image
 
 from app.core.language import normalize_language
-from app.services.vision.image_io import ImageService
-from app.services.vision.forensic_pipeline import ImageForensicPipeline
+from app.services.visual.image_io import ImageService
+from app.services.visual.V_pipeline import VisualForensicPipeline
 
 
 DEFAULT_IMAGE_QUESTION_ZH = "请判断这张图片是真实图像，伪造图像还是合成图像。"
@@ -25,7 +25,7 @@ REMOTE_IMAGE_HEADERS = {
 }
 
 
-class ImageDetectionService:
+class VisualVerdictService:
     LABELS = [
         "真实图像",
         "伪造图像",
@@ -58,9 +58,9 @@ class ImageDetectionService:
         "ai_generated": "Synthetic_Image",
     }
 
-    def __init__(self, image_service: ImageService, forensic_pipeline: ImageForensicPipeline | None = None):
+    def __init__(self, image_service: ImageService, visual_pipeline: VisualForensicPipeline | None = None):
         self.image_service = image_service
-        self.forensic_pipeline = forensic_pipeline
+        self.visual_pipeline = visual_pipeline
 
     def detect(
         self,
@@ -78,7 +78,7 @@ class ImageDetectionService:
             message = "无法读取图像输入。" if language == "zh" else "Unable to read the image input."
             return self._error_result(resolved_question, message)
 
-        pipeline = self.forensic_pipeline or ImageForensicPipeline(
+        pipeline = self.visual_pipeline or VisualForensicPipeline(
             config=self.image_service.config,
             model_factory=self.image_service.model_factory,
         )

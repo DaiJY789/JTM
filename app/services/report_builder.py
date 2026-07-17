@@ -26,6 +26,7 @@ class DetectionReportBuilder:
             webpage_snapshot=self._webpage_snapshot(task),
             key_evidence=self._evidence(legacy_payload, task),
             findings=self._findings(legacy_payload),
+            comprehensive_report=dict(legacy_payload.get("report") or {}),
             limitations=self._limitations(legacy_payload),
             debug={
                 "raw": legacy_payload.get("raw", {}),
@@ -104,22 +105,33 @@ class DetectionReportBuilder:
                     raw=image,
                 )
             )
-        alignment = legacy_payload.get("alignment_verdict")
-        if isinstance(alignment, dict):
+        crossmodal = legacy_payload.get("crossmodal_verdict")
+        if isinstance(crossmodal, dict):
             findings.append(
                 AnalysisFinding(
-                    analyzer="alignment",
-                    label=str(alignment.get("label") or ""),
-                    summary=str(alignment.get("reasoning") or alignment.get("analysis") or ""),
-                    confidence=alignment.get("consistency_score"),
-                    raw=alignment,
+                    analyzer="crossmodal",
+                    label=str(crossmodal.get("label") or ""),
+                    summary=str(crossmodal.get("reasoning") or crossmodal.get("analysis") or ""),
+                    confidence=crossmodal.get("consistency_score"),
+                    raw=crossmodal,
+                )
+            )
+        report = legacy_payload.get("report")
+        if isinstance(report, dict):
+            findings.append(
+                AnalysisFinding(
+                    analyzer="comprehensive_fusion",
+                    label=str(report.get("label") or legacy_payload.get("label") or ""),
+                    summary=str(report.get("summary") or legacy_payload.get("summary") or ""),
+                    confidence=report.get("confidence"),
+                    raw=report,
                 )
             )
         return findings
 
     def _limitations(self, legacy_payload: dict[str, Any]) -> list[str]:
         values: list[str] = []
-        for key in ("image_verdict", "alignment_verdict", "text_verdict"):
+        for key in ("image_verdict", "crossmodal_verdict", "text_verdict"):
             payload = legacy_payload.get(key)
             if not isinstance(payload, dict):
                 continue
@@ -127,9 +139,18 @@ class DetectionReportBuilder:
                 text = str(item).strip()
                 if text and text not in values:
                     values.append(text)
+        report = legacy_payload.get("report")
+        if isinstance(report, dict):
+            for item in report.get("limitations", []) or []:
+                text = str(item).strip()
+                if text and text not in values:
+                    values.append(text)
         return values
 
     def _risk_level(self, legacy_payload: dict[str, Any]) -> str:
+        report = legacy_payload.get("report")
+        if isinstance(report, dict) and report.get("risk_level") in {"low", "medium", "high"}:
+            return str(report["risk_level"])
         label = str(legacy_payload.get("label") or "")
         anomaly_tokens = ("异常", "False", "Mismatch", "Forged", "Synthetic", "AI")
         if any(token in label for token in anomaly_tokens):

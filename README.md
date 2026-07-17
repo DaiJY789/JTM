@@ -84,27 +84,23 @@
 
 ```text
 app/
-├── agents/                 # 文本模型和视觉模型构造
+├── agents/                 # 模型工厂、提示词和检测工具
 ├── api/                    # 检测、追问和会话接口
 ├── core/                   # 配置、语言与日志
-├── prompts/                # 文本、图像和多模态提示词
 ├── schemas/                # Pydantic 数据结构
 ├── services/
-│   ├── text/               # 声明抽取、证据检索和文本判定
-│   ├── vision/             # 图像读取、取证流程和图像判定
-│   ├── multimodal/         # 图文一致性与多模态结果融合
+│   ├── textual/            # T_pipeline、声明抽取、证据检索和文本判定
+│   ├── visual/             # V_pipeline、图像读取和视觉判定
+│   ├── crossmodal/         # C_pipeline，专门检查图文跨模态一致性
+│   ├── comprehensive_fusion.py # 多模态模型综合融合并生成最终报告
 │   ├── conversation_history.py
 │   ├── detection_orchestrator.py
 │   └── followup_analysis.py
-├── tools/
-│   ├── image/              # 图像取证与辅助工具
-│   └── text/               # 文本检索工具
 └── web/static/             # 前端页面与静态资源
 conversations/              # 对话、结果及上传图片
 logs/                       # 运行日志
 outputs/vision/             # 图像取证中间结果
 tests/                      # 单元测试
-config.py                   # 运行配置
 requirements.txt            # Python 依赖
 ```
 
@@ -185,7 +181,6 @@ set +a
 | `image_url` | string | 空 | 网络图片地址，与上传图片二选一 |
 | `webpage_url` | string | 空 | 新闻网页地址；后端会抽取正文和代表图片进行网页级多模态分析 |
 | `question` | string | 自动生成 | 用户问题或检测要求 |
-| `mode` | string | `auto` | `auto`、`text_only`、`image_only`、`multimodal` |
 | `language` | string | `zh` | `zh` 或 `en` |
 | `history` | JSON string | `[]` | 可选的历史消息数组 |
 | `conversation_id` | string | 自动生成 | 用于延续已有对话 |
@@ -196,19 +191,17 @@ set +a
 - 仅图片：`请判断这张图片是真实图像，伪造图像还是合成图像。`
 - 图文输入：`请判断这段文字和这张图片是否真实可信，并分析图文是否一致。`
 
-自动模式路由：
+接口始终采用自动调度，不接受手动模式选择。路由规则如下：
 
 - 只有文本时进入 `text_only`。
 - 只有图片时进入 `image_only`。
 - 同时包含文本和图片时进入 `multimodal`。
 - 只有网页时会先抽取网页正文和代表图片；如果网页含正文和图片则进入 `multimodal`，只有正文则进入 `text_only`。
-- 显式设置 `mode` 时优先使用指定模式。
 
 文本检测示例：
 
 ```bash
 curl -X POST http://127.0.0.1:5000/detect \
-  -F "mode=text_only" \
   -F "language=zh" \
   -F "text=这里输入需要核查的新闻文本"
 ```
@@ -217,7 +210,6 @@ curl -X POST http://127.0.0.1:5000/detect \
 
 ```bash
 curl -X POST http://127.0.0.1:5000/detect \
-  -F "mode=image_only" \
   -F "language=zh" \
   -F "image=@/path/to/image.jpg"
 ```
@@ -226,7 +218,6 @@ curl -X POST http://127.0.0.1:5000/detect \
 
 ```bash
 curl -X POST http://127.0.0.1:5000/detect \
-  -F "mode=multimodal" \
   -F "language=zh" \
   -F "text=这里输入新闻文本" \
   -F "image=@/path/to/image.jpg"
@@ -236,7 +227,6 @@ curl -X POST http://127.0.0.1:5000/detect \
 
 ```bash
 curl -X POST http://127.0.0.1:5000/detect \
-  -F "mode=auto" \
   -F "language=zh" \
   -F "webpage_url=https://example.com/news-page" \
   -F "question=分析这个网页中的文本、图片及图文关系是否真实可信。"
@@ -293,7 +283,12 @@ curl -X POST http://127.0.0.1:5000/followup \
     "forgery_types": ["无"],
     "suspicious_regions": []
   },
-  "alignment_verdict": {},
+  "crossmodal_verdict": {},
+  "report": {
+    "risk_level": "low",
+    "summary": "多模态模型生成的综合融合报告。",
+    "limitations": []
+  },
   "evidence": [],
   "claims": [],
   "user_answer": {},
@@ -312,7 +307,8 @@ curl -X POST http://127.0.0.1:5000/followup \
 - `runtime_seconds`：本次检测耗时。
 - `text_verdict`：文本检测结果和声明证据。
 - `image_verdict`：图像分类、伪造类型、工具证据及可疑区域。
-- `alignment_verdict`：图文匹配、冲突和缺失信息。
+- `crossmodal_verdict`：跨模态图文匹配、冲突和缺失信息。
+- `report`：多模态模型结合原文、原图和三路检测结果生成的综合融合报告。
 - `user_answer`：供前端展示的最终判断与原因分析。
 - `raw`：调试和结构化证据数据。
 
@@ -414,7 +410,7 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest tests
 ```bash
 .venv/bin/python -m pytest tests/test_image_detection_service.py
 .venv/bin/python -m pytest tests/test_text_detection_service.py
-.venv/bin/python -m pytest tests/test_multimodal_detection_service.py
+.venv/bin/python -m pytest tests/test_crossmodal_service.py
 ```
 
 ## 运行评测

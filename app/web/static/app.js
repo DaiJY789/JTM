@@ -1,5 +1,4 @@
 const state = {
-  mode: "auto",
   language: "zh",
   lastResult: {},
   imageObjectUrl: "",
@@ -136,7 +135,7 @@ const uiText = {
     notes: "说明",
     textSide: "文本方面",
     imageSide: "图片方面",
-    alignmentSide: "图文关系",
+    crossmodalSide: "跨模态关系",
     checkedClaims: "已核查关键事实点",
     foundEvidence: "检索到相关证据",
     newConversation: "新对话",
@@ -173,7 +172,7 @@ const uiText = {
     notes: "Notes",
     textSide: "Text",
     imageSide: "Image",
-    alignmentSide: "Image-text relation",
+    crossmodalSide: "Cross-modal relation",
     checkedClaims: "Checked key claims",
     foundEvidence: "Found related evidence",
     newConversation: "New Chat",
@@ -931,7 +930,7 @@ function formatUserAnswer(result, language) {
   const copy = uiText[language];
   if (!result || Object.keys(result).length === 0) return copy.noSummary;
   if (result.label === "Error") return cleanText(result.summary || result.error || copy.noSummary);
-  if (result.mode === "multimodal" || result.alignment_verdict) {
+  if (result.mode === "multimodal" || result.crossmodal_verdict) {
     return formatMultimodalAnswer(result, language);
   }
   if (result.mode === "image_only" || result.image_verdict || result.raw?.image_forensics) {
@@ -986,29 +985,29 @@ function formatMultimodalAnswer(result, language) {
   const reasons = [];
   const notes = cleanList(answer.notes);
 
-  const textLabel = result?.text_verdict?.label || result?.raw?.text_detection?.label;
+  const textLabel = result?.text_verdict?.label || result?.raw?.textual_detection?.label;
   if (textLabel) statusParts.push(`${copy.textSide}：${formatLabel(textLabel, language)}`);
 
-  const imageLabel = result?.image_verdict?.label || result?.raw?.image_detection?.label;
+  const imageLabel = result?.image_verdict?.label || result?.raw?.visual_detection?.label;
   if (imageLabel) statusParts.push(`${copy.imageSide}：${formatLabel(imageLabel, language)}`);
 
-  const alignmentLabel = result?.alignment_verdict?.label;
-  if (alignmentLabel) statusParts.push(`${copy.alignmentSide}：${formatLabel(alignmentLabel, language)}`);
+  const crossmodalLabel = result?.crossmodal_verdict?.label;
+  if (crossmodalLabel) statusParts.push(`${copy.crossmodalSide}：${formatLabel(crossmodalLabel, language)}`);
 
-  const mismatch = cleanList(result?.alignment_verdict?.mismatched_elements);
+  const mismatch = cleanList(result?.crossmodal_verdict?.mismatched_elements);
   if (mismatch.length) {
     reasons.push(language === "en" ? `Main mismatch: ${mismatch.join("; ")}` : `主要不一致点：${mismatch.join("；")}`);
   }
 
-  const matched = cleanList(result?.alignment_verdict?.matched_elements);
+  const matched = cleanList(result?.crossmodal_verdict?.matched_elements);
   if (matched.length) {
     reasons.push(language === "en" ? `Supported elements: ${matched.join("; ")}` : `能够对应的信息：${matched.join("；")}`);
   }
 
-  const alignmentReason = cleanText(result?.alignment_verdict?.reasoning || result?.alignment_verdict?.analysis);
-  const splitAlignmentReason = splitReasonAndNotes(alignmentReason);
-  if (splitAlignmentReason.reason) reasons.push(splitAlignmentReason.reason);
-  notes.push(...splitAlignmentReason.notes);
+  const crossmodalReason = cleanText(result?.crossmodal_verdict?.reasoning || result?.crossmodal_verdict?.analysis);
+  const splitCrossmodalReason = splitReasonAndNotes(crossmodalReason);
+  if (splitCrossmodalReason.reason) reasons.push(splitCrossmodalReason.reason);
+  notes.push(...splitCrossmodalReason.notes);
 
   if (reasons.length <= 1) {
     const analysis = firstCleanText(answer.reason_analysis, answer.analysis, result?.summary);
@@ -1122,11 +1121,11 @@ function splitNoteItems(text) {
 
 function collectLimitations(result) {
   const verdict = result?.image_verdict || result?.raw?.image_forensics || {};
-  const rawImage = result?.raw?.image_forensics || result?.raw?.image_detection?.raw?.image_forensics || {};
+  const rawImage = result?.raw?.image_forensics || result?.raw?.visual_detection?.raw?.image_forensics || {};
   const limitations = [
     ...(Array.isArray(verdict?.limitations) ? verdict.limitations : []),
     ...(Array.isArray(rawImage?.limitations) ? rawImage.limitations : []),
-    ...(Array.isArray(result?.alignment_verdict?.limitations) ? result.alignment_verdict.limitations : []),
+    ...(Array.isArray(result?.crossmodal_verdict?.limitations) ? result.crossmodal_verdict.limitations : []),
   ];
   return cleanList(limitations);
 }
@@ -1270,7 +1269,6 @@ function buildFormData() {
   if (webpageUrl) formData.append("webpage_url", webpageUrl);
   if (imageUrl) formData.append("image_url", imageUrl);
   if (imageFile) formData.append("image", imageFile);
-  formData.append("mode", state.mode);
   formData.append("language", state.language);
   formData.append("conversation_id", state.conversationId);
   formData.append("history", "[]");
@@ -1288,7 +1286,6 @@ function buildFollowupFormData(question) {
 function currentInputSignature() {
   const imageFile = $("#imageInput").files[0];
   return JSON.stringify({
-    mode: state.mode,
     text: $("#textInput").value.trim(),
     webpage_url: $("#webpageUrlInput").value.trim(),
     image_url: $("#imageUrlInput").value.trim(),
@@ -1373,7 +1370,7 @@ function getSuspiciousRegions(result) {
     result?.image_verdict?.user_answer?.forgery_regions ||
     result?.image_verdict?.suspicious_regions ||
     result?.raw?.image_forensics?.suspicious_regions ||
-    result?.alignment_verdict?.suspicious_regions ||
+    result?.crossmodal_verdict?.suspicious_regions ||
     [];
   return Array.isArray(regions) ? regions : [];
 }
@@ -1469,7 +1466,7 @@ async function submitDetection() {
     setStatus("error", "error");
     const errorResult = {
       ...(isFollowup && previousResult?.label ? previousResult : {}),
-      mode: state.mode,
+      mode: "auto",
       label: "Error",
       summary: error.message,
       error: String(error.message || error),

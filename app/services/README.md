@@ -1,16 +1,17 @@
 # Services Flow
 
-This directory contains the main detection logic. The code is organized around a single orchestration entry point and three scenario-specific services.
+This directory contains the main detection logic. The orchestrator selects the input route, while textual, visual, and cross-modal services keep separate responsibilities.
 
 ## Entry Point
 
-`DetectionOrchestrator` receives normalized API inputs from `/detect` and resolves the detection mode.
+`DetectionOrchestrator` receives normalized API inputs from `/detect` and always resolves the pipeline automatically.
 
 ```text
 DetectionOrchestrator.detect(...)
-  -> text_only       -> TextDetectionService
-  -> image_only      -> ImageDetectionService
-  -> multimodal      -> MultimodalDetectionService
+  -> text_only       -> TextualDetectionPipeline
+  -> image_only      -> VisualVerdictService
+  -> multimodal      -> textual + visual + CrossmodalConsistencyPipeline
+                     -> ComprehensiveFusionService -> final report
 ```
 
 Auto-routing rules:
@@ -18,18 +19,17 @@ Auto-routing rules:
 - no image + text/question -> `text_only`
 - image + generic image question -> `image_only`
 - image + news text/title -> `multimodal`
-- explicit mode wins
 
 ## Text-Only Flow
 
-Implemented in `app/services/text/TextDetectionService`.
+Implemented in `app/services/textual/T_pipeline.py`.
 
 ```text
-TextDetectionService.detect(text)
+TextualDetectionPipeline.detect(text)
   -> ClaimExtractor.extract(text)
   -> evidence = EvidenceSearchService.search(claims)
   -> EvidenceSearchService.attach_evidence(claims, evidence)
-  -> TextVerdictService.evaluate(text, claims, evidence)
+  -> TextualVerdictService.evaluate(text, claims, evidence)
   -> format text_verdict, claims, evidence
 ```
 
@@ -37,7 +37,7 @@ Current behavior:
 
 - Uses `ClaimExtractor` to produce structured claims.
 - Uses `EvidenceSearchService` to retrieve claim-level evidence.
-- Uses `TextVerdictService` for the final text verdict.
+- Uses `TextualVerdictService` for the final text verdict.
 - Uses factual labels only when retrieved evidence can support fact checking.
 - Asks the verdict model to choose rumor-detection labels when evidence is insufficient:
   - `Likely_False`
@@ -52,11 +52,11 @@ Known gap:
 
 ## Image-Only Flow
 
-Implemented in `ImageDetectionService`.
+Implemented in `app/services/visual/visual_verdict.py`.
 
 ```text
-ImageDetectionService.detect(image, question)
-  -> ImageForensicPipeline.detect(image, question)
+VisualVerdictService.detect(image, question)
+  -> VisualForensicPipeline.detect(image, question)
   -> Qwen vision model + local forensic tools
   -> normalize label, evidence chain, suspicious regions
 ```
@@ -76,54 +76,52 @@ Image labels:
 - `存在伪造`
 - `完全AI生成`
 
-## Multimodal Flow
+## Cross-modal Consistency Flow
 
-Implemented in `app/services/multimodal/`.
+Implemented in `app/services/crossmodal/C_pipeline.py`.
 
 ```text
-MultimodalDetectionService.detect(text, image)
-  -> TextDetectionService.detect(text)
-  -> ImageDetectionService.detect(image)
-  -> MultimodalAlignmentService.evaluate(text, image, text_result, image_result)
-  -> MultimodalVerdictService.evaluate(text_result, image_result, alignment_result)
+CrossmodalConsistencyPipeline.detect(text, image)
+  -> extract textual elements
+  -> inspect visible image elements
+  -> compare people, place, time, event, objects, actions, and visible text
+  -> return Consistent | Partially_Consistent | Inconsistent
 ```
 
-Current output:
+This service does not fact-check the text, judge image authenticity, or produce the final credibility label. Its output contains:
 
-- `text_verdict`
-- `image_verdict`
-- `alignment_verdict`
-- `alignment_verdict.text_elements`
-- `alignment_verdict.visual_elements`
+- `text_elements`
+- `visual_elements`
 - `matched_elements`
 - `mismatched_elements`
 - `missing_elements`
-- final `user_answer`
-- final fused `label`
+- `consistency_score`
+- `reasoning`
 
-Fusion priority:
+## Comprehensive Fusion Report
 
-- forged or completely AI-generated image -> `Image_False`
-- image-text mismatch or out-of-context image -> `Cross_Modal_Mismatch`
-- false text -> `Text_False`
-- weak relation or mixed text -> `Mixed`
-- true text + real image + consistent alignment -> `Consistent_True`
-- otherwise -> `Cannot_Determine`
+Implemented in `app/services/comprehensive_fusion.py`.
 
-Known gap:
+For text-and-image input, `DetectionOrchestrator` runs the textual, visual, and cross-modal branches in parallel. `ComprehensiveFusionService` then sends the following to the vision-capable multimodal model:
 
-- Entity-level alignment is still VLM-prompt based, not a dedicated retrieval-backed entity linker.
+- original news text and user question
+- original image
+- textual authenticity result and evidence
+- visual authenticity result and forensic evidence
+- cross-modal consistency result
+
+The model produces the final `report`, including `label`, `type`, `confidence`, `risk_level`, `summary`, `user_answer`, and `limitations`. A deterministic fallback is retained for model failures.
 
 ## Text Services
 
-Text-only components live under `app/services/text/`:
+Textual components live under `app/services/textual/`:
 
 - `claim_extractor.py`
 - `evidence_search.py`
-- `text_verdict.py`
-- `text_detection.py`
+- `textual_verdict.py`
+- `T_pipeline.py`
 
-`TextVerdictService`
+`TextualVerdictService`
 
 - Owns the text-level label policy.
 - Receives original text, extracted claims, and retrieved evidence.
@@ -151,4 +149,4 @@ Text-only components live under `app/services/text/`:
 
 - Loads images from bytes, local path, or URL.
 - Resizes and base64-encodes images.
-- Provides shared image loading helpers for the vision and multimodal services.
+- Provides shared image loading helpers for visual, cross-modal, and comprehensive fusion services.

@@ -1,7 +1,7 @@
-from app.services.text.text_detection import TextDetectionService
+from app.services.textual.T_pipeline import TextualDetectionPipeline
 
 
-class StubTextVerdictService:
+class StubTextualVerdictService:
     config = object()
     model_factory = object()
 
@@ -53,8 +53,8 @@ class StubEvidenceSearchService:
 
 
 def test_text_detection_includes_claim_level_evidence():
-    service = TextDetectionService(
-        text_verdict_service=StubTextVerdictService(),
+    service = TextualDetectionPipeline(
+        textual_verdict_service=StubTextualVerdictService(),
         claim_extractor=StubClaimExtractor(),
         evidence_search_service=StubEvidenceSearchService(),
     )

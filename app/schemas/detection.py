@@ -108,18 +108,18 @@ class ImageVerdict(BaseModel):
     user_answer: dict[str, Any] = Field(default_factory=dict, description="User-facing analysis and conclusion.")
 
 
-class AlignmentVerdict(BaseModel):
+class CrossmodalVerdict(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    label: str = Field(default="Cannot_Determine", description="Image-text alignment label.")
+    label: str = Field(default="Cannot_Determine", description="Cross-modal image-text consistency label.")
     analysis: str = Field(default="", description="Raw model analysis for cross-modal consistency.")
     text_elements: dict[str, Any] = Field(default_factory=dict, description="Structured elements extracted from text.")
     visual_elements: dict[str, Any] = Field(default_factory=dict, description="Structured elements observed in the image.")
     matched_elements: list[str] = Field(default_factory=list, description="Text-image elements that agree.")
     mismatched_elements: list[str] = Field(default_factory=list, description="Text-image elements that conflict.")
     missing_elements: list[str] = Field(default_factory=list, description="Text elements not verifiable from the image.")
-    reasoning: str = Field(default="", description="Reasoning behind the alignment verdict.")
-    limitations: list[Any] = Field(default_factory=list, description="Known limitations of the alignment judgment.")
+    reasoning: str = Field(default="", description="Reasoning behind the cross-modal consistency verdict.")
+    limitations: list[Any] = Field(default_factory=list, description="Known limitations of the cross-modal judgment.")
     consistency_score: float | None = Field(default=None, ge=0, le=1, description="Optional image-text consistency score.")
 
 
@@ -153,7 +153,7 @@ class DetectionResponse(BaseModel):
                         "evidence": ["面部边缘和光照未见明显生成痕迹。"],
                         "reasoning": "未发现明显伪造线索。",
                     },
-                    "alignment_verdict": {
+                    "crossmodal_verdict": {
                         "label": "Inconsistent",
                         "matched_elements": ["人物类别相近"],
                         "mismatched_elements": ["地点与文本不一致"],
@@ -188,13 +188,14 @@ class DetectionResponse(BaseModel):
     runtime_seconds: float | None = Field(default=None, ge=0, description="End-to-end API runtime in seconds.")
     text_verdict: TextVerdict | None = Field(default=None, description="Text-only detection result, when applicable.")
     image_verdict: ImageVerdict | None = Field(default=None, description="Image-only detection result, when applicable.")
-    alignment_verdict: AlignmentVerdict | None = Field(
+    crossmodal_verdict: CrossmodalVerdict | None = Field(
         default=None,
         description="Image-text consistency result, only present for multimodal detection.",
     )
     evidence: list[EvidenceItem] = Field(default_factory=list, description="Evidence collected for the final result.")
     claims: list[ClaimItem] = Field(default_factory=list, description="Claims extracted from the text input.")
     raw: dict[str, Any] = Field(default_factory=dict, description="Raw service payloads for debugging and demos.")
+    report: dict[str, Any] = Field(default_factory=dict, description="Comprehensive multimodal fusion report.")
     user_answer: dict[str, Any] = Field(default_factory=dict, description="User-facing analysis and conclusion.")
     conversation_id: str = Field(default="", description="Backend conversation id for this detection session.")
     conversation_history: list[dict[str, Any]] = Field(

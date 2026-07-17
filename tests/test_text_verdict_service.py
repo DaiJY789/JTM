@@ -1,4 +1,4 @@
-from app.services.text.text_verdict import TextVerdictService
+from app.services.textual.textual_verdict import TextualVerdictService
 
 
 class StubConfig:
@@ -12,7 +12,7 @@ class StubTextVerdictContext:
 
 
 def test_text_verdict_uses_model_label_without_evidence_gate():
-    service = TextVerdictService(
+    service = TextualVerdictService(
         StubTextVerdictContext(),
         evaluator=lambda prompt, timeout: """
         {"label": "Completely_True", "confidence": 0.8, "summary": "Supported by model judgement",
@@ -40,7 +40,7 @@ def test_text_verdict_passes_evidence_into_prompt():
         captured["prompt"] = prompt
         return '{"label": "Mostly_False", "summary": "Refuted", "reasoning": "Evidence refutes it."}'
 
-    service = TextVerdictService(StubTextVerdictContext(), evaluator=evaluator)
+    service = TextualVerdictService(StubTextVerdictContext(), evaluator=evaluator)
     result = service.evaluate(
         text="A claim",
         claims=[{"claim": "A claim", "evidence": [{"title": "Report", "snippet": "Evidence"}]}],
@@ -54,7 +54,7 @@ def test_text_verdict_passes_evidence_into_prompt():
 
 
 def test_text_verdict_normalizes_chinese_label():
-    service = TextVerdictService(
+    service = TextualVerdictService(
         StubTextVerdictContext(),
         evaluator=lambda prompt, timeout: '{"label": "大部分虚假", "summary": "证据反驳"}',
     )
@@ -70,7 +70,7 @@ def test_text_verdict_normalizes_chinese_label():
 
 
 def test_text_verdict_accepts_chinese_cannot_determine_label():
-    service = TextVerdictService(
+    service = TextualVerdictService(
         StubTextVerdictContext(),
         evaluator=lambda prompt, timeout: '{"label": "无法判断", "reasoning": "证据不足"}',
     )

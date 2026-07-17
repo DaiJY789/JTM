@@ -1,4 +1,4 @@
-from app.services.text.claim_extractor import ClaimExtractor
+from app.services.textual.claim_extractor import ClaimExtractor
 
 
 class StubModelFactory:

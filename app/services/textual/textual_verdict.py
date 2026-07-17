@@ -11,7 +11,7 @@ from app.agents.prompts.text import TEXT_VERDICT_JSON_PROMPT_EN, TEXT_VERDICT_JS
 VerdictEvaluator = Callable[[str, float | None], str]
 
 
-class TextVerdictService:
+class TextualVerdictService:
     """Produce a structured final text-level verdict from text, claims, and evidence."""
 
     LABELS = {

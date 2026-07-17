@@ -25,7 +25,7 @@ from app.agents.tools.image.SRM_Filter import SRMFilter
 from app.agents.tools.image.Visual_Enhancer import VisualEnhancer
 
 
-class ImageForensicPipeline:
+class VisualForensicPipeline:
     """Run multi-round image forensics with local tools and a final LLM verdict."""
 
     LABELS_ZH = {"真实图像", "伪造图像", "合成图像"}

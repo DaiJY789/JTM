@@ -1,8 +1,8 @@
 from io import BytesIO
 import time
 
-from app.services.vision.image import ImageDetectionService
-from app.services.vision.forensic_pipeline import ImageForensicPipeline
+from app.services.visual.visual_verdict import VisualVerdictService
+from app.services.visual.V_pipeline import VisualForensicPipeline
 from app.agents.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
 from app.core.config import Settings
 
@@ -14,19 +14,19 @@ class StubImageService:
 
 
 def test_extract_image_label():
-    service = ImageDetectionService(StubImageService())
+    service = VisualVerdictService(StubImageService())
     assert service._extract_label("Label: Deepfake_Suspected\nReasoning: ...") == "合成图像"
     assert service._extract_label("Label: 局部篡改\nReasoning: ...") == "伪造图像"
     assert service._extract_label("Label: AI_Manipulated\nReasoning: ...") == "合成图像"
 
 
 def test_extract_image_field():
-    service = ImageDetectionService(StubImageService())
+    service = VisualVerdictService(StubImageService())
     assert service._extract_field("Deepfake_Risk: high\nReasoning: ...", "Deepfake_Risk") == "high"
 
 
 def test_extract_image_evidence_list():
-    service = ImageDetectionService(StubImageService())
+    service = VisualVerdictService(StubImageService())
     analysis = """Label: Manipulated
 Evidence:
 - 光照方向不一致
@@ -39,7 +39,7 @@ Reasoning: 存在可疑视觉线索
 def test_materialize_image_preserves_original_jpeg_bytes(tmp_path):
     image_service = StubImageService()
     image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))
-    service = ImageDetectionService(image_service)
+    service = VisualVerdictService(image_service)
     buffer = BytesIO()
     Image.new("RGB", (12, 12), color="white").save(buffer, format="JPEG")
     content = buffer.getvalue()
@@ -53,7 +53,7 @@ def test_materialize_image_preserves_original_jpeg_bytes(tmp_path):
 def test_materialize_remote_image_uses_browser_headers(monkeypatch, tmp_path):
     image_service = StubImageService()
     image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))
-    service = ImageDetectionService(image_service)
+    service = VisualVerdictService(image_service)
     buffer = BytesIO()
     Image.new("RGB", (12, 12), color="white").save(buffer, format="PNG")
     captured = {}
@@ -70,7 +70,7 @@ def test_materialize_remote_image_uses_browser_headers(monkeypatch, tmp_path):
         captured["kwargs"] = kwargs
         return FakeResponse()
 
-    monkeypatch.setattr("app.services.vision.image.requests.get", fake_get)
+    monkeypatch.setattr("app.services.visual.visual_verdict.requests.get", fake_get)
 
     path = service._materialize_image(None, "https://mmbiz.qpic.cn/example.jpg")
 
@@ -83,7 +83,7 @@ def test_materialize_remote_image_uses_browser_headers(monkeypatch, tmp_path):
 def test_materialize_remote_image_rejects_oversized_response(monkeypatch, tmp_path):
     image_service = StubImageService()
     image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))
-    service = ImageDetectionService(image_service)
+    service = VisualVerdictService(image_service)
 
     class FakeResponse:
         def raise_for_status(self):
@@ -92,7 +92,7 @@ def test_materialize_remote_image_rejects_oversized_response(monkeypatch, tmp_pa
         def iter_content(self, chunk_size=64000):
             yield b"x" * 16_000_000
 
-    monkeypatch.setattr("app.services.vision.image.requests.get", lambda *_, **__: FakeResponse())
+    monkeypatch.setattr("app.services.visual.visual_verdict.requests.get", lambda *_, **__: FakeResponse())
 
     assert service._materialize_image(None, "https://example.com/large.jpg") == ""
 
@@ -100,7 +100,7 @@ def test_materialize_remote_image_rejects_oversized_response(monkeypatch, tmp_pa
 def test_image_error_result_is_cannot_determine(tmp_path):
     image_service = StubImageService()
     image_service.config = Settings(vision_output_dir=str(tmp_path / "vision"))
-    service = ImageDetectionService(image_service)
+    service = VisualVerdictService(image_service)
 
     result = service.detect(image_content=b"not an image", language="zh")
 
@@ -109,7 +109,7 @@ def test_image_error_result_is_cannot_determine(tmp_path):
 
 
 def test_default_pipeline_disables_c2pa_and_unconfigured_external_tools(tmp_path):
-    pipeline = ImageForensicPipeline(config=Settings(vision_output_dir=str(tmp_path / "vision")), evaluator=lambda prompt: "{}")
+    pipeline = VisualForensicPipeline(config=Settings(vision_output_dir=str(tmp_path / "vision")), evaluator=lambda prompt: "{}")
 
     assert "C2PA_Provenance_Checker" not in pipeline.tool_names
     assert "TruFor_Detector" not in pipeline.tool_names
@@ -120,7 +120,7 @@ def test_default_pipeline_disables_c2pa_and_unconfigured_external_tools(tmp_path
 
 
 def test_default_pipeline_keeps_configured_external_tools(tmp_path):
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(
             vision_output_dir=str(tmp_path / "vision"),
             vision_trufor_command="python trufor.py --image {image_path}",
@@ -187,7 +187,7 @@ def test_image_forensic_pipeline_runs_multi_round_and_marks_region(tmp_path):
             '"tool_evidence": [], "limitations": [], "final_summary": "检测到伪造。"}',
         ]
     )
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=3),
         tools={
             "Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer"),
@@ -213,7 +213,7 @@ def test_image_forensic_pipeline_runs_multi_round_and_marks_region(tmp_path):
 def test_image_forensic_pipeline_runs_initial_tools_in_parallel(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (80, 80), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=2),
         tools={
             "SRM_Filter": SlowVisionTool("SRM_Filter", delay=0.2),
@@ -231,7 +231,7 @@ def test_image_forensic_pipeline_runs_initial_tools_in_parallel(tmp_path):
 
 
 def test_image_forensic_pipeline_parses_structured_regions():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
 
     assert pipeline._parse_region({"x0": 10, "y0": 20, "x1": 30, "y1": 50}) == "10,20,30,50"
     assert pipeline._parse_region({"x": 10, "y": 20, "w": 20, "h": 30}) == "10,20,30,50"
@@ -239,7 +239,7 @@ def test_image_forensic_pipeline_parses_structured_regions():
 
 
 def test_image_forensic_pipeline_uses_cfa_score_in_fallback_probability():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
     tool_calls = [
         {
             "tool": "CFA_Validator",
@@ -253,7 +253,7 @@ def test_image_forensic_pipeline_uses_cfa_score_in_fallback_probability():
 
 
 def test_image_forensic_pipeline_ignores_cfa_score_for_non_camera_source():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
     tool_calls = [
         {
             "tool": "CFA_Validator",
@@ -268,7 +268,7 @@ def test_image_forensic_pipeline_ignores_cfa_score_for_non_camera_source():
 
 
 def test_image_forensic_pipeline_gates_conditional_tools():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
     pipeline.tool_names = {"Noise_Analyzer", "Facial_Biological_Auditor", "PatchDense_Scanner", "CFA_Validator"}
     tool_calls = []
     image_context = {"likely_camera_source": False, "face_hint": False, "copy_move_hint": False}
@@ -281,7 +281,7 @@ def test_image_forensic_pipeline_gates_conditional_tools():
 
 
 def test_image_forensic_pipeline_selects_first_tool_by_context():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
     pipeline.tool_names = {"Spectrum_Grid_Analyzer", "SRM_Filter", "PatchDense_Scanner"}
 
     assert pipeline._choose_first_tool({"copy_move_hint": True}) == "PatchDense_Scanner"
@@ -290,7 +290,7 @@ def test_image_forensic_pipeline_selects_first_tool_by_context():
 
 
 def test_image_forensic_pipeline_keeps_model_probability_and_confidence_when_tools_are_weak():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
     tool_calls = [
         {
             "tool": "Spectrum_Grid_Analyzer",
@@ -310,7 +310,7 @@ def test_image_forensic_pipeline_keeps_model_probability_and_confidence_when_too
 
 
 def test_image_forensic_pipeline_caps_real_probability_when_tools_strongly_conflict():
-    pipeline = ImageForensicPipeline.__new__(ImageForensicPipeline)
+    pipeline = VisualForensicPipeline.__new__(VisualForensicPipeline)
     tool_calls = [
         {
             "tool": "Noise_Analyzer",
@@ -329,7 +329,7 @@ def test_image_forensic_pipeline_caps_real_probability_when_tools_strongly_confl
 def test_image_forensic_pipeline_prompt_exposes_gate_context(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (16, 16), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision")),
         tools={"Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer"), "CFA_Validator": StubVisionTool("CFA_Validator")},
         evaluator=lambda prompt: '{"label": "真实图像"}',
@@ -365,7 +365,7 @@ def test_image_prompt_treats_visible_text_as_image_semantics():
 def test_image_forensic_pipeline_keeps_regions_for_synthetic_image(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (80, 80), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
         tools={"Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer")},
         evaluator=lambda prompt: (
@@ -386,7 +386,7 @@ def test_image_forensic_pipeline_keeps_regions_for_synthetic_image(tmp_path):
 def test_image_forensic_pipeline_adds_region_for_forged_label_without_tool_coordinates(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (80, 60), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
         tools={"Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer")},
         evaluator=lambda prompt: (
@@ -407,7 +407,7 @@ def test_image_forensic_pipeline_adds_region_for_forged_label_without_tool_coord
 def test_image_forensic_pipeline_preserves_model_user_answer(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (80, 60), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
         tools={"Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer")},
         evaluator=lambda prompt: (
@@ -430,7 +430,7 @@ def test_image_forensic_pipeline_preserves_model_user_answer(tmp_path):
 def test_image_forensic_pipeline_uses_user_answer_forgery_regions(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (80, 60), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
         tools={"Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer")},
         evaluator=lambda prompt: (
@@ -452,7 +452,7 @@ def test_image_forensic_pipeline_uses_user_answer_forgery_regions(tmp_path):
 def test_image_forensic_pipeline_keeps_only_one_forgery_type(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (80, 60), color="white").save(image_path)
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
         tools={"Spectrum_Grid_Analyzer": StubVisionTool("Spectrum_Grid_Analyzer")},
         evaluator=lambda prompt: (
@@ -497,7 +497,7 @@ def test_image_forensic_pipeline_calls_qwen_with_base64_image(tmp_path):
     image_path = tmp_path / "input.png"
     Image.new("RGB", (16, 16), color="white").save(image_path)
     model_factory = StubModelFactory()
-    pipeline = ImageForensicPipeline(
+    pipeline = VisualForensicPipeline(
         config=Settings(qwen_vision_model="qwen3-vl-plus", vision_verdict_timeout_seconds=9),
         model_factory=model_factory,
         tools={},

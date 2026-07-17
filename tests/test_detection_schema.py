@@ -3,8 +3,8 @@ from fastapi.testclient import TestClient
 from app.api.dependencies import get_detection_orchestrator
 from app.api import routes
 from app.main import app
-from app.api.routes import should_rerun_detection
 from app.schemas.detection import DetectionResponse
+from app.services.followup_application import should_rerun_detection
 from app.services.webpage_extraction import WebpageExtractionResult
 
 
@@ -36,7 +36,7 @@ def test_detection_response_accepts_multimodal_payload():
                 "evidence": ["未见明显生成痕迹。"],
                 "reasoning": "视觉线索较自然。",
             },
-            "alignment_verdict": {
+            "crossmodal_verdict": {
                 "label": "Mismatch",
                 "text_elements": {"location": "某地", "event": "新闻文本描述的事件"},
                 "visual_elements": {"scene": "街景", "location_clues": ["路牌"]},
@@ -48,6 +48,7 @@ def test_detection_response_accepts_multimodal_payload():
             },
             "evidence": [{"type": "visual_clue", "content": "地点标识不一致。"}],
             "claims": [{"claim": "新闻称图片展示了某地事件。", "type": "event"}],
+            "report": {"risk_level": "high", "summary": "综合融合报告。"},
             "raw": {},
         }
     )
@@ -56,8 +57,9 @@ def test_detection_response_accepts_multimodal_payload():
     assert response.type == "事实核查"
     assert response.text_verdict is not None
     assert response.image_verdict is not None
-    assert response.alignment_verdict is not None
-    assert response.alignment_verdict.text_elements["location"] == "某地"
+    assert response.crossmodal_verdict is not None
+    assert response.crossmodal_verdict.text_elements["location"] == "某地"
+    assert response.report["risk_level"] == "high"
     assert response.claims[0].claim == "新闻称图片展示了某地事件。"
 
 
@@ -112,7 +114,6 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
         response = client.post(
             "/detect",
             data={
-                "mode": "auto",
                 "language": "zh",
                 "webpage_url": "https://example.com/news",
                 "conversation_id": "test-webpage-detect",
