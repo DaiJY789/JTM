@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,7 +11,18 @@ class DetectionMode(str, Enum):
     MULTIMODAL = "multimodal"
 
 
+class DetectionTaskType(str, Enum):
+    MULTIMODAL_FACT_CHECKING = "multimodal_fact_checking"
+    DEEPFAKE_DETECTION = "deepfake_detection"
+    AIGC_DETECTION = "aigc_detection"
+
+
 class DetectionLabel(str, Enum):
+    MMD_TRUE = "True"
+    MMD_MOSTLY_TRUE = "Mostly True"
+    MMD_MIXTURE = "Mixture"
+    MMD_MOSTLY_FALSE = "Mostly False"
+    MMD_FALSE = "False"
     COMPLETELY_FALSE = "Completely_False"
     MOSTLY_FALSE = "Mostly_False"
     MIXED = "Mixed"
@@ -96,7 +107,6 @@ class ImageVerdict(BaseModel):
     confidence: float | None = Field(default=None, ge=0, le=1, description="Confidence of the image verdict.")
     tamper_score: float | None = Field(default=None, ge=0, le=1, description="Fused local tampering score from forensic tools.")
     ai_generated_score: float | None = Field(default=None, ge=0, le=1, description="Fused AI-generated image score from forensic tools.")
-    provenance: dict[str, Any] = Field(default_factory=dict, description="C2PA/Content Credentials provenance findings when available.")
     visual_description: str = Field(default="", description="Visible content described by the model.")
     evidence: list[str] = Field(default_factory=list, description="Visual clues used for the image verdict.")
     reasoning: str = Field(default="", description="Reasoning behind the image verdict.")
@@ -108,19 +118,59 @@ class ImageVerdict(BaseModel):
     user_answer: dict[str, Any] = Field(default_factory=dict, description="User-facing analysis and conclusion.")
 
 
-class AlignmentVerdict(BaseModel):
+class CrossmodalVerdict(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    label: str = Field(default="Cannot_Determine", description="Image-text alignment label.")
+    label: str = Field(default="Cannot_Determine", description="Cross-modal image-text consistency label.")
     analysis: str = Field(default="", description="Raw model analysis for cross-modal consistency.")
     text_elements: dict[str, Any] = Field(default_factory=dict, description="Structured elements extracted from text.")
     visual_elements: dict[str, Any] = Field(default_factory=dict, description="Structured elements observed in the image.")
     matched_elements: list[str] = Field(default_factory=list, description="Text-image elements that agree.")
     mismatched_elements: list[str] = Field(default_factory=list, description="Text-image elements that conflict.")
     missing_elements: list[str] = Field(default_factory=list, description="Text elements not verifiable from the image.")
-    reasoning: str = Field(default="", description="Reasoning behind the alignment verdict.")
-    limitations: list[Any] = Field(default_factory=list, description="Known limitations of the alignment judgment.")
+    reasoning: str = Field(default="", description="Reasoning behind the cross-modal consistency verdict.")
+    limitations: list[Any] = Field(default_factory=list, description="Known limitations of the cross-modal judgment.")
     consistency_score: float | None = Field(default=None, ge=0, le=1, description="Optional image-text consistency score.")
+
+
+class MMDFineGrainedCheck(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    assessment: Literal["confirmed", "suspected", "not_verifiable", "absent"] = "not_verifiable"
+    severity: int = Field(default=0, ge=0, le=3)
+    evidence_basis: Literal[
+        "visual_input",
+        "ocr_output",
+        "external_search",
+        "text_internal",
+        "model_knowledge",
+        "none",
+    ] = "none"
+    analysis: str = ""
+
+
+class MMDExplanation(BaseModel):
+    verdict_statement: str = ""
+    analysis: str = ""
+    limitations: list[str] = Field(default_factory=list)
+
+
+class MMDAtomicPoint(BaseModel):
+    claim: str = ""
+    visual_observation: str = ""
+    search_query: str = ""
+    point_type: Literal["factual_claim", "visual_claim", "crossmodal_claim"] = "factual_claim"
+
+
+class MMDDetectionResult(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    status: Literal["success", "error"] = "success"
+    verdict: Literal["True", "Mostly True", "Mixture", "Mostly False", "False"] | None = None
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    atomic_points: list[MMDAtomicPoint] = Field(default_factory=list)
+    fine_grained_checks: dict[str, MMDFineGrainedCheck] = Field(default_factory=dict)
+    explanation: MMDExplanation = Field(default_factory=MMDExplanation)
 
 
 class DetectionResponse(BaseModel):
@@ -129,9 +179,9 @@ class DetectionResponse(BaseModel):
             "examples": [
                 {
                     "mode": "multimodal",
-                    "label": "均无异常",
+                    "label": "Cross_Modal_Mismatch",
                     "type": "图文不一致",
-                    "summary": "综合判断为均无异常，图文一致性为图文不一致。",
+                    "summary": "文本核查结果为大部分真实，图文关系为图文不一致。",
                     "confidence": 0.72,
                     "text_verdict": {
                         "label": "Mostly_True",
@@ -145,15 +195,8 @@ class DetectionResponse(BaseModel):
                             }
                         ],
                     },
-                    "image_verdict": {
-                        "label": "Real",
-                        "deepfake_risk": "low",
-                        "manipulation_risk": "low",
-                        "visual_description": "图片展示了相关人物在室内场景中发言。",
-                        "evidence": ["面部边缘和光照未见明显生成痕迹。"],
-                        "reasoning": "未发现明显伪造线索。",
-                    },
-                    "alignment_verdict": {
+                    "image_verdict": None,
+                    "crossmodal_verdict": {
                         "label": "Inconsistent",
                         "matched_elements": ["人物类别相近"],
                         "mismatched_elements": ["地点与文本不一致"],
@@ -181,20 +224,26 @@ class DetectionResponse(BaseModel):
 
     mode: DetectionMode = Field(description="Resolved detection mode actually used by the service.")
     type: str = Field(default="", description="Detection type, such as 事实核查/fact_checking or 谣言检测/rumor_detection for text.")
-    label: str = Field(description="Final fused label.")
+    label: str | None = Field(description="Final label, or null when detection fails technically.")
     summary: str = Field(default="", description="Human-readable summary of the detection result.")
     question: str = Field(default="", description="Resolved user question used to focus the analysis.")
     confidence: float | None = Field(default=None, ge=0, le=1, description="Optional final confidence score.")
+    decision_status: str = Field(default="", description="Whether the decision is confident or evidence-limited.")
     runtime_seconds: float | None = Field(default=None, ge=0, description="End-to-end API runtime in seconds.")
     text_verdict: TextVerdict | None = Field(default=None, description="Text-only detection result, when applicable.")
     image_verdict: ImageVerdict | None = Field(default=None, description="Image-only detection result, when applicable.")
-    alignment_verdict: AlignmentVerdict | None = Field(
+    crossmodal_verdict: CrossmodalVerdict | None = Field(
         default=None,
         description="Image-text consistency result, only present for multimodal detection.",
+    )
+    mmd_detection: MMDDetectionResult | None = Field(
+        default=None,
+        description="Direct five-way multimodal misinformation result with evidence and user explanation.",
     )
     evidence: list[EvidenceItem] = Field(default_factory=list, description="Evidence collected for the final result.")
     claims: list[ClaimItem] = Field(default_factory=list, description="Claims extracted from the text input.")
     raw: dict[str, Any] = Field(default_factory=dict, description="Raw service payloads for debugging and demos.")
+    report: dict[str, Any] = Field(default_factory=dict, description="Comprehensive multimodal fusion report.")
     user_answer: dict[str, Any] = Field(default_factory=dict, description="User-facing analysis and conclusion.")
     conversation_id: str = Field(default="", description="Backend conversation id for this detection session.")
     conversation_history: list[dict[str, Any]] = Field(

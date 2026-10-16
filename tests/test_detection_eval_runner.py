@@ -13,8 +13,8 @@ from evals.run_detection_eval import (
 def test_load_baseline_samples():
     samples = load_samples(Path("evals/samples/baseline.jsonl"))
 
-    assert len(samples) >= 5
-    assert {sample.task for sample in samples} >= {"text_only", "image_only", "multimodal", "webpage"}
+    assert len(samples) >= 4
+    assert {sample.task for sample in samples} == {"deepfake_detection", "multimodal_fact_checking"}
     assert all(sample.expected["accepted_labels"] for sample in samples)
     assert any(not sample.live_enabled for sample in samples)
 

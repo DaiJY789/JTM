@@ -51,6 +51,7 @@ class DetectionReport(BaseModel):
     webpage_snapshot: WebpageSnapshot | None = None
     key_evidence: list[StructuredEvidence] = Field(default_factory=list)
     findings: list[AnalysisFinding] = Field(default_factory=list)
+    comprehensive_report: dict[str, Any] = Field(default_factory=dict)
     limitations: list[str] = Field(default_factory=list)
     debug: dict[str, Any] = Field(default_factory=dict)
     legacy_payload: dict[str, Any] = Field(default_factory=dict)

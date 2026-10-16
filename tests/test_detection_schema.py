@@ -1,11 +1,31 @@
+from io import BytesIO
+
 from fastapi.testclient import TestClient
+from PIL import Image
 
 from app.api.dependencies import get_detection_orchestrator
 from app.api import routes
 from app.main import app
-from app.api.routes import should_rerun_detection
 from app.schemas.detection import DetectionResponse
+from app.services.followup_application import should_rerun_detection
+from app.services.remote_image_downloader import DownloadedRemoteImage
 from app.services.webpage_extraction import WebpageExtractionResult
+
+
+def valid_png_bytes(color: str) -> bytes:
+    output = BytesIO()
+    Image.new("RGB", (4, 4), color=color).save(output, format="PNG")
+    return output.getvalue()
+
+
+class StubRemoteImageDownloader:
+    def download(self, url):
+        return DownloadedRemoteImage(
+            valid_png_bytes("white"),
+            ".png",
+            "image/png",
+            url,
+        )
 
 
 def test_detection_response_accepts_multimodal_payload():
@@ -36,7 +56,7 @@ def test_detection_response_accepts_multimodal_payload():
                 "evidence": ["未见明显生成痕迹。"],
                 "reasoning": "视觉线索较自然。",
             },
-            "alignment_verdict": {
+            "crossmodal_verdict": {
                 "label": "Mismatch",
                 "text_elements": {"location": "某地", "event": "新闻文本描述的事件"},
                 "visual_elements": {"scene": "街景", "location_clues": ["路牌"]},
@@ -48,6 +68,7 @@ def test_detection_response_accepts_multimodal_payload():
             },
             "evidence": [{"type": "visual_clue", "content": "地点标识不一致。"}],
             "claims": [{"claim": "新闻称图片展示了某地事件。", "type": "event"}],
+            "report": {"risk_level": "high", "summary": "综合融合报告。"},
             "raw": {},
         }
     )
@@ -56,8 +77,9 @@ def test_detection_response_accepts_multimodal_payload():
     assert response.type == "事实核查"
     assert response.text_verdict is not None
     assert response.image_verdict is not None
-    assert response.alignment_verdict is not None
-    assert response.alignment_verdict.text_elements["location"] == "某地"
+    assert response.crossmodal_verdict is not None
+    assert response.crossmodal_verdict.text_elements["location"] == "某地"
+    assert response.report["risk_level"] == "high"
     assert response.claims[0].claim == "新闻称图片展示了某地事件。"
 
 
@@ -69,7 +91,113 @@ def test_detect_openapi_documents_request_examples():
         "/DetectionResponse"
     )
     assert "Unified endpoint" in operation["description"]
-    assert set(multipart["examples"]) >= {"text_only", "image_only", "multimodal", "webpage"}
+    assert set(multipart["examples"]) >= {"image_only", "multimodal", "webpage"}
+    assert "text_only" not in multipart["examples"]
+
+
+def test_split_detection_openapi_exposes_task_specific_fields():
+    schema = app.openapi()
+    mmd_body = schema["paths"]["/detect/mmd"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
+    deepfake_body = schema["paths"]["/detect/deepfake"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
+    mmd_fields = schema["components"]["schemas"][mmd_body["$ref"].rsplit("/", 1)[-1]]["properties"]
+    deepfake_fields = schema["components"]["schemas"][deepfake_body["$ref"].rsplit("/", 1)[-1]]["properties"]
+
+    assert {"text", "images", "image_urls", "webpage_url"} <= mmd_fields.keys()
+    assert {"image", "image_url", "webpage_url"} <= deepfake_fields.keys()
+    assert {"task", "text", "images", "image_urls"}.isdisjoint(deepfake_fields)
+    assert "task" not in mmd_fields
+
+
+def test_conversation_followup_openapi_uses_conversation_path_parameter():
+    operation = app.openapi()["paths"]["/conversations/{conversation_id}/followup"]["post"]
+    parameters = {item["name"]: item for item in operation["parameters"]}
+    body_schema = operation["requestBody"]["content"]["application/x-www-form-urlencoded"]["schema"]
+    body_fields = app.openapi()["components"]["schemas"][body_schema["$ref"].rsplit("/", 1)[-1]]["properties"]
+
+    assert parameters["conversation_id"]["in"] == "path"
+    assert parameters["conversation_id"]["required"] is True
+    assert set(body_fields) == {"question", "language"}
+    assert "/followup" in app.openapi()["paths"]
+
+
+def test_webpage_extraction_endpoint_returns_preview_without_detection(monkeypatch):
+    class StubWebpageExtractor:
+        def extract(self, url):
+            return WebpageExtractionResult(
+                url=url,
+                final_url="https://example.com/final-news",
+                title="网页新闻标题",
+                text="网页新闻正文。",
+                image_url="https://example.com/one.jpg",
+                images=["https://example.com/one.jpg", "https://example.com/two.jpg"],
+                metadata={"image_count": 2},
+            )
+
+    monkeypatch.setattr(routes, "webpage_extraction_service", StubWebpageExtractor())
+    response = TestClient(app).post(
+        "/webpages/extract",
+        data={"webpage_url": "https://example.com/news"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "网页新闻标题"
+    assert response.json()["text"] == "网页新闻正文。"
+    assert len(response.json()["images"]) == 2
+
+
+def test_split_detection_routes_dispatch_to_matching_tasks(monkeypatch, tmp_path):
+    from app.services.artifact_store import ArtifactStore
+    from app.services.conversation_history import ConversationHistoryStore
+    from app.services.session_service import SessionService
+
+    calls = []
+
+    class StubOrchestrator:
+        def detect(self, **kwargs):
+            calls.append(kwargs)
+            return {
+                "mode": "image_only" if kwargs["task_type"].value == "deepfake_detection" else "multimodal",
+                "label": "Real" if kwargs["task_type"].value == "deepfake_detection" else "True",
+                "summary": "检测完成。",
+                "raw": {},
+            }
+
+    store = ConversationHistoryStore(log_dir=tmp_path / "conversations")
+    artifacts = ArtifactStore(store.log_dir)
+    logged_endpoints = []
+    monkeypatch.setattr(routes, "artifact_store", artifacts)
+    monkeypatch.setattr(routes, "session_service", SessionService(store, artifacts))
+    monkeypatch.setattr(routes, "log_io_event", lambda event, request_id, endpoint, payload: logged_endpoints.append((event, endpoint)))
+    app.dependency_overrides[get_detection_orchestrator] = lambda: StubOrchestrator()
+    try:
+        client = TestClient(app)
+        mmd_response = client.post(
+            "/detect/mmd",
+            data={"text": "这是一条包含两张图片的新闻。"},
+            files=[
+                ("images", ("one.png", valid_png_bytes("red"), "image/png")),
+                ("images", ("two.png", valid_png_bytes("blue"), "image/png")),
+            ],
+        )
+        deepfake_response = client.post(
+            "/detect/deepfake",
+            files={"image": ("sample.png", valid_png_bytes("green"), "image/png")},
+        )
+    finally:
+        app.dependency_overrides.pop(get_detection_orchestrator, None)
+
+    assert mmd_response.status_code == 200
+    assert deepfake_response.status_code == 200
+    assert calls[0]["task_type"].value == "multimodal_fact_checking"
+    assert len(calls[0]["image_contents"]) == 2
+    assert calls[1]["task_type"].value == "deepfake_detection"
+    assert len(calls[1]["image_contents"]) == 1
+    assert logged_endpoints == [
+        ("request_input", "/detect/mmd"),
+        ("request_output", "/detect/mmd"),
+        ("request_input", "/detect/deepfake"),
+        ("request_output", "/detect/deepfake"),
+    ]
 
 
 def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkeypatch):
@@ -105,6 +233,7 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
 
     stub_orchestrator = StubOrchestrator()
     monkeypatch.setattr(routes, "webpage_extraction_service", StubWebpageExtractor())
+    monkeypatch.setattr(routes, "remote_image_downloader", StubRemoteImageDownloader())
     app.dependency_overrides[get_detection_orchestrator] = lambda: stub_orchestrator
 
     try:
@@ -112,7 +241,6 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
         response = client.post(
             "/detect",
             data={
-                "mode": "auto",
                 "language": "zh",
                 "webpage_url": "https://example.com/news",
                 "conversation_id": "test-webpage-detect",
@@ -125,10 +253,100 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
     payload = response.json()
     call = stub_orchestrator.calls[0]
     assert call["text"].startswith("网页新闻标题")
-    assert call["image_url"] == "https://example.com/image.jpg"
+    assert call["image_url"] is None
+    assert len(call["image_contents"]) == 1
+    assert call["image_urls"] == []
     assert payload["raw"]["webpage"]["final_url"] == "https://example.com/news"
     assert payload["raw"]["webpage"]["text"] == "网页正文描述了一张配图。"
     assert payload["evidence"][0]["type"] == "webpage_source"
+
+
+def test_detect_accepts_multiple_uploaded_images(monkeypatch):
+    class StubOrchestrator:
+        def __init__(self):
+            self.calls = []
+
+        def detect(self, **kwargs):
+            self.calls.append(kwargs)
+            return {
+                "mode": "multimodal",
+                "type": "multimodal_misinformation",
+                "label": "True",
+                "summary": "多张图片已进入检测。",
+                "confidence": 0.7,
+                "evidence": [],
+                "claims": [],
+                "raw": {},
+            }
+
+    stub = StubOrchestrator()
+    monkeypatch.setattr(routes, "remote_image_downloader", StubRemoteImageDownloader())
+    app.dependency_overrides[get_detection_orchestrator] = lambda: stub
+    try:
+        response = TestClient(app).post(
+            "/detect",
+            data={
+                "task": "multimodal_fact_checking",
+                "text": "这是一条包含多张配图的新闻。",
+                "conversation_id": "test-multiple-image-upload",
+            },
+            files=[
+                ("images", ("one.png", valid_png_bytes("red"), "image/png")),
+                ("images", ("two.png", valid_png_bytes("blue"), "image/png")),
+            ],
+        )
+    finally:
+        app.dependency_overrides.pop(get_detection_orchestrator, None)
+
+    assert response.status_code == 200
+    call = stub.calls[0]
+    assert len(call["image_contents"]) == 2
+    assert call["image_urls"] == []
+    assert call["task_type"].value == "multimodal_fact_checking"
+
+
+def test_detect_accepts_multiple_remote_image_urls(monkeypatch):
+    class StubOrchestrator:
+        def __init__(self):
+            self.calls = []
+
+        def detect(self, **kwargs):
+            self.calls.append(kwargs)
+            return {
+                "mode": "multimodal",
+                "type": "multimodal_misinformation",
+                "label": "Mostly True",
+                "summary": "远程多图已进入检测。",
+                "confidence": 0.6,
+                "evidence": [],
+                "claims": [],
+                "raw": {},
+            }
+
+    stub = StubOrchestrator()
+    monkeypatch.setattr(routes, "remote_image_downloader", StubRemoteImageDownloader())
+    app.dependency_overrides[get_detection_orchestrator] = lambda: stub
+    try:
+        response = TestClient(app).post(
+            "/detect",
+            data={
+                "task": "multimodal_fact_checking",
+                "text": "这是一条包含远程多图的新闻。",
+                "conversation_id": "test-multiple-image-urls",
+                "image_urls": [
+                    "https://example.com/one.jpg",
+                    "https://example.com/two.jpg",
+                ],
+            },
+        )
+    finally:
+        app.dependency_overrides.pop(get_detection_orchestrator, None)
+
+    assert response.status_code == 200
+    call = stub.calls[0]
+    assert len(call["image_contents"]) == 2
+    assert call["image_urls"] == []
+    assert call["task_type"].value == "multimodal_fact_checking"
 
 
 def test_conversation_endpoints_return_history_shape():

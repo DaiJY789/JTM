@@ -5,7 +5,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from app.schemas.detection import DetectionMode
+from app.schemas.detection import DetectionMode, DetectionTaskType
 
 
 class ArtifactType(str, Enum):
@@ -55,6 +55,7 @@ class EvidenceBundle(BaseModel):
 
 
 class DetectionTask(BaseModel):
+    task: DetectionTaskType = DetectionTaskType.MULTIMODAL_FACT_CHECKING
     mode: DetectionMode = DetectionMode.AUTO
     language: str = "zh"
     question: str = ""
@@ -62,6 +63,7 @@ class DetectionTask(BaseModel):
     history: list[dict[str, Any]] = Field(default_factory=list)
     evidence_bundle: EvidenceBundle = Field(default_factory=EvidenceBundle)
     image_content: bytes | None = Field(default=None, exclude=True)
+    image_contents: list[bytes] = Field(default_factory=list, exclude=True)
     user_input: dict[str, Any] = Field(default_factory=dict)
 
     @property
@@ -74,5 +76,13 @@ class DetectionTask(BaseModel):
         return image.source_url if image else ""
 
     @property
+    def image_urls(self) -> list[str]:
+        return [
+            item.source_url
+            for item in self.evidence_bundle.image_artifacts
+            if item.source_url and not item.local_path
+        ]
+
+    @property
     def has_image(self) -> bool:
-        return bool(self.image_content or self.image_url)
+        return bool(self.image_contents or self.image_content or self.image_urls)

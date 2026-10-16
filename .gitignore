@@ -1,19 +1,33 @@
-# macOS
+# System and editor files
 .DS_Store
+.vscode/
+.idea/
 
-# Python cache
+# Python and test caches
 __pycache__/
 *.py[cod]
-*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtual environments
 .venv/
 venv/
 
-# Runtime/generated data
+# Secrets; only blank example configurations belong in Git
+.env
+.env.*
+!.env.example
+!.env.production.example
+*.pem
+*.key
+
+# User data and generated artifacts
 conversations/
 logs/
 outputs/
-
-# Local env files
-.env
+data/
+dist/
+backups/
+app/web/static/versions/
+app/web/static/figma-export.html

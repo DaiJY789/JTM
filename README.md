@@ -48,6 +48,8 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 5000 --env-file .env
 
 后端使用 **FastAPI**，前端使用原生 **HTML / CSS / JavaScript**。多模态核查由 `MMD_Agent` 执行，图像伪造检测由 `IFD_Agent` 执行，支持视觉模型、网页提取、外部搜索与本地图像取证工具。
 
+开发测试可安装 `pip install -r requirements-dev.txt`，随后运行 `python -m pytest tests`；前端 URL 导入测试可使用 `node --test tests/frontend_url_import.test.cjs`。
+
 主要代码位于 `app/`，评测脚本位于 `evals/`，测试位于 `tests/`。运行时的会话、日志和图像结果分别存储在 `conversations/`、`logs/` 和 `outputs/`。
 
 检测结果用于辅助判断，请结合原始来源与其他证据进行核实。

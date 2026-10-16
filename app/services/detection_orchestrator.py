@@ -1,49 +1,38 @@
+from __future__ import annotations
+
 from typing import Any
 
+from app.api.adapters.detection_response import DetectionResponseAdapter
 from app.core.language import normalize_language
 from app.schemas.artifacts import DetectionTask
-from app.schemas.detection import DetectionMode
+from app.schemas.detection import DetectionMode, DetectionTaskType
 from app.schemas.report import DetectionReport
-from app.api.adapters.detection_response import DetectionResponseAdapter
+from app.services.ifd_detection import IFDDetectionService
+from app.services.mmd_detection import MMDDetectionService
 from app.services.report_builder import DetectionReportBuilder
-from app.services.vision.image import ImageDetectionService
-from app.services.multimodal import MultimodalDetectionService
-from app.services.text.text_detection import TextDetectionService
 
 
-DEFAULT_TEXT_QUESTION_ZH = "请判断这段文字的真实性。"
-DEFAULT_TEXT_QUESTION_EN = "Please determine the authenticity of this text."
-DEFAULT_IMAGE_QUESTION_ZH = "请判断这张图片是真实图像，伪造图像还是合成图像。"
-DEFAULT_IMAGE_QUESTION_EN = "Please determine whether this image is a real image, a forged image, or a synthetic image."
-DEFAULT_MULTIMODAL_QUESTION_ZH = "请判断这段文字和这张图片是否真实可信，并分析图文是否一致。"
-DEFAULT_MULTIMODAL_QUESTION_EN = "Please assess whether this text and image are credible, and analyze whether the image and text are consistent."
+DEFAULT_IMAGE_QUESTION_ZH = "请判断这张图片是真实图像、伪造图像还是合成图像。"
+DEFAULT_IMAGE_QUESTION_EN = "Please determine whether this image is real, forged, or synthetic."
+DEFAULT_MULTIMODAL_QUESTION_ZH = "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+DEFAULT_MULTIMODAL_QUESTION_EN = "Please assess whether this text and the supplied image(s) are credible and mutually consistent."
+DEFAULT_TEXT_QUESTION_ZH = "请核查这段文字中的核心事实主张是否真实可信。"
+DEFAULT_TEXT_QUESTION_EN = "Please fact-check the core factual claims in this text."
 
 
 class DetectionOrchestrator:
-    GENERIC_IMAGE_QUESTIONS = {
-        "这张图片是真的假的",
-        "这张图片是真的假的？",
-        "图片是真的假的",
-        "图片是真的吗",
-        "这是真的吗",
-        "真的假的",
-        "is this image real",
-        "is this real",
-        "real or fake",
-        "fake or real",
-    }
+    """Route each supported task to exactly one specialized detector."""
 
     def __init__(
         self,
-        text_detection_service: TextDetectionService,
-        image_detection_service: ImageDetectionService,
-        multimodal_detection_service: MultimodalDetectionService,
+        *,
+        mmd_detection_service: MMDDetectionService,
+        ifd_detection_service: IFDDetectionService,
         report_builder: DetectionReportBuilder | None = None,
         response_adapter: DetectionResponseAdapter | None = None,
     ):
-        self.text_detection_service = text_detection_service
-        self.image_detection_service = image_detection_service
-        self.multimodal_detection_service = multimodal_detection_service
+        self.mmd_detection_service = mmd_detection_service
+        self.ifd_detection_service = ifd_detection_service
         self.report_builder = report_builder or DetectionReportBuilder()
         self.response_adapter = response_adapter or DetectionResponseAdapter()
 
@@ -52,31 +41,73 @@ class DetectionOrchestrator:
         text: str | None = None,
         image_content: bytes | None = None,
         image_url: str | None = None,
+        image_contents: list[bytes] | tuple[bytes, ...] | None = None,
+        image_urls: list[str] | tuple[str, ...] | None = None,
+        image_labels: list[str] | tuple[str, ...] | None = None,
         question: str | None = None,
-        mode: str | DetectionMode = DetectionMode.AUTO,
         history: list | None = None,
         language: str = "zh",
+        mode: DetectionMode = DetectionMode.AUTO,
+        task_type: DetectionTaskType = DetectionTaskType.MULTIMODAL_FACT_CHECKING,
+        image_path: str | None = None,
     ) -> dict[str, Any]:
+        del history, mode
         language = normalize_language(language)
         normalized_text = (text or "").strip()
         normalized_question = (question or "").strip()
-        resolved_mode = self.resolve_mode(normalized_text, bool(image_content or image_url), normalized_question, mode)
-        resolved_question = self._resolve_question(normalized_question, resolved_mode, language)
+        normalized_image_contents = list(
+            image_contents or (() if image_content is None else (image_content,))
+        )
+        normalized_image_urls = list(
+            dict.fromkeys(
+                value.strip()
+                for value in ([image_url] if image_url else []) + list(image_urls or [])
+                if value and value.strip()
+            )
+        )
+        normalized_image_path = str(image_path or "").strip()
+        has_image = bool(normalized_image_path or normalized_image_contents or normalized_image_urls)
 
-        if resolved_mode == DetectionMode.TEXT_ONLY:
-            result = self.text_detection_service.detect(normalized_text or normalized_question, history, language)
+        if task_type == DetectionTaskType.AIGC_DETECTION:
+            raise ValueError("task=aigc_detection 暂未实现。")
+
+        if task_type == DetectionTaskType.DEEPFAKE_DETECTION:
+            if not has_image:
+                raise ValueError("task=deepfake_detection 需要提供图片。")
+            if len(normalized_image_contents) + len(normalized_image_urls) > 1:
+                raise ValueError("task=deepfake_detection 当前只支持一张图片。")
+            resolved_question = normalized_question or (
+                DEFAULT_IMAGE_QUESTION_ZH if language == "zh" else DEFAULT_IMAGE_QUESTION_EN
+            )
+            result = self.ifd_detection_service.detect(
+                image_content=normalized_image_contents[0] if normalized_image_contents else None,
+                image_url=normalized_image_urls[0] if normalized_image_urls else None,
+                image_path=normalized_image_path or None,
+                question=resolved_question,
+                language=language,
+            )
+            self._attach_single_agent_trace(result, "deepfake_detection", "IFD_Agent")
             result["question"] = resolved_question
             return result
-        if resolved_mode == DetectionMode.IMAGE_ONLY:
-            result = self.image_detection_service.detect(image_content, image_url, resolved_question or normalized_text, language)
-            result["question"] = resolved_question
-            return result
-        result = self.multimodal_detection_service.detect(
+
+        if not normalized_text:
+            raise ValueError("task=multimodal_fact_checking 需要提供待核查的文本。")
+        if normalized_question:
+            resolved_question = normalized_question
+        elif has_image:
+            resolved_question = (
+                DEFAULT_MULTIMODAL_QUESTION_ZH if language == "zh" else DEFAULT_MULTIMODAL_QUESTION_EN
+            )
+        else:
+            resolved_question = DEFAULT_TEXT_QUESTION_ZH if language == "zh" else DEFAULT_TEXT_QUESTION_EN
+        result = self.mmd_detection_service.detect(
             text=normalized_text,
-            image_content=image_content,
-            image_url=image_url,
+            image_content=normalized_image_contents[0] if normalized_image_contents else None,
+            image_url=normalized_image_urls[0] if normalized_image_urls else None,
+            image_contents=normalized_image_contents,
+            image_urls=normalized_image_urls,
+            image_labels=image_labels,
             question=resolved_question,
-            history=history,
             language=language,
         )
         result["question"] = resolved_question
@@ -87,15 +118,18 @@ class DetectionOrchestrator:
         return self.response_adapter.to_legacy_response(report)
 
     def detect_report(self, task: DetectionTask) -> DetectionReport:
+        image_urls = task.image_urls
         primary_image = task.evidence_bundle.primary_image
         result = self.detect(
             text=task.text,
-            image_content=task.image_content,
-            image_url=primary_image.source_url if primary_image else None,
+            image_contents=task.image_contents,
+            image_urls=image_urls,
+            image_path=primary_image.local_path if primary_image else None,
             question=task.question,
-            mode=task.mode,
             history=task.history,
             language=task.language,
+            mode=task.mode,
+            task_type=task.task,
         )
         self._attach_task_context(result, task)
         return self.report_builder.build(task, result)
@@ -104,38 +138,23 @@ class DetectionOrchestrator:
         self,
         text: str,
         has_image: bool,
-        question: str,
-        mode: str | DetectionMode = DetectionMode.AUTO,
+        question: str = "",
     ) -> DetectionMode:
-        requested_mode = DetectionMode(mode)
-        if requested_mode != DetectionMode.AUTO:
-            return requested_mode
-
-        if has_image and self._is_image_only_text(text, question):
-            return DetectionMode.IMAGE_ONLY
-        if has_image and text:
+        del question
+        if text.strip() and has_image:
             return DetectionMode.MULTIMODAL
         if has_image:
             return DetectionMode.IMAGE_ONLY
         return DetectionMode.TEXT_ONLY
 
-    def _is_image_only_text(self, text: str, question: str) -> bool:
-        candidate = (question or text).strip().lower().replace("?", "").replace("？", "")
-        if not candidate:
-            return True
-        normalized_generic = {item.lower().replace("?", "").replace("？", "") for item in self.GENERIC_IMAGE_QUESTIONS}
-        return candidate in normalized_generic
-
-    def _resolve_question(self, question: str, mode: DetectionMode, language: str) -> str:
-        if question:
-            return question
-        if mode == DetectionMode.TEXT_ONLY:
-            return DEFAULT_TEXT_QUESTION_ZH if language == "zh" else DEFAULT_TEXT_QUESTION_EN
-        if mode == DetectionMode.IMAGE_ONLY:
-            return DEFAULT_IMAGE_QUESTION_ZH if language == "zh" else DEFAULT_IMAGE_QUESTION_EN
-        if mode == DetectionMode.MULTIMODAL:
-            return DEFAULT_MULTIMODAL_QUESTION_ZH if language == "zh" else DEFAULT_MULTIMODAL_QUESTION_EN
-        return ""
+    def _attach_single_agent_trace(self, result: dict[str, Any], name: str, agent: str) -> None:
+        raw = result.setdefault("raw", {})
+        raw["workflow"] = {
+            "name": name,
+            "routing": "single_agent",
+            "steps": [agent],
+            "dependencies": [],
+        }
 
     def _attach_task_context(self, result: dict[str, Any], task: DetectionTask) -> None:
         bundle = task.evidence_bundle

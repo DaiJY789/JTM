@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 from time import time
@@ -22,6 +23,7 @@ class ArtifactStore:
         content: bytes | None,
         filename: str | None = None,
         content_type: str | None = None,
+        source_url: str | None = None,
         role: ArtifactRole = ArtifactRole.UPLOADED_IMAGE,
         metadata: dict[str, Any] | None = None,
     ) -> InputArtifact | None:
@@ -41,6 +43,7 @@ class ArtifactStore:
             id=artifact_id,
             type=ArtifactType.IMAGE,
             role=role,
+            source_url=(source_url or "").strip(),
             local_path=str(image_path),
             public_url=f"/conversations/{normalized}/assets/images/{stored_filename}",
             filename=filename or stored_filename,
@@ -80,7 +83,47 @@ class ArtifactStore:
             "path": artifact.local_path,
             "url": artifact.public_url,
             "artifact_id": artifact.id,
+            "source_url": artifact.source_url,
         }
+
+    def cached_remote_preview(self, conversation_id: str, source_url: str) -> Path | None:
+        normalized = self._safe_id(conversation_id)
+        if not normalized or not source_url:
+            return None
+        image_dir = self.root_dir / normalized / "images"
+        prefix = self._remote_preview_prefix(source_url)
+        for suffix in (".jpg", ".png", ".webp", ".gif", ".bmp"):
+            candidate = image_dir / f"{prefix}{suffix}"
+            if candidate.is_file():
+                return candidate
+        return None
+
+    def save_remote_preview(
+        self,
+        conversation_id: str,
+        source_url: str,
+        content: bytes,
+        suffix: str,
+    ) -> Path | None:
+        normalized = self._safe_id(conversation_id)
+        normalized_suffix = suffix.lower()
+        if (
+            not normalized
+            or not source_url
+            or not content
+            or normalized_suffix not in {".jpg", ".png", ".webp", ".gif", ".bmp"}
+        ):
+            return None
+        image_dir = self.root_dir / normalized / "images"
+        image_dir.mkdir(parents=True, exist_ok=True)
+        path = image_dir / f"{self._remote_preview_prefix(source_url)}{normalized_suffix}"
+        if not path.exists():
+            path.write_bytes(content)
+        return path
+
+    def _remote_preview_prefix(self, source_url: str) -> str:
+        digest = hashlib.sha256(source_url.encode("utf-8")).hexdigest()[:24]
+        return f"remote_preview_{digest}"
 
     def _safe_id(self, conversation_id: str | None) -> str:
         normalized = str(conversation_id or "").strip()

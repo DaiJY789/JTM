@@ -1,7 +1,7 @@
 from app.core.language import is_zh
-from app.agents.prompts.image import IMAGE_FORENSIC_PROMPT_EN, IMAGE_FORENSIC_PROMPT_ZH
+from app.agents.prompts.ifd import IFD_PROMPT_EN, IFD_PROMPT_ZH
 
 
 class PromptService:
     def get_image_prompt(self, selected_language: str) -> str:
-        return IMAGE_FORENSIC_PROMPT_ZH if is_zh(selected_language) else IMAGE_FORENSIC_PROMPT_EN
+        return IFD_PROMPT_ZH if is_zh(selected_language) else IFD_PROMPT_EN
