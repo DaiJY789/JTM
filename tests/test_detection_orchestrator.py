@@ -1,92 +1,119 @@
-from app.schemas.detection import DetectionMode
+import pytest
+
 from app.schemas.artifacts import ArtifactRole, ArtifactType, DetectionTask, EvidenceBundle, InputArtifact
+from app.schemas.detection import DetectionMode, DetectionTaskType
 from app.services.detection_orchestrator import DetectionOrchestrator
 
 
-class StubService:
+class StubMMDService:
     def __init__(self):
         self.calls = []
 
-    def detect(self, *args, **kwargs):
-        self.calls.append((args, kwargs))
-        return {"mode": "stub"}
+    def detect(self, **kwargs):
+        self.calls.append(kwargs)
+        return {
+            "mode": "multimodal",
+            "label": "True",
+            "type": "multimodal_misinformation",
+            "summary": "图文可信。",
+            "confidence": 0.8,
+            "mmd_detection": {
+                "verdict": "True",
+                "confidence": 0.8,
+                "explanation": {"analysis": "图文可信。", "limitations": []},
+            },
+            "evidence": [],
+            "claims": [],
+            "raw": {"workflow": {"routing": "single_agent", "steps": ["MMD_Agent"]}},
+        }
+
+
+class StubIFDService:
+    def __init__(self):
+        self.calls = []
+
+    def detect(self, **kwargs):
+        self.calls.append(kwargs)
+        return {
+            "mode": "image_only",
+            "label": "真实图像",
+            "type": "deepfake_detection",
+            "summary": "未发现明确伪造。",
+            "confidence": 0.8,
+            "image_verdict": {"label": "真实图像", "analysis": "未发现明确伪造。"},
+            "evidence": [],
+            "claims": [],
+            "raw": {},
+        }
 
 
 def make_orchestrator():
-    stub = StubService()
-    return DetectionOrchestrator(stub, stub, stub)
+    return DetectionOrchestrator(
+        mmd_detection_service=StubMMDService(),
+        ifd_detection_service=StubIFDService(),
+    )
 
 
-def test_auto_routes_text_only_without_image():
-    orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("新闻文本", False, "", DetectionMode.AUTO) == DetectionMode.TEXT_ONLY
-
-
-def test_auto_routes_generic_image_question_to_image_only():
-    orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("", True, "这张图片是真的假的？", DetectionMode.AUTO) == DetectionMode.IMAGE_ONLY
-
-
-def test_auto_routes_short_news_title_with_image_to_multimodal():
-    orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("特朗普被捕", True, "", DetectionMode.AUTO) == DetectionMode.MULTIMODAL
-
-
-def test_explicit_mode_wins():
-    orchestrator = make_orchestrator()
-    assert orchestrator.resolve_mode("新闻文本", True, "", DetectionMode.IMAGE_ONLY) == DetectionMode.IMAGE_ONLY
-
-
-def test_text_only_sets_default_question_zh():
+def test_multimodal_task_uses_only_mmd_agent():
     orchestrator = make_orchestrator()
 
-    result = orchestrator.detect(text="新闻文本", language="zh")
+    result = orchestrator.detect(
+        text="新闻文本",
+        image_content=b"image",
+        task_type=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
+    )
 
-    assert result["question"] == "请判断这段文字的真实性。"
-    assert orchestrator.text_detection_service.calls[0][0][0] == "新闻文本"
+    assert result["question"] == "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+    assert result["raw"]["workflow"]["steps"] == ["MMD_Agent"]
+    assert len(orchestrator.mmd_detection_service.calls) == 1
+    assert orchestrator.ifd_detection_service.calls == []
 
 
-def test_text_only_sets_default_question_en():
+def test_deepfake_task_uses_only_deepfake_agent():
     orchestrator = make_orchestrator()
 
-    result = orchestrator.detect(text="A news claim", language="en")
+    result = orchestrator.detect(
+        image_content=b"image",
+        task_type=DetectionTaskType.DEEPFAKE_DETECTION,
+    )
 
-    assert result["question"] == "Please determine the authenticity of this text."
+    assert result["question"] == "请判断这张图片是真实图像、伪造图像还是合成图像。"
+    assert result["raw"]["workflow"]["steps"] == ["IFD_Agent"]
+    assert len(orchestrator.ifd_detection_service.calls) == 1
+    assert orchestrator.mmd_detection_service.calls == []
 
 
-def test_image_only_sets_default_question_zh():
+def test_multimodal_task_accepts_text_without_image():
     orchestrator = make_orchestrator()
 
-    result = orchestrator.detect(image_content=b"image bytes", language="zh")
+    result = orchestrator.detect(
+        text="新闻文本",
+        task_type=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
+    )
 
-    assert result["question"] == "请判断这张图片是真实图像，伪造图像还是合成图像。"
-    assert orchestrator.image_detection_service.calls[0][0][2] == "请判断这张图片是真实图像，伪造图像还是合成图像。"
-
-
-def test_multimodal_sets_default_question_zh():
-    orchestrator = make_orchestrator()
-
-    result = orchestrator.detect(text="新闻文本", image_content=b"image bytes", language="zh")
-
-    assert result["question"] == "请判断这段文字和这张图片是否真实可信，并分析图文是否一致。"
-    assert orchestrator.multimodal_detection_service.calls[0][1]["question"] == "请判断这段文字和这张图片是否真实可信，并分析图文是否一致。"
+    assert result["question"] == "请核查这段文字中的核心事实主张是否真实可信。"
+    call = orchestrator.mmd_detection_service.calls[0]
+    assert call["image_contents"] == []
+    assert call["image_urls"] == []
 
 
-def test_explicit_question_is_preserved():
-    orchestrator = make_orchestrator()
-
-    result = orchestrator.detect(text="新闻文本", question="请重点判断标题是否真实", language="zh")
-
-    assert result["question"] == "请重点判断标题是否真实"
+def test_multimodal_task_still_requires_text():
+    with pytest.raises(ValueError, match="需要提供待核查的文本"):
+        make_orchestrator().detect(image_content=b"image")
 
 
-def test_detect_task_uses_normalized_artifacts():
+def test_deepfake_task_requires_image():
+    with pytest.raises(ValueError, match="需要提供图片"):
+        make_orchestrator().detect(task_type=DetectionTaskType.DEEPFAKE_DETECTION)
+
+
+def test_detect_task_uses_normalized_artifacts_and_builds_report():
     orchestrator = make_orchestrator()
     task = DetectionTask(
-        mode=DetectionMode.MULTIMODAL,
+        task=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
         language="zh",
         question="判断图文是否一致",
-        history=[{"role": "user", "content": "history"}],
+        conversation_id="conv-report",
         evidence_bundle=EvidenceBundle(
             text_artifacts=[
                 InputArtifact(type=ArtifactType.TEXT, role=ArtifactRole.USER_INPUT, content="新闻文本")
@@ -98,41 +125,72 @@ def test_detect_task_uses_normalized_artifacts():
                     source_url="https://example.com/image.jpg",
                 )
             ],
+            evidence_items=[{"type": "manual_context", "source": "test", "content": "context"}],
         ),
     )
 
     result = orchestrator.detect_task(task)
 
     assert result["question"] == "判断图文是否一致"
-    call_kwargs = orchestrator.multimodal_detection_service.calls[0][1]
-    assert call_kwargs["text"] == "新闻文本"
-    assert call_kwargs["image_url"] == "https://example.com/image.jpg"
-    assert call_kwargs["history"] == [{"role": "user", "content": "history"}]
+    assert orchestrator.mmd_detection_service.calls[0]["image_url"] == "https://example.com/image.jpg"
     assert result["raw"]["input_artifacts"]["images"][0]["source_url"] == "https://example.com/image.jpg"
-    assert result["raw"]["report"]["input_artifacts"][1]["source_url"] == "https://example.com/image.jpg"
+    assert result["raw"]["report"]["conversation_id"] == "conv-report"
 
 
-def test_detect_report_builds_internal_contract():
+def test_detect_task_passes_all_mmd_images_to_single_agent():
     orchestrator = make_orchestrator()
     task = DetectionTask(
-        mode=DetectionMode.TEXT_ONLY,
-        language="zh",
-        question="判断真实性",
-        conversation_id="conv-report",
+        task=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
         evidence_bundle=EvidenceBundle(
-            text_artifacts=[
-                InputArtifact(type=ArtifactType.TEXT, role=ArtifactRole.USER_INPUT, content="新闻文本")
-            ],
-            evidence_items=[
-                {"type": "manual_context", "source": "test", "content": "context"}
+            text_artifacts=[InputArtifact(type=ArtifactType.TEXT, content="多图新闻文本")],
+            image_artifacts=[
+                InputArtifact(type=ArtifactType.IMAGE, source_url="https://example.com/2.jpg"),
+                InputArtifact(type=ArtifactType.IMAGE, source_url="https://example.com/3.jpg"),
             ],
         ),
+        image_content=b"image-1",
+        image_contents=[b"image-1"],
     )
 
-    report = orchestrator.detect_report(task)
+    orchestrator.detect_task(task)
 
-    assert report.mode == DetectionMode.TEXT_ONLY
-    assert report.question == "判断真实性"
-    assert report.conversation_id == "conv-report"
-    assert report.input_artifacts[0].content == "新闻文本"
-    assert report.key_evidence[0].type == "manual_context"
+    call = orchestrator.mmd_detection_service.calls[0]
+    assert call["image_contents"] == [b"image-1"]
+    assert call["image_urls"] == [
+        "https://example.com/2.jpg",
+        "https://example.com/3.jpg",
+    ]
+
+
+def test_detect_task_passes_persisted_path_to_deepfake_service(tmp_path):
+    image_path = tmp_path / "conversations" / "conv" / "images" / "input.png"
+    image_path.parent.mkdir(parents=True)
+    image_path.write_bytes(b"image")
+    orchestrator = make_orchestrator()
+    task = DetectionTask(
+        task=DetectionTaskType.DEEPFAKE_DETECTION,
+        evidence_bundle=EvidenceBundle(
+            image_artifacts=[
+                InputArtifact(
+                    type=ArtifactType.IMAGE,
+                    role=ArtifactRole.UPLOADED_IMAGE,
+                    local_path=str(image_path),
+                )
+            ],
+        ),
+        image_content=b"image",
+        image_contents=[b"image"],
+    )
+
+    orchestrator.detect_task(task)
+
+    call = orchestrator.ifd_detection_service.calls[0]
+    assert call["image_path"] == str(image_path)
+    assert call["image_url"] is None
+
+
+def test_resolve_mode_is_shape_based_only():
+    orchestrator = make_orchestrator()
+    assert orchestrator.resolve_mode("新闻文本", True) == DetectionMode.MULTIMODAL
+    assert orchestrator.resolve_mode("", True) == DetectionMode.IMAGE_ONLY
+    assert orchestrator.resolve_mode("新闻文本", False) == DetectionMode.TEXT_ONLY

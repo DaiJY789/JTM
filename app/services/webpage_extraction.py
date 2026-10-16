@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import re
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
@@ -26,6 +27,7 @@ class LimitedHtml:
     content: str
     bytes_read: int
     truncated: bool = False
+    encoding: str = "utf-8"
 
 
 class WebpageExtractionService:
@@ -68,9 +70,10 @@ class WebpageExtractionService:
         html = self._read_limited_text(response)
         soup = BeautifulSoup(html.content, "html.parser")
         final_url = response.url or normalized_url
+        content_root = self._select_content_root(soup)
         title = self._extract_title(soup)
-        text = self._extract_text(soup)
-        images = self._extract_images(soup, final_url)
+        text = self._extract_text(soup, content_root)
+        images = self._extract_images(soup, final_url, content_root)
         return WebpageExtractionResult(
             url=normalized_url,
             final_url=final_url,
@@ -85,6 +88,8 @@ class WebpageExtractionService:
                 "html_bytes_read": html.bytes_read,
                 "html_truncated": html.truncated,
                 "html_limit_bytes": self.max_html_bytes,
+                "encoding": html.encoding,
+                "content_selector": self._content_selector(content_root),
             },
         )
 
@@ -119,12 +124,37 @@ class WebpageExtractionService:
             chunks.append(chunk)
             total += len(chunk)
         content = b"".join(chunks)
-        response.encoding = response.encoding or response.apparent_encoding or "utf-8"
+        encoding = self._detect_encoding(content, response)
         return LimitedHtml(
-            content=content.decode(response.encoding, errors="replace"),
+            content=content.decode(encoding, errors="replace"),
             bytes_read=total,
             truncated=truncated,
+            encoding=encoding,
         )
+
+    def _detect_encoding(self, content: bytes, response: requests.Response) -> str:
+        if content.startswith(b"\xef\xbb\xbf"):
+            return "utf-8-sig"
+        head = content[:8192]
+        meta_match = re.search(
+            br"<meta[^>]+charset\s*=\s*[\"']?\s*([a-zA-Z0-9._-]+)",
+            head,
+            re.I,
+        )
+        if not meta_match:
+            meta_match = re.search(
+                br"<meta[^>]+content\s*=\s*[\"'][^\"']*charset\s*=\s*([a-zA-Z0-9._-]+)",
+                head,
+                re.I,
+            )
+        if meta_match:
+            return meta_match.group(1).decode("ascii", errors="ignore") or "utf-8"
+
+        content_type = str(response.headers.get("content-type", ""))
+        header_match = re.search(r"charset\s*=\s*[\"']?\s*([a-zA-Z0-9._-]+)", content_type, re.I)
+        if header_match:
+            return header_match.group(1)
+        return str(getattr(response, "apparent_encoding", "") or "utf-8")
 
     def _extract_title(self, soup: BeautifulSoup) -> str:
         for selector in [
@@ -136,27 +166,61 @@ class WebpageExtractionService:
                 return value
         return " ".join((soup.title.string or "").split()) if soup.title and soup.title.string else ""
 
-    def _extract_text(self, soup: BeautifulSoup) -> str:
+    def _select_content_root(self, soup: BeautifulSoup):
+        selectors = [
+            "article",
+            '[itemprop="articleBody"]',
+            ".content_maincontent_content",
+            ".article-content",
+            ".article_content",
+            ".article-body",
+            ".article_body",
+            ".news-content",
+            ".news_content",
+            "#article-content",
+            "#articleContent",
+            "main",
+        ]
+        for selector in selectors:
+            candidates = []
+            for root in soup.select(selector):
+                parts = self._text_parts(root)
+                score = sum(len(item) for item in parts)
+                if score:
+                    candidates.append((score, root))
+            if candidates:
+                return max(candidates, key=lambda item: item[0])[1]
+        return soup.body or soup
+
+    def _content_selector(self, root: Any) -> str:
+        name = str(getattr(root, "name", "") or "")
+        element_id = str(root.get("id") or "") if hasattr(root, "get") else ""
+        classes = root.get("class") if hasattr(root, "get") else []
+        suffix = f"#{element_id}" if element_id else ""
+        if isinstance(classes, list) and classes:
+            suffix += "".join(f".{item}" for item in classes[:3])
+        return f"{name}{suffix}" or "document"
+
+    def _text_parts(self, root: Any) -> list[str]:
+        parts = []
+        for element in root.find_all(["h1", "h2", "h3", "p", "li", "figcaption"], recursive=True):
+            text = " ".join(element.get_text(" ", strip=True).split())
+            if text and text not in parts:
+                parts.append(text)
+        return parts
+
+    def _extract_text(self, soup: BeautifulSoup, content_root: Any | None = None) -> str:
         for node in soup(["script", "style", "noscript", "template", "svg"]):
             node.decompose()
-        parts: list[str] = []
-        for selector in ["article", "main", "body"]:
-            root = soup.select_one(selector)
-            if not root:
-                continue
-            for element in root.find_all(["h1", "h2", "h3", "p", "li", "figcaption"], recursive=True):
-                text = " ".join(element.get_text(" ", strip=True).split())
-                if text and text not in parts:
-                    parts.append(text)
-            if parts:
-                break
+        root = content_root or self._select_content_root(soup)
+        parts = self._text_parts(root)
         if not parts:
-            fallback = " ".join(soup.get_text(" ", strip=True).split())
+            fallback = " ".join(root.get_text(" ", strip=True).split())
             parts = [fallback] if fallback else []
         return "\n".join(parts)[: self.max_text_chars].strip()
 
-    def _extract_images(self, soup: BeautifulSoup, base_url: str) -> list[str]:
-        candidates: list[str] = []
+    def _extract_images(self, soup: BeautifulSoup, base_url: str, content_root: Any | None = None) -> list[str]:
+        candidates: list[tuple[str, Any | None]] = []
         for selector in [
             ('meta[property="og:image"]', "content"),
             ('meta[name="twitter:image"]', "content"),
@@ -165,15 +229,20 @@ class WebpageExtractionService:
         ]:
             value = self._meta_value(soup, *selector)
             if value:
-                candidates.append(value)
-        for image in soup.find_all("img"):
-            src = image.get("src") or image.get("data-src") or image.get("data-original")
+                candidates.append((value, None))
+
+        root = content_root or self._select_content_root(soup)
+        content_images = list(root.find_all("img"))
+        for image in [*content_images, *soup.find_all("img")]:
+            src = self._image_source(image)
             if src:
-                candidates.append(src)
+                candidates.append((src, image))
 
         output: list[str] = []
         seen = set()
-        for candidate in candidates:
+        for candidate, image in candidates:
+            if image is not None and self._is_decorative_image(image, candidate):
+                continue
             absolute = urljoin(base_url, str(candidate).strip())
             parsed = urlparse(absolute)
             if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -185,6 +254,36 @@ class WebpageExtractionService:
             if len(output) >= self.max_images:
                 break
         return output
+
+    def _image_source(self, image: Any) -> str:
+        for attribute in ("data-original", "data-src", "data-lazy-src", "src"):
+            value = str(image.get(attribute) or "").strip()
+            if value and not value.startswith("data:image/gif;base64"):
+                return value
+        srcset = str(image.get("srcset") or "").strip()
+        if srcset:
+            return srcset.split(",")[-1].strip().split()[0]
+        return ""
+
+    def _is_decorative_image(self, image: Any, source: str) -> bool:
+        marker = " ".join(
+            [
+                str(source or ""),
+                str(image.get("alt") or ""),
+                str(image.get("class") or ""),
+                str(image.get("id") or ""),
+            ]
+        ).lower()
+        decorative_tokens = ("logo", "icon", "arrow", "avatar", "qrcode", "qr-code", "spacer", "sprite")
+        if any(token in marker for token in decorative_tokens):
+            return True
+        width = self._dimension(image.get("width"))
+        height = self._dimension(image.get("height"))
+        return bool(width and height and (width < 200 or height < 120))
+
+    def _dimension(self, value: Any) -> int:
+        match = re.search(r"\d+", str(value or ""))
+        return int(match.group(0)) if match else 0
 
     def _meta_value(self, soup: BeautifulSoup, selector: str, attr: str) -> str:
         node = soup.select_one(selector)

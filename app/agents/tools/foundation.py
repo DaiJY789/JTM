@@ -10,19 +10,6 @@ class BaseTool:
         self.tool_schema = tool_schema
 
 
-class TextTool(BaseTool):
-    """Lightweight base class for text tools."""
-
-    def __init__(
-        self,
-        selected_language: str,
-        config: dict | None = None,
-        tool_schema: Any | None = None,
-    ):
-        super().__init__(config=config, tool_schema=tool_schema)
-        self.selected_language = selected_language
-
-
 @dataclass
 class OpenAIFunctionPropertySchema:
     type: str
@@ -54,6 +41,7 @@ class OpenAIFunctionToolSchema:
 @dataclass
 class ToolResponse:
     text: str = ""
+    image: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod

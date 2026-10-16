@@ -9,29 +9,30 @@ from app.schemas.report import AnalysisFinding, DetectionReport, WebpageSnapshot
 
 
 class DetectionReportBuilder:
-    """Build the internal report contract from the current legacy detector payload."""
+    """Build the internal report contract from a detector payload."""
 
-    def build(self, task: DetectionTask, legacy_payload: dict[str, Any]) -> DetectionReport:
+    def build(self, task: DetectionTask, payload: dict[str, Any]) -> DetectionReport:
         return DetectionReport(
-            mode=self._mode(legacy_payload.get("mode"), task.mode),
-            label=str(legacy_payload.get("label") or ""),
-            type=str(legacy_payload.get("type") or ""),
-            risk_level=self._risk_level(legacy_payload),
-            confidence=legacy_payload.get("confidence"),
-            summary=str(legacy_payload.get("summary") or ""),
-            question=str(legacy_payload.get("question") or task.question or ""),
+            mode=self._mode(payload.get("mode"), task.mode),
+            label=str(payload.get("label") or ""),
+            type=str(payload.get("type") or ""),
+            risk_level=self._risk_level(payload),
+            confidence=payload.get("confidence"),
+            summary=str(payload.get("summary") or ""),
+            question=str(payload.get("question") or task.question or ""),
             language=task.language,
             conversation_id=task.conversation_id,
             input_artifacts=self._input_artifacts(task),
             webpage_snapshot=self._webpage_snapshot(task),
-            key_evidence=self._evidence(legacy_payload, task),
-            findings=self._findings(legacy_payload),
-            limitations=self._limitations(legacy_payload),
+            key_evidence=self._evidence(payload, task),
+            findings=self._findings(payload),
+            comprehensive_report=dict(payload.get("report") or {}),
+            limitations=self._limitations(payload),
             debug={
-                "raw": legacy_payload.get("raw", {}),
-                "claims": legacy_payload.get("claims", []),
+                "raw": payload.get("raw", {}),
+                "claims": payload.get("claims", []),
             },
-            legacy_payload=dict(legacy_payload),
+            legacy_payload=dict(payload),
         )
 
     def _mode(self, value: object, fallback: DetectionMode) -> DetectionMode:
@@ -71,9 +72,9 @@ class DetectionReportBuilder:
             metadata=dict(metadata.get("metadata") or {}),
         )
 
-    def _evidence(self, legacy_payload: dict[str, Any], task: DetectionTask) -> list[StructuredEvidence]:
+    def _evidence(self, payload: dict[str, Any], task: DetectionTask) -> list[StructuredEvidence]:
         items = []
-        for item in legacy_payload.get("evidence", []) or []:
+        for item in payload.get("evidence", []) or []:
             if isinstance(item, dict):
                 items.append(StructuredEvidence.from_mapping(item))
         for item in task.evidence_bundle.evidence_items:
@@ -81,19 +82,32 @@ class DetectionReportBuilder:
                 items.append(StructuredEvidence.from_mapping(item))
         return items
 
-    def _findings(self, legacy_payload: dict[str, Any]) -> list[AnalysisFinding]:
+    def _findings(self, payload: dict[str, Any]) -> list[AnalysisFinding]:
         findings: list[AnalysisFinding] = []
-        text = legacy_payload.get("text_verdict")
-        if isinstance(text, dict):
+        mmd = payload.get("mmd_detection")
+        if isinstance(mmd, dict):
+            explanation = (
+                mmd.get("explanation")
+                if isinstance(mmd.get("explanation"), dict)
+                else mmd.get("user_explanation")
+                if isinstance(mmd.get("user_explanation"), dict)
+                else {}
+            )
             findings.append(
                 AnalysisFinding(
-                    analyzer="text",
-                    label=str(text.get("label") or legacy_payload.get("label") or ""),
-                    summary=str(text.get("appraisalResults") or ""),
-                    raw=text,
+                    analyzer="mmd_single_agent",
+                    label=str(mmd.get("verdict") or payload.get("label") or ""),
+                    summary=str(
+                        explanation.get("analysis")
+                        or explanation.get("summary")
+                        or payload.get("summary")
+                        or ""
+                    ),
+                    confidence=mmd.get("confidence"),
+                    raw=mmd,
                 )
             )
-        image = legacy_payload.get("image_verdict")
+        image = payload.get("image_verdict")
         if isinstance(image, dict):
             findings.append(
                 AnalysisFinding(
@@ -104,34 +118,43 @@ class DetectionReportBuilder:
                     raw=image,
                 )
             )
-        alignment = legacy_payload.get("alignment_verdict")
-        if isinstance(alignment, dict):
-            findings.append(
-                AnalysisFinding(
-                    analyzer="alignment",
-                    label=str(alignment.get("label") or ""),
-                    summary=str(alignment.get("reasoning") or alignment.get("analysis") or ""),
-                    confidence=alignment.get("consistency_score"),
-                    raw=alignment,
-                )
-            )
         return findings
 
-    def _limitations(self, legacy_payload: dict[str, Any]) -> list[str]:
+    def _limitations(self, payload: dict[str, Any]) -> list[str]:
         values: list[str] = []
-        for key in ("image_verdict", "alignment_verdict", "text_verdict"):
-            payload = legacy_payload.get(key)
-            if not isinstance(payload, dict):
-                continue
-            for item in payload.get("limitations", []) or []:
+        mmd = payload.get("mmd_detection")
+        if isinstance(mmd, dict):
+            explanation = (
+                mmd.get("explanation")
+                if isinstance(mmd.get("explanation"), dict)
+                else mmd.get("user_explanation")
+                if isinstance(mmd.get("user_explanation"), dict)
+                else {}
+            )
+            for item in explanation.get("limitations", []) or []:
+                text = str(item).strip()
+                if text and text not in values:
+                    values.append(text)
+        image = payload.get("image_verdict")
+        if isinstance(image, dict):
+            for item in image.get("limitations", []) or []:
+                text = str(item).strip()
+                if text and text not in values:
+                    values.append(text)
+        report = payload.get("report")
+        if isinstance(report, dict):
+            for item in report.get("limitations", []) or []:
                 text = str(item).strip()
                 if text and text not in values:
                     values.append(text)
         return values
 
-    def _risk_level(self, legacy_payload: dict[str, Any]) -> str:
-        label = str(legacy_payload.get("label") or "")
-        anomaly_tokens = ("异常", "False", "Mismatch", "Forged", "Synthetic", "AI")
+    def _risk_level(self, payload: dict[str, Any]) -> str:
+        report = payload.get("report")
+        if isinstance(report, dict) and report.get("risk_level") in {"low", "medium", "high"}:
+            return str(report["risk_level"])
+        label = str(payload.get("label") or "")
+        anomaly_tokens = ("异常", "False", "Forged", "Synthetic", "AI")
         if any(token in label for token in anomaly_tokens):
             return "high"
         if label:

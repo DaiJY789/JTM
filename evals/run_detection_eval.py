@@ -17,6 +17,8 @@ DEFAULT_OUTPUT_PATH = ROOT_DIR / "evals" / "results" / "baseline_last.json"
 
 LABEL_FAMILIES = {
     "true": {
+        "True",
+        "Mostly True",
         "Completely_True",
         "Mostly_True",
         "Likely_True",
@@ -25,6 +27,8 @@ LABEL_FAMILIES = {
         "完全真实",
     },
     "false": {
+        "False",
+        "Mostly False",
         "Completely_False",
         "Mostly_False",
         "Likely_False",
@@ -61,6 +65,7 @@ LABEL_FAMILIES = {
         "图文不一致",
     },
     "unknown": {
+        "Mixture",
         "Cannot_Determine",
     },
 }
@@ -193,7 +198,8 @@ def mock_detector(sample: EvalSample) -> dict[str, Any]:
 def endpoint_detector(endpoint: str, timeout: float) -> Callable[[EvalSample], dict[str, Any]]:
     def detect(sample: EvalSample) -> dict[str, Any]:
         payload = dict(sample.input)
-        payload.setdefault("mode", sample.input.get("mode") or sample.task)
+        payload.pop("mode", None)
+        payload.setdefault("task", sample.task)
         payload.setdefault("language", sample.language)
 
         files = None
