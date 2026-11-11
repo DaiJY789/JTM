@@ -102,15 +102,15 @@ def test_detect_openapi_documents_request_examples():
 
 def test_split_detection_openapi_exposes_task_specific_fields():
     schema = app.openapi()
-    mmd_body = schema["paths"]["/detect/mmd"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
+    mfc_body = schema["paths"]["/detect/mfc"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
     deepfake_body = schema["paths"]["/detect/deepfake"]["post"]["requestBody"]["content"]["multipart/form-data"]["schema"]
-    mmd_fields = schema["components"]["schemas"][mmd_body["$ref"].rsplit("/", 1)[-1]]["properties"]
+    mfc_fields = schema["components"]["schemas"][mfc_body["$ref"].rsplit("/", 1)[-1]]["properties"]
     deepfake_fields = schema["components"]["schemas"][deepfake_body["$ref"].rsplit("/", 1)[-1]]["properties"]
 
-    assert {"text", "images", "image_urls", "webpage_url"} <= mmd_fields.keys()
+    assert {"text", "images", "image_urls", "webpage_url"} <= mfc_fields.keys()
     assert {"image", "image_url", "webpage_url"} <= deepfake_fields.keys()
     assert {"task", "text", "images", "image_urls"}.isdisjoint(deepfake_fields)
-    assert "task" not in mmd_fields
+    assert "task" not in mfc_fields
 
 
 def test_conversation_followup_openapi_uses_conversation_path_parameter():
@@ -150,7 +150,8 @@ def test_webpage_extraction_endpoint_returns_preview_without_detection(monkeypat
     assert len(response.json()["images"]) == 2
 
 
-def test_split_detection_routes_dispatch_to_matching_tasks(monkeypatch, tmp_path):
+@pytest.mark.parametrize("mfc_endpoint", ["/detect/mfc", "/detect/mmd"])
+def test_split_detection_routes_dispatch_to_matching_tasks(monkeypatch, tmp_path, mfc_endpoint):
     from app.services.artifact_store import ArtifactStore
     from app.services.conversation_history import ConversationHistoryStore
     from app.services.session_service import SessionService
@@ -176,8 +177,8 @@ def test_split_detection_routes_dispatch_to_matching_tasks(monkeypatch, tmp_path
     app.dependency_overrides[get_detection_orchestrator] = lambda: StubOrchestrator()
     try:
         client = TestClient(app)
-        mmd_response = client.post(
-            "/detect/mmd",
+        mfc_response = client.post(
+            mfc_endpoint,
             data={"text": "这是一条包含两张图片的新闻。"},
             files=[
                 ("images", ("one.png", valid_png_bytes("red"), "image/png")),
@@ -191,26 +192,37 @@ def test_split_detection_routes_dispatch_to_matching_tasks(monkeypatch, tmp_path
     finally:
         app.dependency_overrides.pop(get_detection_orchestrator, None)
 
-    assert mmd_response.status_code == 200
+    assert mfc_response.status_code == 200
     assert deepfake_response.status_code == 200
     assert calls[0]["task_type"].value == "multimodal_fact_checking"
     assert len(calls[0]["image_contents"]) == 2
     assert calls[1]["task_type"].value == "deepfake_detection"
     assert len(calls[1]["image_contents"]) == 1
     assert logged_endpoints == [
-        ("request_input", "/detect/mmd"),
-        ("request_output", "/detect/mmd"),
+        ("request_input", "/detect/mfc"),
+        ("request_output", "/detect/mfc"),
         ("request_input", "/detect/deepfake"),
         ("request_output", "/detect/deepfake"),
     ]
+
+
+def test_old_mmd_result_is_read_and_serialized_under_canonical_mfc_field():
+    response = DetectionResponse.model_validate({
+        "mode": "text_only", "label": "True", "confidence": 0.912345,
+        "mmd_detection": {"label": "True", "confidence": 0.912345, "type": "none"},
+    })
+    payload = response.model_dump(mode="json")
+    assert payload["mfc_detection"]["label"] == "True"
+    assert payload["mfc_detection"]["confidence"] == 0.912345
+    assert "mmd_detection" not in payload
 
 
 @pytest.mark.parametrize(
     ("endpoint", "selection", "expected"),
     [
         ("/detect", None, ["https://example.com/image.jpg", "https://example.com/other.jpg"]),
-        ("/detect/mmd", ["https://example.com/other.jpg"], ["https://example.com/other.jpg"]),
-        ("/detect/mmd", [], []),
+        ("/detect/mfc", ["https://example.com/other.jpg"], ["https://example.com/other.jpg"]),
+        ("/detect/mfc", [], []),
         ("/detect/deepfake", ["https://example.com/other.jpg"], ["https://example.com/other.jpg"]),
     ],
 )

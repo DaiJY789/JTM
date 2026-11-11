@@ -3,17 +3,17 @@
 `DetectionOrchestrator` only performs explicit two-way routing:
 
 ```text
-multimodal_fact_checking + text + image -> MMDDetectionService -> MMD_Agent
+multimodal_fact_checking + text + image -> MFCDetectionService -> MFC_Agent
 deepfake_detection + image             -> IFDDetectionService -> IFD_Agent
 ```
 
-There is no fallback to the removed P/E/T/C/F workflow. MMD input must contain both text and an image; deepfake input must contain an image.
+There is no fallback to the removed P/E/T/C/F workflow. MFC input must contain both text and an image; deepfake input must contain an image.
 
-## MMD path
+## MFC path
 
-`MMD_Agent` remains the only decision-making agent. Before its final vision-model call, the application runs image OCR/entity extraction and three whole-post Bocha searches: whole event, key detail, and OCR-assisted cross-modal context. OCR and the first two searches run in parallel; the third search uses OCR output. Atomic points remain part of final analysis but do not define the search scope.
+`MFC_Agent` remains the only decision-making agent. Before its final vision-model call, the application runs image OCR/entity extraction and three whole-post Bocha searches: whole event, key detail, and OCR-assisted cross-modal context. OCR and the first two searches run in parallel; the third search uses OCR output. Atomic points remain part of final analysis but do not define the search scope.
 
-`app/agents/tools/mmd/` contains `ImageOCREntityTool`, `BoChaSearchTool`, and the rule-based `MMDSearchQueryBuilder`. Tool failures are isolated and the final agent continues with available evidence. Search snippets are untrusted candidates, search absence is not contradiction, crawl time is not publication time, and returned image URLs are not treated as verified provenance.
+`app/agents/tools/mfc/` contains `ImageOCREntityTool`, `BoChaSearchTool`, and the rule-based `MFCSearchQueryBuilder`. Tool failures are isolated and the final agent continues with available evidence. Search snippets are untrusted candidates, search absence is not contradiction, crawl time is not publication time, and returned image URLs are not treated as verified provenance.
 
 ## Deepfake path
 

@@ -1,0 +1,690 @@
+{
+  "mode": "multimodal",
+  "label": "Mixture",
+  "type": "C2_contextual_inconsistency",
+  "summary": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+  "confidence": 0.85,
+  "decision_status": "confident",
+  "mfc_detection": {
+    "status": "success",
+    "label": "Mixture",
+    "type": "C2_contextual_inconsistency",
+    "confidence": 0.85,
+    "atomic_points": [
+      {
+        "claim": "CDC追踪与邮轮M/V Hondius有关的汉坦病毒病例线索",
+        "visual_observation": "Image 1显示邮轮及防疫人员，Image 3显示穿防护服人员处理行李",
+        "search_query": "CDC M/V Hondius hantavirus cases tracking",
+        "point_type": "factual_claim"
+      },
+      {
+        "claim": "辉瑞疫苗专利公开引发热议",
+        "visual_observation": "Image 1左上角展示美国专利文件，右上角有辉瑞Logo，右下角有辉瑞疫苗瓶",
+        "search_query": "Pfizer vaccine patent public controversy",
+        "point_type": "crossmodal_claim"
+      },
+      {
+        "claim": "网络将不同时间背景信息拼接解读",
+        "visual_observation": "Image 1将邮轮、专利、疫苗瓶拼贴；Image 2为1994年申请的汉坦病毒疫苗专利截图",
+        "search_query": "",
+        "point_type": "crossmodal_claim"
+      }
+    ],
+    "fine_grained_checks": {
+      "T1_fabrication": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "external_search",
+        "analysis": "核心事实（CDC通报、专利存在）均有据可查。"
+      },
+      "T2_distortion": {
+        "assessment": "suspected",
+        "severity": 2,
+        "evidence_basis": "text_internal",
+        "analysis": "文字提及辉瑞副作用联系，但配图暗示辉瑞专利与汉坦病毒有关联。"
+      },
+      "T3_misleading_context": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "visual_input",
+        "analysis": "将无关的辉瑞标识与汉坦病毒邮轮事件并置，制造虚假关联语境。"
+      },
+      "V1_synthetic_visual_content": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图片元素均为真实素材或截图，未见AI生成痕迹。"
+      },
+      "V2_visual_editing": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "visual_input",
+        "analysis": "Image 1通过拼贴手法将邮轮、专利、辉瑞疫苗组合，改变原意。"
+      },
+      "C1_semantic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图文在字面语义上无明显矛盾。"
+      },
+      "C2_contextual_inconsistency": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "visual_input",
+        "analysis": "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。"
+      },
+      "C3_pragmatic_inconsistency": {
+        "assessment": "confirmed",
+        "severity": 2,
+        "evidence_basis": "visual_input",
+        "analysis": "图文组合诱导读者认为辉瑞专利与此次邮轮疫情有直接关系。"
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+      "notes": [
+        "Image 1的拼贴设计是判定C2的主要依据",
+        "辉瑞专利与汉坦病毒无直接关联，属误导"
+      ]
+    },
+    "evidence": [
+      {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "title": "U.S. concludes Hantavirus response effort, no U.S. cases detected-Xinhua",
+        "url": "https://english.news.cn/northamerica/20260625/e4e5ccbf22f14238b28927655a646145/c.html",
+        "domain": "english.news.cn",
+        "site_name": "Xinhuanet",
+        "snippet": "LOS\nANGELES,\nJune\n24\n(Xinhua)\n--\nThe\nU.S.\nCenters\nfor\nDisease\nControl\nand\nPrevention\n(CDC)\non\nWednes",
+        "source_tier": "established_media",
+        "date_last_crawled": "2026-06-25T00:00:00Z"
+      },
+      {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "title": "CDC Provides Update on Hantavirus Outbreak Linked to M/V Hondius Cruise Ship | CDC Newsroom",
+        "url": "https://www.cdc.gov/media/releases/2026/cdc-provides-update-on-hantavirus-outbreak-linked-to-m-v-hondius-cruise-ship.html",
+        "domain": "cdc.gov",
+        "site_name": "CDC",
+        "snippet": "Official\nwebsites\nuse\n.gov\nA\n.gov\nwebsite\nbelongs\nto\nan\nofficial\ngovernment\norganization\nin\nthe\nUnit",
+        "source_tier": "official_candidate",
+        "date_last_crawled": "2026-05-19T13:17:07Z"
+      },
+      {
+        "evidence_id": "S3",
+        "query_id": "Q1",
+        "title": "Interim Guidance for Public Health Assessment and Management of People with Potential Exposure to Andes Virus | Hantavirus | CDC",
+        "url": "https://archive.cdc.gov/www_cdc_gov/hantavirus/php/emergency-guidance/index.html",
+        "domain": "archive.cdc.gov",
+        "site_name": "CDC",
+        "snippet": "Scope\nImportant\nupdate\nOn\nJune\n21,\nall\nU.S.\ncitizens\npotentially\nexposed\nto\nhantavirus\naboard\nthe\nM/",
+        "source_tier": "official_candidate",
+        "date_last_crawled": "2026-06-22T14:41:11Z"
+      },
+      {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "title": "专利号AU1902892  HEPATITIS C DIAGNOSTICS AND VACCINES - 知嘟嘟专利查询",
+        "url": "https://www.iprdb.com/patent/AU1902892A.html?ds=all",
+        "domain": "iprdb.com",
+        "site_name": "智慧芽",
+        "snippet": "八大检索 产品+服务 热门服务 年费省心管 用专利管家帮您管理 盯紧竞争对手 让情报监控跟踪对手 服务 中文 会员体验 专利管家 (专利管理) 工作空间 (专利管理) 风险监控 (情报监控) 数据分析",
+        "source_tier": "other",
+        "date_last_crawled": ""
+      },
+      {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "title": "专利号EP16791573.5  VACCINES AGAINST HEPATITIS B VIRUS - 知嘟嘟专利查询",
+        "url": "https://iprdb.com/patent/EP3371316A1.html",
+        "domain": "iprdb.com",
+        "site_name": "智慧芽",
+        "snippet": "会员体验 专利管家 (专利管理) 工作空间 (专利管理) 风险监控 (情报监控) 数据分析 (专利分析) 侵权分析 (诉讼无效) 联系我们 现在联系顾问~ 基本信息 权利要求书 说明书全文 PDF全文",
+        "source_tier": "other",
+        "date_last_crawled": "2016-11-03T07:53:37Z"
+      },
+      {
+        "evidence_id": "S6",
+        "query_id": "Q2",
+        "title": "一种基于反向疫苗学技术的猪肺炎支原体多表位基因工程亚单位疫苗的制备方法及其应用 - 道客巴巴",
+        "url": "https://www.doc88.com/p-40229469287138.html",
+        "domain": "doc88.com",
+        "site_name": "道客巴巴",
+        "snippet": "下载积分: 500 内容提示: (19)国家知识产权局(12)发明专利(10)授权公告号 (45)授权公告日 (21)申请号 202111664581.5(22)申请日 2021.12.30(65)同",
+        "source_tier": "other",
+        "date_last_crawled": "2023-06-23T15:20:38Z"
+      }
+    ]
+  },
+  "text_verdict": {
+    "type": "C2_contextual_inconsistency",
+    "label": "Mixture",
+    "appraisalResults": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+    "explainInDetail": {
+      "fine_grained_checks": {
+        "T1_fabrication": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "external_search",
+          "analysis": "核心事实（CDC通报、专利存在）均有据可查。",
+          "evidence": "核心事实（CDC通报、专利存在）均有据可查。"
+        },
+        "T2_distortion": {
+          "assessment": "suspected",
+          "present": true,
+          "severity": 2,
+          "evidence_basis": "text_internal",
+          "analysis": "文字提及辉瑞副作用联系，但配图暗示辉瑞专利与汉坦病毒有关联。",
+          "evidence": "文字提及辉瑞副作用联系，但配图暗示辉瑞专利与汉坦病毒有关联。"
+        },
+        "T3_misleading_context": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "visual_input",
+          "analysis": "将无关的辉瑞标识与汉坦病毒邮轮事件并置，制造虚假关联语境。",
+          "evidence": "将无关的辉瑞标识与汉坦病毒邮轮事件并置，制造虚假关联语境。"
+        },
+        "V1_synthetic_visual_content": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图片元素均为真实素材或截图，未见AI生成痕迹。",
+          "evidence": "图片元素均为真实素材或截图，未见AI生成痕迹。"
+        },
+        "V2_visual_editing": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "visual_input",
+          "analysis": "Image 1通过拼贴手法将邮轮、专利、辉瑞疫苗组合，改变原意。",
+          "evidence": "Image 1通过拼贴手法将邮轮、专利、辉瑞疫苗组合，改变原意。"
+        },
+        "C1_semantic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图文在字面语义上无明显矛盾。",
+          "evidence": "图文在字面语义上无明显矛盾。"
+        },
+        "C2_contextual_inconsistency": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "visual_input",
+          "analysis": "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。",
+          "evidence": "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。"
+        },
+        "C3_pragmatic_inconsistency": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 2,
+          "evidence_basis": "visual_input",
+          "analysis": "图文组合诱导读者认为辉瑞专利与此次邮轮疫情有直接关系。",
+          "evidence": "图文组合诱导读者认为辉瑞专利与此次邮轮疫情有直接关系。"
+        }
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+      "notes": [
+        "Image 1的拼贴设计是判定C2的主要依据",
+        "辉瑞专利与汉坦病毒无直接关联，属误导"
+      ]
+    },
+    "limitations": [
+      "Image 1的拼贴设计是判定C2的主要依据",
+      "辉瑞专利与汉坦病毒无直接关联，属误导"
+    ]
+  },
+  "image_verdict": null,
+  "crossmodal_verdict": {
+    "label": "Inconsistent",
+    "analysis": "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。",
+    "matched_elements": [],
+    "mismatched_elements": [
+      "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。"
+    ],
+    "missing_elements": [],
+    "reasoning": "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。",
+    "limitations": [
+      "Image 1的拼贴设计是判定C2的主要依据",
+      "辉瑞专利与汉坦病毒无直接关联，属误导"
+    ],
+    "consistency_score": 0.0
+  },
+  "evidence": [
+    {
+      "type": "external_search_result",
+      "source": "Xinhuanet",
+      "title": "U.S. concludes Hantavirus response effort, no U.S. cases detected-Xinhua",
+      "url": "https://english.news.cn/northamerica/20260625/e4e5ccbf22f14238b28927655a646145/c.html",
+      "snippet": "LOS\nANGELES,\nJune\n24\n(Xinhua)\n--\nThe\nU.S.\nCenters\nfor\nDisease\nControl\nand\nPrevention\n(CDC)\non\nWednes",
+      "content": {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "domain": "english.news.cn",
+        "date_last_crawled": "2026-06-25T00:00:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "CDC",
+      "title": "CDC Provides Update on Hantavirus Outbreak Linked to M/V Hondius Cruise Ship | CDC Newsroom",
+      "url": "https://www.cdc.gov/media/releases/2026/cdc-provides-update-on-hantavirus-outbreak-linked-to-m-v-hondius-cruise-ship.html",
+      "snippet": "Official\nwebsites\nuse\n.gov\nA\n.gov\nwebsite\nbelongs\nto\nan\nofficial\ngovernment\norganization\nin\nthe\nUnit",
+      "content": {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "domain": "cdc.gov",
+        "date_last_crawled": "2026-05-19T13:17:07Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "CDC",
+      "title": "Interim Guidance for Public Health Assessment and Management of People with Potential Exposure to Andes Virus | Hantavirus | CDC",
+      "url": "https://archive.cdc.gov/www_cdc_gov/hantavirus/php/emergency-guidance/index.html",
+      "snippet": "Scope\nImportant\nupdate\nOn\nJune\n21,\nall\nU.S.\ncitizens\npotentially\nexposed\nto\nhantavirus\naboard\nthe\nM/",
+      "content": {
+        "evidence_id": "S3",
+        "query_id": "Q1",
+        "domain": "archive.cdc.gov",
+        "date_last_crawled": "2026-06-22T14:41:11Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "智慧芽",
+      "title": "专利号AU1902892  HEPATITIS C DIAGNOSTICS AND VACCINES - 知嘟嘟专利查询",
+      "url": "https://www.iprdb.com/patent/AU1902892A.html?ds=all",
+      "snippet": "八大检索 产品+服务 热门服务 年费省心管 用专利管家帮您管理 盯紧竞争对手 让情报监控跟踪对手 服务 中文 会员体验 专利管家 (专利管理) 工作空间 (专利管理) 风险监控 (情报监控) 数据分析",
+      "content": {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "domain": "iprdb.com",
+        "date_last_crawled": "",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "智慧芽",
+      "title": "专利号EP16791573.5  VACCINES AGAINST HEPATITIS B VIRUS - 知嘟嘟专利查询",
+      "url": "https://iprdb.com/patent/EP3371316A1.html",
+      "snippet": "会员体验 专利管家 (专利管理) 工作空间 (专利管理) 风险监控 (情报监控) 数据分析 (专利分析) 侵权分析 (诉讼无效) 联系我们 现在联系顾问~ 基本信息 权利要求书 说明书全文 PDF全文",
+      "content": {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "domain": "iprdb.com",
+        "date_last_crawled": "2016-11-03T07:53:37Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "道客巴巴",
+      "title": "一种基于反向疫苗学技术的猪肺炎支原体多表位基因工程亚单位疫苗的制备方法及其应用 - 道客巴巴",
+      "url": "https://www.doc88.com/p-40229469287138.html",
+      "snippet": "下载积分: 500 内容提示: (19)国家知识产权局(12)发明专利(10)授权公告号 (45)授权公告日 (21)申请号 202111664581.5(22)申请日 2021.12.30(65)同",
+      "content": {
+        "evidence_id": "S6",
+        "query_id": "Q2",
+        "domain": "doc88.com",
+        "date_last_crawled": "2023-06-23T15:20:38Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "CDC追踪与邮轮M/V Hondius有关的汉坦病毒病例线索",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "Image 1显示邮轮及防疫人员，Image 3显示穿防护服人员处理行李",
+        "search_query": "CDC M/V Hondius hantavirus cases tracking"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "辉瑞疫苗专利公开引发热议",
+      "content": {
+        "point_type": "crossmodal_claim",
+        "visual_observation": "Image 1左上角展示美国专利文件，右上角有辉瑞Logo，右下角有辉瑞疫苗瓶",
+        "search_query": "Pfizer vaccine patent public controversy"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "网络将不同时间背景信息拼接解读",
+      "content": {
+        "point_type": "crossmodal_claim",
+        "visual_observation": "Image 1将邮轮、专利、疫苗瓶拼贴；Image 2为1994年申请的汉坦病毒疫苗专利截图",
+        "search_query": ""
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "T2_distortion",
+      "content": {
+        "severity": 2,
+        "assessment": "suspected",
+        "evidence_basis": "text_internal",
+        "observation": "文字提及辉瑞副作用联系，但配图暗示辉瑞专利与汉坦病毒有关联。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "T3_misleading_context",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "将无关的辉瑞标识与汉坦病毒邮轮事件并置，制造虚假关联语境。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "V2_visual_editing",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "Image 1通过拼贴手法将邮轮、专利、辉瑞疫苗组合，改变原意。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C2_contextual_inconsistency",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "配图将辉瑞（新冠相关）与汉坦病毒（邮轮相关）混淆，属移花接木。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C3_pragmatic_inconsistency",
+      "content": {
+        "severity": 2,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "图文组合诱导读者认为辉瑞专利与此次邮轮疫情有直接关系。",
+        "regions": []
+      }
+    }
+  ],
+  "claims": [],
+  "report": {
+    "label": "Mixture",
+    "type": "C2_contextual_inconsistency",
+    "summary": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+    "confidence": 0.85,
+    "risk_level": "medium",
+    "decision_status": "confident",
+    "limitations": [
+      "Image 1的拼贴设计是判定C2的主要依据",
+      "辉瑞专利与汉坦病毒无直接关联，属误导"
+    ],
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+      "notes": [
+        "Image 1的拼贴设计是判定C2的主要依据",
+        "辉瑞专利与汉坦病毒无直接关联，属误导"
+      ]
+    },
+    "agent_trace": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    }
+  },
+  "user_answer": {
+    "judgment": "该内容整体判断为真伪混合。",
+    "analysis": "文字部分准确描述了CDC对M/V Hondius邮轮汉坦病毒事件的追踪（S2支持），并指出网络存在拼接信息的现象。然而，Image 1作为配图，直接将辉瑞Logo、疫苗瓶与邮轮场景、专利文件拼贴在一起，这种视觉呈现方式正是文字所批评的“拼接解读”的典型例子，构成了严重的语境冲突（C2）。虽然文字试图澄清，但配图的误导性极强，导致整体内容呈现混合状态。",
+    "notes": [
+      "Image 1的拼贴设计是判定C2的主要依据",
+      "辉瑞专利与汉坦病毒无直接关联，属误导"
+    ]
+  },
+  "raw": {
+    "workflow": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    },
+    "mfc_diagnostics": {
+      "model_verdict": "Mixture",
+      "verdict_adjustments": [],
+      "evidence_coverage": 0.8,
+      "core_supported": 2,
+      "core_contradicted": 0,
+      "supporting_contradicted": 0
+    },
+    "mfc_tool_evidence": {
+      "enabled": true,
+      "ocr": {
+        "status": "not_run"
+      },
+      "search": {
+        "status": "success",
+        "queries": [
+          {
+            "query_id": "Q1",
+            "strategy": "model_selected",
+            "query": "CDC M/V Hondius hantavirus cases tracking",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          },
+          {
+            "query_id": "Q2",
+            "strategy": "model_selected",
+            "query": "US5614193A Hantavirus vaccine patent details",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          }
+        ],
+        "results": [
+          {
+            "evidence_id": "S1",
+            "query_id": "Q1",
+            "title": "U.S. concludes Hantavirus response effort, no U.S. cases detected-Xinhua",
+            "url": "https://english.news.cn/northamerica/20260625/e4e5ccbf22f14238b28927655a646145/c.html",
+            "domain": "english.news.cn",
+            "site_name": "Xinhuanet",
+            "snippet": "LOS\nANGELES,\nJune\n24\n(Xinhua)\n--\nThe\nU.S.\nCenters\nfor\nDisease\nControl\nand\nPrevention\n(CDC)\non\nWednes",
+            "source_tier": "established_media",
+            "date_last_crawled": "2026-06-25T00:00:00Z"
+          },
+          {
+            "evidence_id": "S2",
+            "query_id": "Q1",
+            "title": "CDC Provides Update on Hantavirus Outbreak Linked to M/V Hondius Cruise Ship | CDC Newsroom",
+            "url": "https://www.cdc.gov/media/releases/2026/cdc-provides-update-on-hantavirus-outbreak-linked-to-m-v-hondius-cruise-ship.html",
+            "domain": "cdc.gov",
+            "site_name": "CDC",
+            "snippet": "Official\nwebsites\nuse\n.gov\nA\n.gov\nwebsite\nbelongs\nto\nan\nofficial\ngovernment\norganization\nin\nthe\nUnit",
+            "source_tier": "official_candidate",
+            "date_last_crawled": "2026-05-19T13:17:07Z"
+          },
+          {
+            "evidence_id": "S3",
+            "query_id": "Q1",
+            "title": "Interim Guidance for Public Health Assessment and Management of People with Potential Exposure to Andes Virus | Hantavirus | CDC",
+            "url": "https://archive.cdc.gov/www_cdc_gov/hantavirus/php/emergency-guidance/index.html",
+            "domain": "archive.cdc.gov",
+            "site_name": "CDC",
+            "snippet": "Scope\nImportant\nupdate\nOn\nJune\n21,\nall\nU.S.\ncitizens\npotentially\nexposed\nto\nhantavirus\naboard\nthe\nM/",
+            "source_tier": "official_candidate",
+            "date_last_crawled": "2026-06-22T14:41:11Z"
+          },
+          {
+            "evidence_id": "S4",
+            "query_id": "Q2",
+            "title": "专利号AU1902892  HEPATITIS C DIAGNOSTICS AND VACCINES - 知嘟嘟专利查询",
+            "url": "https://www.iprdb.com/patent/AU1902892A.html?ds=all",
+            "domain": "iprdb.com",
+            "site_name": "智慧芽",
+            "snippet": "八大检索 产品+服务 热门服务 年费省心管 用专利管家帮您管理 盯紧竞争对手 让情报监控跟踪对手 服务 中文 会员体验 专利管家 (专利管理) 工作空间 (专利管理) 风险监控 (情报监控) 数据分析",
+            "source_tier": "other",
+            "date_last_crawled": ""
+          },
+          {
+            "evidence_id": "S5",
+            "query_id": "Q2",
+            "title": "专利号EP16791573.5  VACCINES AGAINST HEPATITIS B VIRUS - 知嘟嘟专利查询",
+            "url": "https://iprdb.com/patent/EP3371316A1.html",
+            "domain": "iprdb.com",
+            "site_name": "智慧芽",
+            "snippet": "会员体验 专利管家 (专利管理) 工作空间 (专利管理) 风险监控 (情报监控) 数据分析 (专利分析) 侵权分析 (诉讼无效) 联系我们 现在联系顾问~ 基本信息 权利要求书 说明书全文 PDF全文",
+            "source_tier": "other",
+            "date_last_crawled": "2016-11-03T07:53:37Z"
+          },
+          {
+            "evidence_id": "S6",
+            "query_id": "Q2",
+            "title": "一种基于反向疫苗学技术的猪肺炎支原体多表位基因工程亚单位疫苗的制备方法及其应用 - 道客巴巴",
+            "url": "https://www.doc88.com/p-40229469287138.html",
+            "domain": "doc88.com",
+            "site_name": "道客巴巴",
+            "snippet": "下载积分: 500 内容提示: (19)国家知识产权局(12)发明专利(10)授权公告号 (45)授权公告日 (21)申请号 202111664581.5(22)申请日 2021.12.30(65)同",
+            "source_tier": "other",
+            "date_last_crawled": "2023-06-23T15:20:38Z"
+          }
+        ],
+        "images": [
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://www.cdc.gov/TemplatePackage/5.0/img/uswds/icon-dot-gov.svg",
+            "thumbnail_url": "https://www.cdc.gov/TemplatePackage/5.0/img/uswds/icon-dot-gov.svg"
+          },
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://www.cdc.gov/TemplatePackage/5.0/img/uswds/icon-https.svg",
+            "thumbnail_url": "https://www.cdc.gov/TemplatePackage/5.0/img/uswds/icon-https.svg"
+          }
+        ],
+        "limitations": [
+          "搜索摘要是候选外部证据，仍需检查来源、发布时间和正文语境。"
+        ]
+      },
+      "errors": [],
+      "timings": {
+        "ocr_seconds": 0.0,
+        "search_seconds": 0.2965,
+        "model_calls": 0
+      }
+    },
+    "timings": {
+      "agents": {
+        "MFC_Agent": 31.1641
+      },
+      "critical_path_seconds": 31.1641,
+      "parallel_groups": [
+        [
+          "BoChaSearchTool:Q1",
+          "BoChaSearchTool:Q2"
+        ]
+      ],
+      "model_calls": 3,
+      "image_preprocess_seconds": 0.0438,
+      "enrichment_seconds": 0.0,
+      "tool_seconds": 0.2965,
+      "tool_rounds": 1,
+      "search_calls": 2,
+      "ocr_seconds": 0.0,
+      "search_seconds": 0.2965,
+      "model_seconds": 30.8233,
+      "model_output_characters": 2688,
+      "input_image_count": 3,
+      "thinking_enabled": false,
+      "thinking_characters": 0,
+      "finish_reason": "end_turn",
+      "prompt_tokens": 5919,
+      "completion_tokens": 1661,
+      "reasoning_tokens": 0,
+      "invalid_output_retries": 1,
+      "total_model_output_characters": 4280,
+      "model_attempts": [
+        {
+          "attempt": 1,
+          "turn": 1,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 4195,
+          "completion_tokens": 564,
+          "reasoning_tokens": 0,
+          "output_characters": 1337,
+          "kind": "tool_request",
+          "seconds": 12.3156
+        },
+        {
+          "attempt": 2,
+          "turn": 2,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 1588,
+          "completion_tokens": 79,
+          "reasoning_tokens": 0,
+          "output_characters": 255,
+          "error": "Search is unavailable or exhausted; return a final label JSON",
+          "seconds": 2.4262
+        },
+        {
+          "attempt": 3,
+          "turn": 2,
+          "retry": true,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 136,
+          "completion_tokens": 1018,
+          "reasoning_tokens": 0,
+          "output_characters": 2688,
+          "kind": "final",
+          "seconds": 16.0814
+        }
+      ]
+    }
+  },
+  "question": "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+}

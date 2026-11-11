@@ -1,0 +1,38 @@
+{
+  "case_id": "MFC-136",
+  "task": "MFC",
+  "label": "True",
+  "title": "沃尔玛收购 Vizio",
+  "focus": "商业报道与品牌配图一致",
+  "folder": "MFC/True/MFC-136",
+  "text_file": "MFC-136.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "136_01_img_1.jpg",
+      "source": "data/mmd/test/True/136_01_img_1.jpg",
+      "sha256": "efe860cb2f429af5f1487ff34f2ec28308e6a647bddb9ebb48e08a8b2bc86ce1"
+    },
+    {
+      "file": "136_02_img_2.jpg",
+      "source": "data/mmd/test/True/136_02_img_2.jpg",
+      "sha256": "f013e08eeefb316939ca456bc90a4e4f224d11a03f377cf6321f621381fc7fe9"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "136",
+  "source_split": "test",
+  "taxonomy": [],
+  "reference_rationale": "样本文本的核心表述与原始素材摘要一致：素材明确称沃尔玛已完成收购Vizio，并将SmartCast与WatchFree+纳入其业务体系，目的在于扩展connected-TV advertising能力，并与其广告业务形成联动。配图一展示沃尔玛与Vizio品牌关系，配图二展示Vizio电视产品，也与文本所述公司与品牌背景相符，整体不存在会改变受众理解的事实偏差。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "True",
+    "confidence": 0.95,
+    "matches_reference": true,
+    "seconds": 22.826,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-136.json"
+  }
+}

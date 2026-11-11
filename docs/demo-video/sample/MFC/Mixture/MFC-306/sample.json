@@ -1,0 +1,42 @@
+{
+  "case_id": "MFC-306",
+  "task": "MFC",
+  "label": "Mixture",
+  "title": "花滑组合退役与新闻字幕",
+  "focus": "真实退役消息、字幕编辑与场景错置",
+  "folder": "MFC/Mixture/MFC-306",
+  "text_file": "MFC-306.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "306_01_img_1.jpg",
+      "source": "data/mmd/train/Mixture/306_01_img_1.jpg",
+      "sha256": "43494cd4a7244b664180e98a3cc7cd23288f80c0806fc3276bbca9738602a6e0"
+    },
+    {
+      "file": "306_02_img_2.jpg",
+      "source": "data/mmd/train/Mixture/306_02_img_2.jpg",
+      "sha256": "2d9d8208315ae3079f771dc59df43439074810904c822b7062192592ac432474"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "306",
+  "source_split": "train",
+  "taxonomy": [
+    "T3 Misleading Context",
+    "V2 Visual Editing",
+    "C2 Contextual Inconsistency"
+  ],
+  "reference_rationale": "虽然宣布退休和参加游园会是有事实依据的，但正文将游园会的交流联系在了“他直接传达退休信息的地方”的语境中。而且，图片中的转播字幕经过了编辑，不同时间拍摄的比赛照片也被用作强化材料，因此整体语境具有误导性。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Mostly True",
+    "confidence": 0.95,
+    "matches_reference": false,
+    "seconds": 19.16,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-306.json"
+  }
+}

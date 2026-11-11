@@ -1,0 +1,800 @@
+{
+  "description": "本次新增的 10 个 MFC 与 10 个 IFD 演示样例；素材来自本地有标注数据，未改写正文或重编码图片。",
+  "label_policy": {
+    "MFC": "沿用 data/mmd/dataset_metadata.json 的 verdict。",
+    "IFD": "Real_Image 沿用 OpenFake real；Forged_Image/Synthetic_Image 由 MFC 的 V2/V1 及明确针对所选图片的说明派生，属于演示归类，并非独立 IFD 三分类真值。"
+  },
+  "detection_run": true,
+  "samples": [
+    {
+      "case_id": "MFC-136",
+      "task": "MFC",
+      "label": "True",
+      "title": "沃尔玛收购 Vizio",
+      "focus": "商业报道与品牌配图一致",
+      "folder": "MFC/True/MFC-136",
+      "text_file": "MFC-136.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "136_01_img_1.jpg",
+          "source": "data/mmd/test/True/136_01_img_1.jpg",
+          "sha256": "efe860cb2f429af5f1487ff34f2ec28308e6a647bddb9ebb48e08a8b2bc86ce1"
+        },
+        {
+          "file": "136_02_img_2.jpg",
+          "source": "data/mmd/test/True/136_02_img_2.jpg",
+          "sha256": "f013e08eeefb316939ca456bc90a4e4f224d11a03f377cf6321f621381fc7fe9"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "136",
+      "source_split": "test",
+      "taxonomy": [],
+      "reference_rationale": "样本文本的核心表述与原始素材摘要一致：素材明确称沃尔玛已完成收购Vizio，并将SmartCast与WatchFree+纳入其业务体系，目的在于扩展connected-TV advertising能力，并与其广告业务形成联动。配图一展示沃尔玛与Vizio品牌关系，配图二展示Vizio电视产品，也与文本所述公司与品牌背景相符，整体不存在会改变受众理解的事实偏差。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "True",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 22.826,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-136.json"
+      }
+    },
+    {
+      "case_id": "MFC-101",
+      "task": "MFC",
+      "label": "True",
+      "title": "北海道暴风雪警报",
+      "focus": "简短天气消息与警报说明图",
+      "folder": "MFC/True/MFC-101",
+      "text_file": "MFC-101.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "101_01_img_1.jpg",
+          "source": "data/mmd/train/True/101_01_img_1.jpg",
+          "sha256": "509f909483f23bc1b0c7282f5fce1bb895b0373a4c1dfd9494b6415c8bcf5ff5"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "101",
+      "source_split": "train",
+      "taxonomy": [],
+      "reference_rationale": "正文一致表示，北海道石狩市和越志市部分地区已发布暴风雪警报，以及警报的时间段和内容，与提供的材料摘要一致。使用的图像也是暴风雪警报的说明图，与文字内容并不矛盾。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mostly False",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 20.401,
+        "tool_calls": 0,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-101.json"
+      }
+    },
+    {
+      "case_id": "MFC-201",
+      "task": "MFC",
+      "label": "Mostly True",
+      "title": "JAPAN JAM 公演取消",
+      "focus": "核心事件真实，配图时间语境需要区分",
+      "folder": "MFC/Mostly True/MFC-201",
+      "text_file": "MFC-201.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "201_01_img_1.jpg",
+          "source": "data/mmd/test/Mostly True/201_01_img_1.jpg",
+          "sha256": "d4ffc8dcf10a5d6b43e1a54519fca7da3a902187564b3a18fbd1e602fe2b42c2"
+        },
+        {
+          "file": "201_02_img_2.jpg",
+          "source": "data/mmd/test/Mostly True/201_02_img_2.jpg",
+          "sha256": "eb4644d0764924b0a2d02ec1c7cfe501b072c6f9accdce2f83d8490ff9216f80"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "201",
+      "source_split": "test",
+      "taxonomy": [
+        "T2 Distortion",
+        "C2 Contextual Inconsistency"
+      ],
+      "reference_rationale": "演出取消的核心细节、日期、时间、地点、原因、退款信息与材料摘要一致。另一方面，文本的结尾有些概括了影响的程度，图像显示的是不同时间点的常规事件的图像，而不是当天的取消情况，这在上下文方面略有误导。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mixture",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 18.128,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-201.json"
+      }
+    },
+    {
+      "case_id": "MFC-469",
+      "task": "MFC",
+      "label": "Mostly True",
+      "title": "月全食与红月画面",
+      "focus": "基本事实与视觉强化并存",
+      "folder": "MFC/Mostly True/MFC-469",
+      "text_file": "MFC-469.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "469_01_img_1.jpg",
+          "source": "data/mmd/train/Mostly True/469_01_img_1.jpg",
+          "sha256": "379f53a56d76b29da1addad4569473ab155809e5208856bf27c070be2bb7a533"
+        },
+        {
+          "file": "469_02_img_2.jpg",
+          "source": "data/mmd/train/Mostly True/469_02_img_2.jpg",
+          "sha256": "b7fe25d193a64b65752c38bcf7b47553e1f6c0956909cad045fe17783a16b77e"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "469",
+      "source_split": "train",
+      "taxonomy": [
+        "T2 Distortion",
+        "V2 Visual Editing",
+        "C3 Pragmatic Inconsistency"
+      ],
+      "reference_rationale": "虽然对月食发生时间及其机制的描述大体符合事实，但文字后半部分给人的印象稍显宽泛、易于观察、泛红。另外，发布的照片​​经过编辑，强调了红色，增强了比正文更生动的外观，所以总体来说是真实的。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mostly False",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 24.726,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-469.json"
+      }
+    },
+    {
+      "case_id": "MFC-493",
+      "task": "MFC",
+      "label": "Mixture",
+      "title": "AMD 营收指引与行情图",
+      "focus": "真实财报信息与编辑行情图混合",
+      "folder": "MFC/Mixture/MFC-493",
+      "text_file": "MFC-493.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "493_01_img_1.jpg",
+          "source": "data/mmd/train/Mixture/493_01_img_1.jpg",
+          "sha256": "1bffe76849c73c8e56eaca62da118d2efd3f582e898930d192103f93691b1dfd"
+        },
+        {
+          "file": "493_02_img_2.jpg",
+          "source": "data/mmd/train/Mixture/493_02_img_2.jpg",
+          "sha256": "6ee66f09dd677e2b46d12140359ef2598e593b4fa7fcdb13471d737dfdf56ad6"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "493",
+      "source_split": "train",
+      "taxonomy": [
+        "T3 Misleading Context",
+        "V2 Visual Editing",
+        "C2 Contextual Inconsistency"
+      ],
+      "reference_rationale": "文本前半段关于AMD营收指引高于预期、消息后股价走强的方向有真实依据，但后半段把经过编辑的行情图包装成“今晨美股行情截图”并暗示盘中高点甚至新高区间，放大并错置了市场表现语境，因此整体属于真假并存的混合型误导。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mixture",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 26.992,
+        "tool_calls": 3,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-493.json"
+      }
+    },
+    {
+      "case_id": "MFC-306",
+      "task": "MFC",
+      "label": "Mixture",
+      "title": "花滑组合退役与新闻字幕",
+      "focus": "真实退役消息、字幕编辑与场景错置",
+      "folder": "MFC/Mixture/MFC-306",
+      "text_file": "MFC-306.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "306_01_img_1.jpg",
+          "source": "data/mmd/train/Mixture/306_01_img_1.jpg",
+          "sha256": "43494cd4a7244b664180e98a3cc7cd23288f80c0806fc3276bbca9738602a6e0"
+        },
+        {
+          "file": "306_02_img_2.jpg",
+          "source": "data/mmd/train/Mixture/306_02_img_2.jpg",
+          "sha256": "2d9d8208315ae3079f771dc59df43439074810904c822b7062192592ac432474"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "306",
+      "source_split": "train",
+      "taxonomy": [
+        "T3 Misleading Context",
+        "V2 Visual Editing",
+        "C2 Contextual Inconsistency"
+      ],
+      "reference_rationale": "虽然宣布退休和参加游园会是有事实依据的，但正文将游园会的交流联系在了“他直接传达退休信息的地方”的语境中。而且，图片中的转播字幕经过了编辑，不同时间拍摄的比赛照片也被用作强化材料，因此整体语境具有误导性。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mostly True",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 19.16,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-306.json"
+      }
+    },
+    {
+      "case_id": "MFC-296",
+      "task": "MFC",
+      "label": "Mostly False",
+      "title": "MacBook 新品发布海报",
+      "focus": "促销线索被包装为官方发布",
+      "folder": "MFC/Mostly False/MFC-296",
+      "text_file": "MFC-296.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "296_01_img_1.jpg",
+          "source": "data/mmd/train/Mostly False/296_01_img_1.jpg",
+          "sha256": "0a5a01a50484dff6631d05100fbd9ab4ce88e06ec866728e05aefe6cdb8d89ed"
+        },
+        {
+          "file": "296_02_img_2.jpg",
+          "source": "data/mmd/train/Mostly False/296_02_img_2.jpg",
+          "sha256": "ddd07c754f3de9cff740057390a6487cd6af9d87eb6af02d6747ed5bed897f96"
+        },
+        {
+          "file": "296_03_img_3.jpg",
+          "source": "data/mmd/train/Mostly False/296_03_img_3.jpg",
+          "sha256": "89b864a82fb217d57b7df042eaba1f7d53ffbd5682624520484355102e8df5b3"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "296",
+      "source_split": "train",
+      "taxonomy": [
+        "T2 Distortion",
+        "V2 Visual Editing",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "样本文本抓住了“3月11日可预订/开售、MacBook Air M5正在流传”这一部分真实线索，但把来源于带广告性质的第三方促销帖内容，改写成接近确定无疑的苹果新品发布信息，还补入了“3月初发布、512GB起步、Wi‑Fi 7升级”等未获现有证据支持的细节；首图又被编辑成近似苹果官方海报，进一步强化了错误的官方发布印象，因此整体以误导为主，属于 Mostly False。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mixture",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 20.551,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-296.json"
+      }
+    },
+    {
+      "case_id": "MFC-006",
+      "task": "MFC",
+      "label": "Mostly False",
+      "title": "邮轮病例与专利、品牌拼图",
+      "focus": "真实监测背景与错误关联及拼接图",
+      "folder": "MFC/Mostly False/MFC-006",
+      "text_file": "MFC-006.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "006_01_img_1.jpg",
+          "source": "data/mmd/test/Mostly False/006_01_img_1.jpg",
+          "sha256": "bd489863197ac0fe2fa7a3f1ab60e7b4d74af85d19779918da151ea7016e93f7"
+        },
+        {
+          "file": "006_02_img_2.jpg",
+          "source": "data/mmd/test/Mostly False/006_02_img_2.jpg",
+          "sha256": "80dccc7bac8740ee1a72c50e5f5f5aa18e1335ca2c0353915297db1872c80176"
+        },
+        {
+          "file": "006_03_img_3.jpg",
+          "source": "data/mmd/test/Mostly False/006_03_img_3.jpg",
+          "sha256": "c978e0b471adb773f90a8419d00103e068be88430f08cbc3258e22a279cb6daf"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "006",
+      "source_split": "test",
+      "taxonomy": [
+        "T2 Distortion",
+        "V2 Visual Editing",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "样本文本前半段关于CDC追踪邮轮相关汉坦病毒病例线索有一定事实基础，但后半段通过把零散社交媒体猜测、旧专利信息与当前邮轮事件放在同一叙事链中，显著放大了“辉瑞副作用”和“提前布局”的联想。配图又经过拼接编辑，加入专利页、Pfizer 标识和疫苗图标，使受众更容易误以为这些元素与邮轮病例存在现实证据关联，因此整体主要印象仍然是误导性的。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mixture",
+        "confidence": 0.85,
+        "matches_reference": false,
+        "seconds": 31.166,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-006.json"
+      }
+    },
+    {
+      "case_id": "MFC-178",
+      "task": "MFC",
+      "label": "False",
+      "title": "霍尔木兹海峡冲突现场",
+      "focus": "未经证实的事件叙事与生成图片",
+      "folder": "MFC/False/MFC-178",
+      "text_file": "MFC-178.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "178_01_img_1.jpg",
+          "source": "data/mmd/train/False/178_01_img_1.jpg",
+          "sha256": "eda4353cbea939aaeb3f632ce9ce211322b3ce44ebe4ed1d1e957c03dfd371c8"
+        },
+        {
+          "file": "178_02_img_2.jpg",
+          "source": "data/mmd/train/False/178_02_img_2.jpg",
+          "sha256": "d08705b81f8cb6129f098b38a406a4d7dd25168e9fbf443b0b4b8a01e74943ea"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "178",
+      "source_split": "train",
+      "taxonomy": [
+        "T1 Fabrication",
+        "V1 Synthetic Visual Content",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "该样本把来源中带有个人推演、专家设想和未经证实的战事情景，改写成已经发生并被“多家媒体报道”“最新海上画面显示”的既成事实，核心叙述缺乏可验证证据支撑。同时，两张配图均为生成式图片，却被包装成现场画面和局势图来为文本背书，导致文本事实层面与图像证据层面同时失真，整体核心主张不成立。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Mixture",
+        "confidence": 0.85,
+        "matches_reference": false,
+        "seconds": 23.837,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-178.json"
+      }
+    },
+    {
+      "case_id": "MFC-496",
+      "task": "MFC",
+      "label": "False",
+      "title": "巴黎圣日耳曼夺冠与比分图",
+      "focus": "虚构夺冠画面、比分与文字冲突",
+      "folder": "MFC/False/MFC-496",
+      "text_file": "MFC-496.txt",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "496_01_img_1.jpg",
+          "source": "data/mmd/train/False/496_01_img_1.jpg",
+          "sha256": "93821901c7bf02f6fe40c6ae2dfcad4599968c478288e2002fdea7bd5c7cc7e2"
+        },
+        {
+          "file": "496_02_img_2.jpg",
+          "source": "data/mmd/train/False/496_02_img_2.jpg",
+          "sha256": "f1841844552a765f4c8b44a0a0c0304667193025cca2262a6643b80cf09c6156"
+        }
+      ],
+      "label_basis": "source_dataset_verdict",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_sample_id": "496",
+      "source_split": "train",
+      "taxonomy": [
+        "T1 Fabrication",
+        "T2 Distortion",
+        "V1 Synthetic Visual Content",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "该样本是错误的，因为占主导地位的多模态叙事是基于虚构或严重扭曲的元素：两个视觉效果及其说明显示了官方加冕、3-0 的比分和 Désiré Doué 的帽子戏法，而可用的文章文本仅谈到 1-0 的胜利，使巴黎更接近冠军，但没有正式宣布。因此，读者收到的是由作为视觉证据呈现的合成图像整合而成的虚假叙述，这颠倒了体育赛事的含义，而不是简单地夸大次要细节。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "False",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 21.604,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-496.json"
+      }
+    },
+    {
+      "case_id": "IFD-01",
+      "task": "IFD",
+      "label": "Real_Image",
+      "title": "餐食近景",
+      "folder": "IFD/Real_Image/IFD-01",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "0001.jpg",
+          "source": "data/ifd/openfake_sample_100/images/0001.jpg",
+          "sha256": "1e3ffc054bb4eb2610bd66b90b5c507bff2984cb1371828940bcecfe658cdc73"
+        }
+      ],
+      "label_basis": "source_binary_real_label",
+      "label_explanation": "OpenFake 原始 real 标签；普通餐食摄影。",
+      "source_metadata": "data/ifd/openfake_sample_100/metadata.jsonl",
+      "source_original_label": "real",
+      "source_index": 1,
+      "source_media_type": "image",
+      "taxonomy": [],
+      "reference_rationale": "OpenFake 原始 real 标签；普通餐食摄影。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Real_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 25.41,
+        "tool_calls": 3,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-01.json"
+      }
+    },
+    {
+      "case_id": "IFD-02",
+      "task": "IFD",
+      "label": "Real_Image",
+      "title": "林地中的鸟类",
+      "folder": "IFD/Real_Image/IFD-02",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "0019.jpg",
+          "source": "data/ifd/openfake_sample_100/images/0019.jpg",
+          "sha256": "543d969b58295a3d49cc4abcc8be191156119e60b1dc82a8fe7da0c70ad14849"
+        }
+      ],
+      "label_basis": "source_binary_real_label",
+      "label_explanation": "OpenFake 原始 real 标签；自然环境与动物摄影。",
+      "source_metadata": "data/ifd/openfake_sample_100/metadata.jsonl",
+      "source_original_label": "real",
+      "source_index": 19,
+      "source_media_type": "image",
+      "taxonomy": [],
+      "reference_rationale": "OpenFake 原始 real 标签；自然环境与动物摄影。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Real_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 9.388,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-02.json"
+      }
+    },
+    {
+      "case_id": "IFD-03",
+      "task": "IFD",
+      "label": "Real_Image",
+      "title": "道路、车辆与晚霞",
+      "folder": "IFD/Real_Image/IFD-03",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "0052.jpg",
+          "source": "data/ifd/openfake_sample_100/images/0052.jpg",
+          "sha256": "66d8ea9e9457b26e47279e8818d0c24d227c318e14d7e455683a69987738e879"
+        }
+      ],
+      "label_basis": "source_binary_real_label",
+      "label_explanation": "OpenFake 原始 real 标签；道路场景及自然光照。",
+      "source_metadata": "data/ifd/openfake_sample_100/metadata.jsonl",
+      "source_original_label": "real",
+      "source_index": 52,
+      "source_media_type": "image",
+      "taxonomy": [],
+      "reference_rationale": "OpenFake 原始 real 标签；道路场景及自然光照。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Real_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 10.983,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-03.json"
+      }
+    },
+    {
+      "case_id": "IFD-04",
+      "task": "IFD",
+      "label": "Real_Image",
+      "title": "微距与浅景深",
+      "folder": "IFD/Real_Image/IFD-04",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "0090.jpg",
+          "source": "data/ifd/openfake_sample_100/images/0090.jpg",
+          "sha256": "57a35b64e23bbdf924f2020c1e0a8e72412b9d165028873b9b62423add954e03"
+        }
+      ],
+      "label_basis": "source_binary_real_label",
+      "label_explanation": "OpenFake 原始 real 标签；用于区分浅景深效果与合成异常。",
+      "source_metadata": "data/ifd/openfake_sample_100/metadata.jsonl",
+      "source_original_label": "real",
+      "source_index": 90,
+      "source_media_type": "image",
+      "taxonomy": [],
+      "reference_rationale": "OpenFake 原始 real 标签；用于区分浅景深效果与合成异常。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Real_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 16.66,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-04.json"
+      }
+    },
+    {
+      "case_id": "IFD-05",
+      "task": "IFD",
+      "label": "Forged_Image",
+      "title": "专利、品牌与新闻画面拼接",
+      "folder": "IFD/Forged_Image/IFD-05",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "006_01_img_1.jpg",
+          "source": "data/mmd/test/Mostly False/006_01_img_1.jpg",
+          "sha256": "bd489863197ac0fe2fa7a3f1ab60e7b4d74af85d19779918da151ea7016e93f7"
+        }
+      ],
+      "label_basis": "derived_from_image_specific_annotation",
+      "label_explanation": "原始标注明确写出拼接编辑、加入专利页、Pfizer 标识和疫苗图标；选择对应第一张拼图。",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_original_label": "Mostly False",
+      "source_sample_id": "006",
+      "source_image_number": 1,
+      "taxonomy": [
+        "T2 Distortion",
+        "V2 Visual Editing",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "样本文本前半段关于CDC追踪邮轮相关汉坦病毒病例线索有一定事实基础，但后半段通过把零散社交媒体猜测、旧专利信息与当前邮轮事件放在同一叙事链中，显著放大了“辉瑞副作用”和“提前布局”的联想。配图又经过拼接编辑，加入专利页、Pfizer 标识和疫苗图标，使受众更容易误以为这些元素与邮轮病例存在现实证据关联，因此整体主要印象仍然是误导性的。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Forged_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 10.014,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-05.json"
+      }
+    },
+    {
+      "case_id": "IFD-06",
+      "task": "IFD",
+      "label": "Forged_Image",
+      "title": "花滑新闻字幕被编辑",
+      "folder": "IFD/Forged_Image/IFD-06",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "306_01_img_1.jpg",
+          "source": "data/mmd/train/Mixture/306_01_img_1.jpg",
+          "sha256": "43494cd4a7244b664180e98a3cc7cd23288f80c0806fc3276bbca9738602a6e0"
+        }
+      ],
+      "label_basis": "derived_from_image_specific_annotation",
+      "label_explanation": "原始标注明确说明转播字幕经过编辑；选择带字幕的第一张新闻截图。",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_original_label": "Mixture",
+      "source_sample_id": "306",
+      "source_image_number": 1,
+      "taxonomy": [
+        "T3 Misleading Context",
+        "V2 Visual Editing",
+        "C2 Contextual Inconsistency"
+      ],
+      "reference_rationale": "虽然宣布退休和参加游园会是有事实依据的，但正文将游园会的交流联系在了“他直接传达退休信息的地方”的语境中。而且，图片中的转播字幕经过了编辑，不同时间拍摄的比赛照片也被用作强化材料，因此整体语境具有误导性。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Real_Image",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 10.514,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-06.json"
+      }
+    },
+    {
+      "case_id": "IFD-07",
+      "task": "IFD",
+      "label": "Forged_Image",
+      "title": "船只画面添加爆炸与烟雾",
+      "folder": "IFD/Forged_Image/IFD-07",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "113_01_img_1.jpg",
+          "source": "data/mmd/train/Mostly False/113_01_img_1.jpg",
+          "sha256": "e8c9a6747dfde78a7cf65822517cc0b9451013b1a44feb86bf4688c7cb014424"
+        }
+      ],
+      "label_basis": "derived_from_image_specific_annotation",
+      "label_explanation": "原始标注明确说明配图添加爆炸、烟雾和尾迹；选择相应第一张船只图片。",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_original_label": "Mostly False",
+      "source_sample_id": "113",
+      "source_image_number": 1,
+      "taxonomy": [
+        "T2 Distortion",
+        "V2 Visual Editing",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "样本文本并非完全凭空捏造，而是把有限来源中的“护送/通行/军事伴随”信息显著强化为“正式展开高强度护航并重新恢复商业航线”的既成事实，还把战果与局势变化表述得过于确定。与此同时，配图经过后期添加爆炸、烟雾和尾迹等效果，制造出正在交火拦截的视觉印象，但这些画面本身并不能真实证明文中所述的击毁6艘伊朗快艇、拦截导弹和恢复航道等核心语义，因此整体上以误导为主，判为 Mostly False。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Synthetic_Image",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 14.642,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-07.json"
+      }
+    },
+    {
+      "case_id": "IFD-08",
+      "task": "IFD",
+      "label": "Synthetic_Image",
+      "title": "生成的海上冲突画面",
+      "folder": "IFD/Synthetic_Image/IFD-08",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "178_01_img_1.jpg",
+          "source": "data/mmd/train/False/178_01_img_1.jpg",
+          "sha256": "eda4353cbea939aaeb3f632ce9ce211322b3ce44ebe4ed1d1e957c03dfd371c8"
+        }
+      ],
+      "label_basis": "derived_from_image_specific_annotation",
+      "label_explanation": "原始标注包含 V1，且理由明确说明两张配图均为生成式图片；选择第一张。",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_original_label": "False",
+      "source_sample_id": "178",
+      "source_image_number": 1,
+      "taxonomy": [
+        "T1 Fabrication",
+        "V1 Synthetic Visual Content",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "该样本把来源中带有个人推演、专家设想和未经证实的战事情景，改写成已经发生并被“多家媒体报道”“最新海上画面显示”的既成事实，核心叙述缺乏可验证证据支撑。同时，两张配图均为生成式图片，却被包装成现场画面和局势图来为文本背书，导致文本事实层面与图像证据层面同时失真，整体核心主张不成立。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Real_Image",
+        "confidence": 0.95,
+        "matches_reference": false,
+        "seconds": 9.264,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-08.json"
+      }
+    },
+    {
+      "case_id": "IFD-09",
+      "task": "IFD",
+      "label": "Synthetic_Image",
+      "title": "机器兔与野生动物场景",
+      "folder": "IFD/Synthetic_Image/IFD-09",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "303_01_img_1.jpg",
+          "source": "data/mmd/train/False/303_01_img_1.jpg",
+          "sha256": "31ff6ce5b5ca6e377cdf77d505d347bbcc40095bd76a9c0f3d89b45e764035d9"
+        }
+      ],
+      "label_basis": "derived_from_image_specific_annotation",
+      "label_explanation": "原始标注包含 V1，且理由明确说明封面图像为生成内容；选择机器兔封面图。",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_original_label": "False",
+      "source_sample_id": "303",
+      "source_image_number": 1,
+      "taxonomy": [
+        "T1 Fabrication",
+        "T3 Misleading Context",
+        "V1 Synthetic Visual Content",
+        "C1 Semantic Inconsistency",
+        "C2 Contextual Inconsistency"
+      ],
+      "reference_rationale": "这篇文章发明了一个政府支持的机器兔反蟒蛇飞行员，然后用生成的封面图像和重新构建为操作证据的不相关的真实图像来支持这一错误说法。它的拘留地点和大沼泽地港参考是现实世界的元素，但它们被误导性地融入到一个不存在的野生动物机器人项目中。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Synthetic_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 12.355,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-09.json"
+      }
+    },
+    {
+      "case_id": "IFD-10",
+      "task": "IFD",
+      "label": "Synthetic_Image",
+      "title": "生成的足球夺冠庆典",
+      "folder": "IFD/Synthetic_Image/IFD-10",
+      "question_file": "question.txt",
+      "images": [
+        {
+          "file": "496_01_img_1.jpg",
+          "source": "data/mmd/train/False/496_01_img_1.jpg",
+          "sha256": "93821901c7bf02f6fe40c6ae2dfcad4599968c478288e2002fdea7bd5c7cc7e2"
+        }
+      ],
+      "label_basis": "derived_from_image_specific_annotation",
+      "label_explanation": "原始标注包含 V1，且理由明确说明两张视觉材料为合成图像；选择第一张庆典图。",
+      "source_metadata": "data/mmd/dataset_metadata.json",
+      "source_original_label": "False",
+      "source_sample_id": "496",
+      "source_image_number": 1,
+      "taxonomy": [
+        "T1 Fabrication",
+        "T2 Distortion",
+        "V1 Synthetic Visual Content",
+        "C1 Semantic Inconsistency"
+      ],
+      "reference_rationale": "该样本是错误的，因为占主导地位的多模态叙事是基于虚构或严重扭曲的元素：两个视觉效果及其说明显示了官方加冕、3-0 的比分和 Désiré Doué 的帽子戏法，而可用的文章文本仅谈到 1-0 的胜利，使巴黎更接近冠军，但没有正式宣布。因此，读者收到的是由作为视觉证据呈现的合成图像整合而成的虚假叙述，这颠倒了体育赛事的含义，而不是简单地夸大次要细节。",
+      "detection_run": true,
+      "latest_detection": {
+        "run_id": "20261111-203718",
+        "predicted_label": "Synthetic_Image",
+        "confidence": 0.95,
+        "matches_reference": true,
+        "seconds": 11.253,
+        "tool_calls": 2,
+        "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-10.json"
+      }
+    }
+  ],
+  "counts": {
+    "MFC": {
+      "True": 2,
+      "Mostly True": 2,
+      "Mixture": 2,
+      "Mostly False": 2,
+      "False": 2
+    },
+    "IFD": {
+      "Real_Image": 4,
+      "Forged_Image": 3,
+      "Synthetic_Image": 3
+    }
+  },
+  "latest_run_id": "20261111-203718",
+  "latest_run_report": "runs/20261111-203718/report.md"
+}

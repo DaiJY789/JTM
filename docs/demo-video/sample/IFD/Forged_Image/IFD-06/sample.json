@@ -1,0 +1,37 @@
+{
+  "case_id": "IFD-06",
+  "task": "IFD",
+  "label": "Forged_Image",
+  "title": "花滑新闻字幕被编辑",
+  "folder": "IFD/Forged_Image/IFD-06",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "306_01_img_1.jpg",
+      "source": "data/mmd/train/Mixture/306_01_img_1.jpg",
+      "sha256": "43494cd4a7244b664180e98a3cc7cd23288f80c0806fc3276bbca9738602a6e0"
+    }
+  ],
+  "label_basis": "derived_from_image_specific_annotation",
+  "label_explanation": "原始标注明确说明转播字幕经过编辑；选择带字幕的第一张新闻截图。",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_original_label": "Mixture",
+  "source_sample_id": "306",
+  "source_image_number": 1,
+  "taxonomy": [
+    "T3 Misleading Context",
+    "V2 Visual Editing",
+    "C2 Contextual Inconsistency"
+  ],
+  "reference_rationale": "虽然宣布退休和参加游园会是有事实依据的，但正文将游园会的交流联系在了“他直接传达退休信息的地方”的语境中。而且，图片中的转播字幕经过了编辑，不同时间拍摄的比赛照片也被用作强化材料，因此整体语境具有误导性。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Real_Image",
+    "confidence": 0.95,
+    "matches_reference": false,
+    "seconds": 10.514,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-06.json"
+  }
+}

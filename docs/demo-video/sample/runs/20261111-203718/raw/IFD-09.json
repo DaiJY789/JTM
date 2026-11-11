@@ -1,0 +1,574 @@
+{
+  "mode": "image_only",
+  "label": "Synthetic_Image",
+  "summary": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+  "confidence": 0.95,
+  "type": "ai_generated",
+  "image_verdict": {
+    "label": "Synthetic_Image",
+    "analysis": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+    "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+    "deepfake_risk": "high",
+    "manipulation_risk": "high",
+    "probability": 0.0,
+    "confidence": 0.95,
+    "tamper_score": 0.0,
+    "ai_generated_score": 0.0,
+    "visual_analysis": "图像内容呈现明显的AI生成特征。1. 语义逻辑异常：画面中出现了两个造型完全一致的“兔子机器人”，这种重复且无现实依据的物体组合常见于生成式模型。2. 物理细节错误：左侧机器人的轮子与草地接触处缺乏合理的阴影和压痕，呈现出悬浮感；右侧蛇类的鳞片纹理在身体弯曲处显得模糊、不连贯，具有典型的涂抹感。3. 光影质感：整体光照过于均匀柔和，背景景深虚化方式符合算法生成的平滑过渡特征，而非真实镜头的光学特性。4. 工具证据：Spectrum_Grid_Analyzer 检测到极高的能量凹陷分数（energy_hole_score: 1.0），这是扩散模型等生成式AI常见的频域伪影特征。",
+    "visual_description": "基于本地图像取证工具生成的综合判定。",
+    "evidence": [
+      {
+        "step": 1,
+        "tool": "Spectrum_Grid_Analyzer",
+        "why": "检查是否存在生成式AI特有的频域网格或能量分布异常。",
+        "key_findings": [
+          "energy_hole_score 为 1.0，提示存在显著的频谱能量缺失或凹陷，符合AI生成图像的统计特征。"
+        ],
+        "artifacts": []
+      },
+      {
+        "step": 2,
+        "tool": "SRM_Filter",
+        "why": "检查高阶残差噪声中的局部统计异常。",
+        "key_findings": [
+          "residual_tail_score 较低 (0.18)，未检出传统PS篡改痕迹，侧面印证图像可能并非经过后期编辑的真实照片，而是直接生成的合成图。"
+        ],
+        "artifacts": []
+      }
+    ],
+    "reasoning": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+    "type": "ai_generated",
+    "forgery_types": [
+      "AI生成"
+    ],
+    "suspicious_regions": [
+      {
+        "region": "0,0,1024,1024",
+        "score": 0.95,
+        "reason": "整图表现出AI生成的典型视觉特征（如物体重复、物理逻辑瑕疵）及频域伪影。",
+        "coordinate_space": "original_image",
+        "region_reliability": "model_estimated"
+      }
+    ],
+    "limitations": [],
+    "artifacts": {
+      "annotated_image_path": "outputs/vision/f22709083f5743498c1da088ee0d7abc/annotated_suspicious_regions.png"
+    },
+    "user_answer": {
+      "judgment": "这是一张由AI生成的合成图像。",
+      "notes": [
+        "虽然图像看起来像照片，但缺乏EXIF信息且存在多处不符合物理常识的细节。",
+        "频谱分析的高分指标强烈支持AI生成的结论。"
+      ],
+      "analysis": "视觉上，图像包含不合逻辑的重复物体（两个相同的机器人）以及物理细节上的瑕疵（如悬浮感的轮子、模糊的蛇鳞）。取证工具方面，频谱分析检测到了极高的能量凹陷分数，这是生成式AI图像的典型指纹特征，而传统的篡改检测未发现拼接痕迹，综合判断该图为直接生成的合成图像。"
+    }
+  },
+  "evidence": [
+    {
+      "type": "visual_tool_evidence",
+      "source": "Spectrum_Grid_Analyzer",
+      "content": [
+        "energy_hole_score 为 1.0，提示存在显著的频谱能量缺失或凹陷，符合AI生成图像的统计特征。"
+      ]
+    },
+    {
+      "type": "visual_tool_evidence",
+      "source": "SRM_Filter",
+      "content": [
+        "residual_tail_score 较低 (0.18)，未检出传统PS篡改痕迹，侧面印证图像可能并非经过后期编辑的真实照片，而是直接生成的合成图。"
+      ]
+    },
+    {
+      "type": "suspicious_region",
+      "content": {
+        "region": "0,0,1024,1024",
+        "score": 0.95,
+        "reason": "整图表现出AI生成的典型视觉特征（如物体重复、物理逻辑瑕疵）及频域伪影。",
+        "coordinate_space": "original_image",
+        "region_reliability": "model_estimated"
+      }
+    }
+  ],
+  "claims": [],
+  "raw": {
+    "image_forensics": {
+      "label": "Synthetic_Image",
+      "probability": 0.0,
+      "confidence": 0.95,
+      "tamper_score": 0.0,
+      "ai_generated_score": 0.0,
+      "visual_analysis": "图像内容呈现明显的AI生成特征。1. 语义逻辑异常：画面中出现了两个造型完全一致的“兔子机器人”，这种重复且无现实依据的物体组合常见于生成式模型。2. 物理细节错误：左侧机器人的轮子与草地接触处缺乏合理的阴影和压痕，呈现出悬浮感；右侧蛇类的鳞片纹理在身体弯曲处显得模糊、不连贯，具有典型的涂抹感。3. 光影质感：整体光照过于均匀柔和，背景景深虚化方式符合算法生成的平滑过渡特征，而非真实镜头的光学特性。4. 工具证据：Spectrum_Grid_Analyzer 检测到极高的能量凹陷分数（energy_hole_score: 1.0），这是扩散模型等生成式AI常见的频域伪影特征。",
+      "type": "ai_generated",
+      "forgery_types": [
+        "AI生成"
+      ],
+      "evidence": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "检查是否存在生成式AI特有的频域网格或能量分布异常。",
+          "key_findings": [
+            "energy_hole_score 为 1.0，提示存在显著的频谱能量缺失或凹陷，符合AI生成图像的统计特征。"
+          ],
+          "artifacts": []
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "检查高阶残差噪声中的局部统计异常。",
+          "key_findings": [
+            "residual_tail_score 较低 (0.18)，未检出传统PS篡改痕迹，侧面印证图像可能并非经过后期编辑的真实照片，而是直接生成的合成图。"
+          ],
+          "artifacts": []
+        }
+      ],
+      "suspicious_regions": [
+        {
+          "region": "0,0,1024,1024",
+          "score": 0.95,
+          "reason": "整图表现出AI生成的典型视觉特征（如物体重复、物理逻辑瑕疵）及频域伪影。",
+          "coordinate_space": "original_image",
+          "region_reliability": "model_estimated"
+        }
+      ],
+      "limitations": [],
+      "final_summary": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+      "artifacts": {
+        "annotated_image_path": "outputs/vision/f22709083f5743498c1da088ee0d7abc/annotated_suspicious_regions.png"
+      },
+      "tool_calls": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+                "summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.1,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+                "coordinate_space": "frequency"
+              },
+              "regions": [],
+              "spectrum_statistics": {
+                "peak_count": 2,
+                "raw_peak_count": 2,
+                "paired_peak_count": 2,
+                "conjugate_pair_ratio": 1.0,
+                "lattice_peak_count": 0,
+                "lattice_ratio": 0.0,
+                "candidate_for_followup": false,
+                "peak_ratio": 3.39e-06,
+                "peak_threshold": 11.35653654,
+                "energy_hole_count": 6,
+                "energy_hole_indices": [
+                  73,
+                  80,
+                  91,
+                  114,
+                  127,
+                  145
+                ],
+                "processed_size": {
+                  "width": 768,
+                  "height": 768
+                },
+                "original_size": {
+                  "width": 1024,
+                  "height": 1024
+                }
+              },
+              "evidence_scores": {
+                "peak_sparsity_score": 0.984587,
+                "peak_density_score": 0.0,
+                "energy_hole_score": 1.0,
+                "conjugate_pair_score": 1.0,
+                "lattice_ratio_score": 0.0,
+                "spectral_artifact_score": 0.1
+              },
+              "top_grid_peaks": [],
+              "artifacts": {
+                "spectrum_logmag_path": "",
+                "grid_peak_mask_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "Spectrum_Grid_Analyzer",
+              "execution_time_ms": 53
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "error_message": null,
+            "tool_name": "Spectrum_Grid_Analyzer",
+            "execution_time_ms": 53,
+            "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+            "report_summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "peak_sparsity_score": 0.984587,
+              "peak_density_score": 0.0,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 1.0,
+              "lattice_ratio_score": 0.0,
+              "spectral_artifact_score": 0.1
+            },
+            "evidence_scores": {
+              "peak_sparsity_score": 0.984587,
+              "peak_density_score": 0.0,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 1.0,
+              "lattice_ratio_score": 0.0,
+              "spectral_artifact_score": 0.1
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.1,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+              "coordinate_space": "frequency"
+            },
+            "regions": [],
+            "artifacts": {
+              "spectrum_logmag_path": "",
+              "grid_peak_mask_path": ""
+            },
+            "spectrum_statistics": {
+              "peak_count": 2,
+              "raw_peak_count": 2,
+              "paired_peak_count": 2,
+              "conjugate_pair_ratio": 1.0,
+              "lattice_peak_count": 0,
+              "lattice_ratio": 0.0,
+              "candidate_for_followup": false,
+              "peak_ratio": 3.39e-06,
+              "peak_threshold": 11.35653654,
+              "energy_hole_count": 6,
+              "energy_hole_indices": [
+                73,
+                80,
+                91,
+                114,
+                127,
+                145
+              ],
+              "processed_size": {
+                "width": 768,
+                "height": 768
+              },
+              "original_size": {
+                "width": 1024,
+                "height": 1024
+              }
+            }
+          }
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Spatial Rich Model residual filter bank",
+                "filter_count": 16,
+                "truncate_threshold": 3.0,
+                "top_suspicious_regions": [],
+                "summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.186785,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_residual_tail_heuristic",
+                "coordinate_space": "original"
+              },
+              "regions": [],
+              "residual_statistics": [
+                {
+                  "filter": "fo_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.294322,
+                  "std": 2.522039,
+                  "kurtosis": -1.670042
+                },
+                {
+                  "filter": "fo_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.373061,
+                  "std": 2.569052,
+                  "kurtosis": -1.706148
+                },
+                {
+                  "filter": "fo_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.511177,
+                  "std": 2.666091,
+                  "kurtosis": -1.783366
+                },
+                {
+                  "filter": "fo_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.494288,
+                  "std": 2.655334,
+                  "kurtosis": -1.778465
+                },
+                {
+                  "filter": "so_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.808088,
+                  "std": 2.144397,
+                  "kurtosis": -1.267058
+                },
+                {
+                  "filter": "so_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.907169,
+                  "std": 2.220082,
+                  "kurtosis": -1.362787
+                },
+                {
+                  "filter": "so_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.219544,
+                  "std": 2.452489,
+                  "kurtosis": -1.615552
+                },
+                {
+                  "filter": "so_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.202999,
+                  "std": 2.440844,
+                  "kurtosis": -1.603767
+                },
+                {
+                  "filter": "to_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 1.532931,
+                  "std": 1.91333,
+                  "kurtosis": -0.91178
+                },
+                {
+                  "filter": "to_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.633183,
+                  "std": 1.995371,
+                  "kurtosis": -1.051384
+                },
+                {
+                  "filter": "fo4_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 1.556898,
+                  "std": 1.931355,
+                  "kurtosis": -0.943292
+                },
+                {
+                  "filter": "fo4_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.656304,
+                  "std": 2.011912,
+                  "kurtosis": -1.079865
+                },
+                {
+                  "filter": "nl_mix1",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.565923,
+                  "std": 1.927663,
+                  "kurtosis": -0.963942
+                },
+                {
+                  "filter": "nl_mix2",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.750805,
+                  "std": 2.095191,
+                  "kurtosis": -1.202837
+                },
+                {
+                  "filter": "nl_mix3",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.249325,
+                  "std": 1.669833,
+                  "kurtosis": -0.33854
+                },
+                {
+                  "filter": "nl_mix4",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.019493,
+                  "std": 1.407992,
+                  "kurtosis": 0.338209
+                }
+              ],
+              "evidence_scores": {
+                "avg_abs_kurtosis": 1.183788,
+                "residual_tail_score": 0.186785
+              },
+              "artifacts": {
+                "srm_heatmap_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "SRM_Filter",
+              "execution_time_ms": 316
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "error_message": null,
+            "tool_name": "SRM_Filter",
+            "execution_time_ms": 316,
+            "method": "Spatial Rich Model residual filter bank",
+            "report_summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "avg_abs_kurtosis": 1.183788,
+              "residual_tail_score": 0.186785
+            },
+            "evidence_scores": {
+              "avg_abs_kurtosis": 1.183788,
+              "residual_tail_score": 0.186785
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.186785,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_residual_tail_heuristic",
+              "coordinate_space": "original"
+            },
+            "regions": [],
+            "artifacts": {
+              "srm_heatmap_path": ""
+            }
+          }
+        }
+      ],
+      "user_answer": {
+        "judgment": "这是一张由AI生成的合成图像。",
+        "notes": [
+          "虽然图像看起来像照片，但缺乏EXIF信息且存在多处不符合物理常识的细节。",
+          "频谱分析的高分指标强烈支持AI生成的结论。"
+        ],
+        "analysis": "视觉上，图像包含不合逻辑的重复物体（两个相同的机器人）以及物理细节上的瑕疵（如悬浮感的轮子、模糊的蛇鳞）。取证工具方面，频谱分析检测到了极高的能量凹陷分数，这是生成式AI图像的典型指纹特征，而传统的篡改检测未发现拼接痕迹，综合判断该图为直接生成的合成图像。"
+      }
+    },
+    "workflow": {
+      "name": "deepfake_detection",
+      "routing": "single_agent",
+      "steps": [
+        "IFD_Agent"
+      ],
+      "dependencies": []
+    }
+  },
+  "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+  "user_answer": {
+    "judgment": "这是一张由AI生成的合成图像。",
+    "notes": [
+      "虽然图像看起来像照片，但缺乏EXIF信息且存在多处不符合物理常识的细节。",
+      "频谱分析的高分指标强烈支持AI生成的结论。"
+    ],
+    "analysis": "视觉上，图像包含不合逻辑的重复物体（两个相同的机器人）以及物理细节上的瑕疵（如悬浮感的轮子、模糊的蛇鳞）。取证工具方面，频谱分析检测到了极高的能量凹陷分数，这是生成式AI图像的典型指纹特征，而传统的篡改检测未发现拼接痕迹，综合判断该图为直接生成的合成图像。"
+  }
+}

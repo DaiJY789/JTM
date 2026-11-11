@@ -1,0 +1,42 @@
+{
+  "case_id": "MFC-493",
+  "task": "MFC",
+  "label": "Mixture",
+  "title": "AMD 营收指引与行情图",
+  "focus": "真实财报信息与编辑行情图混合",
+  "folder": "MFC/Mixture/MFC-493",
+  "text_file": "MFC-493.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "493_01_img_1.jpg",
+      "source": "data/mmd/train/Mixture/493_01_img_1.jpg",
+      "sha256": "1bffe76849c73c8e56eaca62da118d2efd3f582e898930d192103f93691b1dfd"
+    },
+    {
+      "file": "493_02_img_2.jpg",
+      "source": "data/mmd/train/Mixture/493_02_img_2.jpg",
+      "sha256": "6ee66f09dd677e2b46d12140359ef2598e593b4fa7fcdb13471d737dfdf56ad6"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "493",
+  "source_split": "train",
+  "taxonomy": [
+    "T3 Misleading Context",
+    "V2 Visual Editing",
+    "C2 Contextual Inconsistency"
+  ],
+  "reference_rationale": "文本前半段关于AMD营收指引高于预期、消息后股价走强的方向有真实依据，但后半段把经过编辑的行情图包装成“今晨美股行情截图”并暗示盘中高点甚至新高区间，放大并错置了市场表现语境，因此整体属于真假并存的混合型误导。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Mixture",
+    "confidence": 0.95,
+    "matches_reference": true,
+    "seconds": 26.992,
+    "tool_calls": 3,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-493.json"
+  }
+}

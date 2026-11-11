@@ -7,14 +7,14 @@ APP_JS = (ROOT / "app/web/static/app.js").read_text(encoding="utf-8")
 STYLES = (ROOT / "app/web/static/styles.css").read_text(encoding="utf-8")
 
 
-def test_frontend_exposes_multi_image_inputs_for_mmd():
+def test_frontend_exposes_multi_image_inputs_for_mfc():
     assert 'id="imageInput"' in INDEX
     assert 'accept="image/*" multiple' in INDEX
     assert 'id="imageUrlInput"' in INDEX
     assert 'id="imageUrlInput"' in INDEX and 'type="url"' in INDEX
     assert 'id="urlInput" type="url"' in INDEX
     assert "图片 URL，每行一个" not in INDEX
-    assert "const MAX_MMD_IMAGES = 4;" in APP_JS
+    assert "const MAX_MFC_IMAGES = 4;" in APP_JS
 
 
 def test_frontend_places_dialogue_before_composer_and_right_input_column():
@@ -83,13 +83,13 @@ def test_frontend_posts_task_specific_fields_to_split_endpoints():
     assert 'formData.append("image_urls", url)' in APP_JS
     assert 'formData.append("image", imageFiles[0])' in APP_JS
     assert 'formData.append("image_url", imageUrls[0])' in APP_JS
-    assert 'state.task === "deepfake_detection" ? "/detect/deepfake" : "/detect/mmd"' in APP_JS
+    assert 'state.task === "deepfake_detection" ? "/detect/deepfake" : "/detect/mfc"' in APP_JS
     assert '`/conversations/${encodeURIComponent(state.conversationId)}/followup`' in APP_JS
     assert 'isFollowup ? followupEndpoint : detectionEndpoint' in APP_JS
 
 
-def test_frontend_switches_between_mmd_and_single_image_deepfake_limits():
-    assert 'state.task === "deepfake_detection" ? 1 : MAX_MMD_IMAGES' in APP_JS
+def test_frontend_switches_between_mfc_and_single_image_deepfake_limits():
+    assert 'state.task === "deepfake_detection" ? 1 : MAX_MFC_IMAGES' in APP_JS
     assert 'input.multiple = state.task !== "deepfake_detection"' in APP_JS
     assert 'data-value="multimodal_fact_checking"' in INDEX
     assert 'data-value="deepfake_detection"' in INDEX

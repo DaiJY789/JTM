@@ -114,16 +114,15 @@ class IFDDetectionService:
             }
 
         label = self._extract_label(result.get("label"))
-        tool_evidence = result.get("tool_evidence") or result.get("evidence_chain", [])
+        evidence = result.get("evidence") or result.get("tool_evidence") or result.get("evidence_chain", [])
         suspicious_regions = result.get("suspicious_regions", [])
         final_summary = result.get("final_summary", "")
-        evidence = self._evidence_from_chain(tool_evidence)
         return {
             "mode": "image_only",
             "label": label,
             "summary": final_summary,
             "confidence": result.get("confidence"),
-            "forgery_type": result.get("forgery_type"),
+            "type": result.get("type") or result.get("forgery_type"),
             "image_verdict": {
                 "label": label,
                 "analysis": final_summary,
@@ -140,15 +139,14 @@ class IFDDetectionService:
                 "visual_description": "基于本地图像取证工具生成的综合判定。",
                 "evidence": evidence,
                 "reasoning": final_summary,
-                "forgery_type": result.get("forgery_type"),
+                "type": result.get("type") or result.get("forgery_type"),
                 "forgery_types": result.get("forgery_types", []),
-                "tool_evidence": tool_evidence,
                 "suspicious_regions": suspicious_regions,
                 "limitations": result.get("limitations", []),
                 "artifacts": result.get("artifacts", {}),
                 "user_answer": result.get("user_answer", {}),
             },
-            "evidence": self._structured_evidence(tool_evidence, suspicious_regions),
+            "evidence": self._structured_evidence(evidence, suspicious_regions),
             "claims": [],
             "raw": {"image_forensics": result},
             "question": resolved_question,
@@ -272,19 +270,23 @@ class IFDDetectionService:
         }
 
     def _extract_label(self, analysis: str) -> str:
-        analysis = str(analysis or "")
-        if analysis in self.LABELS:
-            return analysis
-        if analysis in self.LEGACY_LABEL_ALIASES:
-            return self.LEGACY_LABEL_ALIASES[analysis]
-        for label in self.LABELS:
-            if label in analysis:
-                return label
-        for label, normalized in self.LEGACY_LABEL_ALIASES.items():
-            if label in analysis:
-                return normalized
-        match = re.search(r"Label\s*[:：]\s*([A-Za-z_]+)", analysis)
-        return self.LEGACY_LABEL_ALIASES.get(match.group(1), "Cannot_Determine") if match else "Cannot_Determine"
+        try:
+            return IFDDetectionAgent._normalize_label(analysis)
+        except ValueError:
+            text = str(analysis or "")
+            match = re.search(r"Label\s*[:：]\s*([^\n\r]+)", text)
+            if match:
+                try:
+                    return IFDDetectionAgent._normalize_label(match.group(1))
+                except ValueError:
+                    pass
+            for label in self.LABELS + list(self.LEGACY_LABEL_ALIASES):
+                if label in text:
+                    try:
+                        return IFDDetectionAgent._normalize_label(label)
+                    except ValueError:
+                        continue
+            return "Cannot_Determine"
 
     def _extract_field(self, analysis: str, field_name: str) -> str:
         match = re.search(rf"{field_name}\s*[:：]\s*([^\n\r]+)", analysis)

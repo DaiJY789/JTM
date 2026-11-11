@@ -1,0 +1,734 @@
+{
+  "mode": "image_only",
+  "label": "Synthetic_Image",
+  "summary": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+  "confidence": 0.95,
+  "type": "ai_generated",
+  "image_verdict": {
+    "label": "Synthetic_Image",
+    "analysis": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+    "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+    "deepfake_risk": "high",
+    "manipulation_risk": "high",
+    "probability": 0.0,
+    "confidence": 0.95,
+    "tamper_score": 0.0,
+    "ai_generated_score": 0.0,
+    "visual_analysis": "图像存在多处明显的AI生成特征：1. 文字乱码与拼写错误，如球员球衣上的赞助商文字“QATAR AIRWAYS”变形严重（有的显示为“QA AR WAY”），背景横幅文字模糊且无意义；2. 物体结构不合逻辑，奖杯形状怪异，不符合现实中的法甲冠军奖杯样式；3. 细节缺失与扭曲，球员面部表情僵硬、五官比例失调，手指关节和形态不自然，奖牌挂绳与身体穿插关系混乱。频域分析工具也检测到了高置信度的频谱伪影。",
+    "visual_description": "基于本地图像取证工具生成的综合判定。",
+    "evidence": [
+      {
+        "step": 1,
+        "tool": "Spectrum_Grid_Analyzer",
+        "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+        "key_findings": [
+          "检测到显著的频谱伪影 (spectral_artifact_score: 0.897)，提示图像可能由生成式模型产生。"
+        ],
+        "artifacts": []
+      },
+      {
+        "step": 2,
+        "tool": "SRM_Filter",
+        "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+        "key_findings": [
+          "残差统计未发现明显篡改痕迹，符合全图生成的特征。"
+        ],
+        "artifacts": []
+      }
+    ],
+    "reasoning": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+    "type": "ai_generated",
+    "forgery_types": [
+      "AI生成"
+    ],
+    "suspicious_regions": [
+      {
+        "region": "0,0,1024,1024",
+        "score": 0.95,
+        "reason": "整图呈现典型的扩散模型生成特征，包括文字乱码、物体结构幻觉及光影质感不真实。",
+        "coordinate_space": "original_image",
+        "region_reliability": "model_estimated"
+      }
+    ],
+    "limitations": [],
+    "artifacts": {
+      "annotated_image_path": "outputs/vision/41d1c423c5924650a0a9cc068932d525/annotated_suspicious_regions.png"
+    },
+    "user_answer": {
+      "judgment": "这是一张由AI生成的合成图像。",
+      "notes": [
+        "虽然画面试图模仿巴黎圣日耳曼夺冠场景，但关键语义信息（文字、物体）均无法正确还原，属于典型的AI幻觉现象。"
+      ],
+      "analysis": "视觉观察发现图中文字（如球衣赞助商）严重乱码，奖杯造型不符合现实物理规律，人物面部及手部细节存在典型生成式AI的扭曲特征。同时，频域分析工具检测到了高置信度的生成伪影，佐证了上述判断。"
+    }
+  },
+  "evidence": [
+    {
+      "type": "visual_tool_evidence",
+      "source": "Spectrum_Grid_Analyzer",
+      "content": [
+        "检测到显著的频谱伪影 (spectral_artifact_score: 0.897)，提示图像可能由生成式模型产生。"
+      ]
+    },
+    {
+      "type": "visual_tool_evidence",
+      "source": "SRM_Filter",
+      "content": [
+        "残差统计未发现明显篡改痕迹，符合全图生成的特征。"
+      ]
+    },
+    {
+      "type": "suspicious_region",
+      "content": {
+        "region": "0,0,1024,1024",
+        "score": 0.95,
+        "reason": "整图呈现典型的扩散模型生成特征，包括文字乱码、物体结构幻觉及光影质感不真实。",
+        "coordinate_space": "original_image",
+        "region_reliability": "model_estimated"
+      }
+    }
+  ],
+  "claims": [],
+  "raw": {
+    "image_forensics": {
+      "label": "Synthetic_Image",
+      "probability": 0.0,
+      "confidence": 0.95,
+      "tamper_score": 0.0,
+      "ai_generated_score": 0.0,
+      "visual_analysis": "图像存在多处明显的AI生成特征：1. 文字乱码与拼写错误，如球员球衣上的赞助商文字“QATAR AIRWAYS”变形严重（有的显示为“QA AR WAY”），背景横幅文字模糊且无意义；2. 物体结构不合逻辑，奖杯形状怪异，不符合现实中的法甲冠军奖杯样式；3. 细节缺失与扭曲，球员面部表情僵硬、五官比例失调，手指关节和形态不自然，奖牌挂绳与身体穿插关系混乱。频域分析工具也检测到了高置信度的频谱伪影。",
+      "type": "ai_generated",
+      "forgery_types": [
+        "AI生成"
+      ],
+      "evidence": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+          "key_findings": [
+            "检测到显著的频谱伪影 (spectral_artifact_score: 0.897)，提示图像可能由生成式模型产生。"
+          ],
+          "artifacts": []
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+          "key_findings": [
+            "残差统计未发现明显篡改痕迹，符合全图生成的特征。"
+          ],
+          "artifacts": []
+        }
+      ],
+      "suspicious_regions": [
+        {
+          "region": "0,0,1024,1024",
+          "score": 0.95,
+          "reason": "整图呈现典型的扩散模型生成特征，包括文字乱码、物体结构幻觉及光影质感不真实。",
+          "coordinate_space": "original_image",
+          "region_reliability": "model_estimated"
+        }
+      ],
+      "limitations": [],
+      "final_summary": "图像判定为Synthetic_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+      "artifacts": {
+        "annotated_image_path": "outputs/vision/41d1c423c5924650a0a9cc068932d525/annotated_suspicious_regions.png"
+      },
+      "tool_calls": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+                "summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "inconclusive",
+                "score": 0.897143,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+                "coordinate_space": "frequency"
+              },
+              "regions": [],
+              "spectrum_statistics": {
+                "peak_count": 74,
+                "raw_peak_count": 74,
+                "paired_peak_count": 74,
+                "conjugate_pair_ratio": 1.0,
+                "lattice_peak_count": 46,
+                "lattice_ratio": 0.657143,
+                "candidate_for_followup": true,
+                "peak_ratio": 0.00012546,
+                "peak_threshold": 10.92651775,
+                "energy_hole_count": 7,
+                "energy_hole_indices": [
+                  61,
+                  116,
+                  122,
+                  138,
+                  149,
+                  165,
+                  190
+                ],
+                "processed_size": {
+                  "width": 768,
+                  "height": 768
+                },
+                "original_size": {
+                  "width": 1024,
+                  "height": 1024
+                }
+              },
+              "evidence_scores": {
+                "peak_sparsity_score": 0.429722,
+                "peak_density_score": 1.0,
+                "energy_hole_score": 1.0,
+                "conjugate_pair_score": 1.0,
+                "lattice_ratio_score": 0.657143,
+                "spectral_artifact_score": 0.897143
+              },
+              "top_grid_peaks": [
+                {
+                  "x": 445,
+                  "y": 368,
+                  "dx_from_center": 61,
+                  "dy_from_center": -16,
+                  "strength": 11.465814,
+                  "radius": 63.0635
+                },
+                {
+                  "x": 323,
+                  "y": 400,
+                  "dx_from_center": -61,
+                  "dy_from_center": 16,
+                  "strength": 11.465814,
+                  "radius": 63.0635
+                },
+                {
+                  "x": 458,
+                  "y": 378,
+                  "dx_from_center": 74,
+                  "dy_from_center": -6,
+                  "strength": 11.35713,
+                  "radius": 74.2428
+                },
+                {
+                  "x": 310,
+                  "y": 390,
+                  "dx_from_center": -74,
+                  "dy_from_center": 6,
+                  "strength": 11.35713,
+                  "radius": 74.2428
+                },
+                {
+                  "x": 458,
+                  "y": 380,
+                  "dx_from_center": 74,
+                  "dy_from_center": -4,
+                  "strength": 11.339399,
+                  "radius": 74.108
+                },
+                {
+                  "x": 310,
+                  "y": 388,
+                  "dx_from_center": -74,
+                  "dy_from_center": 4,
+                  "strength": 11.339399,
+                  "radius": 74.108
+                },
+                {
+                  "x": 454,
+                  "y": 374,
+                  "dx_from_center": 70,
+                  "dy_from_center": -10,
+                  "strength": 11.318235,
+                  "radius": 70.7107
+                },
+                {
+                  "x": 314,
+                  "y": 394,
+                  "dx_from_center": -70,
+                  "dy_from_center": 10,
+                  "strength": 11.318235,
+                  "radius": 70.7107
+                },
+                {
+                  "x": 450,
+                  "y": 379,
+                  "dx_from_center": 66,
+                  "dy_from_center": -5,
+                  "strength": 11.272008,
+                  "radius": 66.1891
+                },
+                {
+                  "x": 318,
+                  "y": 389,
+                  "dx_from_center": -66,
+                  "dy_from_center": 5,
+                  "strength": 11.272008,
+                  "radius": 66.1891
+                },
+                {
+                  "x": 317,
+                  "y": 377,
+                  "dx_from_center": -67,
+                  "dy_from_center": -7,
+                  "strength": 11.258018,
+                  "radius": 67.3647
+                },
+                {
+                  "x": 451,
+                  "y": 391,
+                  "dx_from_center": 67,
+                  "dy_from_center": 7,
+                  "strength": 11.258018,
+                  "radius": 67.3647
+                },
+                {
+                  "x": 454,
+                  "y": 378,
+                  "dx_from_center": 70,
+                  "dy_from_center": -6,
+                  "strength": 11.210001,
+                  "radius": 70.2567
+                },
+                {
+                  "x": 314,
+                  "y": 390,
+                  "dx_from_center": -70,
+                  "dy_from_center": 6,
+                  "strength": 11.210001,
+                  "radius": 70.2567
+                },
+                {
+                  "x": 451,
+                  "y": 375,
+                  "dx_from_center": 67,
+                  "dy_from_center": -9,
+                  "strength": 11.191966,
+                  "radius": 67.6018
+                },
+                {
+                  "x": 317,
+                  "y": 393,
+                  "dx_from_center": -67,
+                  "dy_from_center": 9,
+                  "strength": 11.191966,
+                  "radius": 67.6018
+                },
+                {
+                  "x": 453,
+                  "y": 355,
+                  "dx_from_center": 69,
+                  "dy_from_center": -29,
+                  "strength": 11.15728,
+                  "radius": 74.8465
+                },
+                {
+                  "x": 315,
+                  "y": 413,
+                  "dx_from_center": -69,
+                  "dy_from_center": 29,
+                  "strength": 11.15728,
+                  "radius": 74.8465
+                },
+                {
+                  "x": 319,
+                  "y": 371,
+                  "dx_from_center": -65,
+                  "dy_from_center": -13,
+                  "strength": 11.155617,
+                  "radius": 66.2873
+                },
+                {
+                  "x": 449,
+                  "y": 397,
+                  "dx_from_center": 65,
+                  "dy_from_center": 13,
+                  "strength": 11.155617,
+                  "radius": 66.2873
+                }
+              ],
+              "artifacts": {
+                "spectrum_logmag_path": "",
+                "grid_peak_mask_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "Spectrum_Grid_Analyzer",
+              "execution_time_ms": 33
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "error_message": null,
+            "tool_name": "Spectrum_Grid_Analyzer",
+            "execution_time_ms": 33,
+            "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+            "report_summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "peak_sparsity_score": 0.429722,
+              "peak_density_score": 1.0,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 1.0,
+              "lattice_ratio_score": 0.657143,
+              "spectral_artifact_score": 0.897143
+            },
+            "evidence_scores": {
+              "peak_sparsity_score": 0.429722,
+              "peak_density_score": 1.0,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 1.0,
+              "lattice_ratio_score": 0.657143,
+              "spectral_artifact_score": 0.897143
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "inconclusive",
+              "score": 0.897143,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+              "coordinate_space": "frequency"
+            },
+            "regions": [],
+            "artifacts": {
+              "spectrum_logmag_path": "",
+              "grid_peak_mask_path": ""
+            },
+            "spectrum_statistics": {
+              "peak_count": 74,
+              "raw_peak_count": 74,
+              "paired_peak_count": 74,
+              "conjugate_pair_ratio": 1.0,
+              "lattice_peak_count": 46,
+              "lattice_ratio": 0.657143,
+              "candidate_for_followup": true,
+              "peak_ratio": 0.00012546,
+              "peak_threshold": 10.92651775,
+              "energy_hole_count": 7,
+              "energy_hole_indices": [
+                61,
+                116,
+                122,
+                138,
+                149,
+                165,
+                190
+              ],
+              "processed_size": {
+                "width": 768,
+                "height": 768
+              },
+              "original_size": {
+                "width": 1024,
+                "height": 1024
+              }
+            }
+          }
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Spatial Rich Model residual filter bank",
+                "filter_count": 16,
+                "truncate_threshold": 3.0,
+                "top_suspicious_regions": [],
+                "summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.337713,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_residual_tail_heuristic",
+                "coordinate_space": "original"
+              },
+              "regions": [],
+              "residual_statistics": [
+                {
+                  "filter": "fo_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.609561,
+                  "std": 2.044542,
+                  "kurtosis": -1.062828
+                },
+                {
+                  "filter": "fo_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.510274,
+                  "std": 1.974384,
+                  "kurtosis": -0.933366
+                },
+                {
+                  "filter": "fo_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.766361,
+                  "std": 2.162227,
+                  "kurtosis": -1.243047
+                },
+                {
+                  "filter": "fo_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.776985,
+                  "std": 2.170217,
+                  "kurtosis": -1.254446
+                },
+                {
+                  "filter": "so_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.304871,
+                  "std": 1.770684,
+                  "kurtosis": -0.520278
+                },
+                {
+                  "filter": "so_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.186515,
+                  "std": 1.666441,
+                  "kurtosis": -0.253113
+                },
+                {
+                  "filter": "so_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.558488,
+                  "std": 1.979029,
+                  "kurtosis": -0.964468
+                },
+                {
+                  "filter": "so_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.564415,
+                  "std": 1.983756,
+                  "kurtosis": -0.972727
+                },
+                {
+                  "filter": "to_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 1.151843,
+                  "std": 1.630705,
+                  "kurtosis": -0.126472
+                },
+                {
+                  "filter": "to_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.032365,
+                  "std": 1.509197,
+                  "kurtosis": 0.240318
+                },
+                {
+                  "filter": "fo4_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 1.212779,
+                  "std": 1.677415,
+                  "kurtosis": -0.275307
+                },
+                {
+                  "filter": "fo4_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.0913,
+                  "std": 1.558071,
+                  "kurtosis": 0.058361
+                },
+                {
+                  "filter": "nl_mix1",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.145557,
+                  "std": 1.602576,
+                  "kurtosis": -0.103009
+                },
+                {
+                  "filter": "nl_mix2",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.162042,
+                  "std": 1.638364,
+                  "kurtosis": -0.197835
+                },
+                {
+                  "filter": "nl_mix3",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 0.913003,
+                  "std": 1.395138,
+                  "kurtosis": 0.770757
+                },
+                {
+                  "filter": "nl_mix4",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.792164,
+                  "std": 1.235838,
+                  "kurtosis": 1.480906
+                }
+              ],
+              "evidence_scores": {
+                "avg_abs_kurtosis": 0.334785,
+                "residual_tail_score": 0.337713
+              },
+              "artifacts": {
+                "srm_heatmap_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "SRM_Filter",
+              "execution_time_ms": 278
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "error_message": null,
+            "tool_name": "SRM_Filter",
+            "execution_time_ms": 278,
+            "method": "Spatial Rich Model residual filter bank",
+            "report_summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "avg_abs_kurtosis": 0.334785,
+              "residual_tail_score": 0.337713
+            },
+            "evidence_scores": {
+              "avg_abs_kurtosis": 0.334785,
+              "residual_tail_score": 0.337713
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.337713,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_residual_tail_heuristic",
+              "coordinate_space": "original"
+            },
+            "regions": [],
+            "artifacts": {
+              "srm_heatmap_path": ""
+            }
+          }
+        }
+      ],
+      "user_answer": {
+        "judgment": "这是一张由AI生成的合成图像。",
+        "notes": [
+          "虽然画面试图模仿巴黎圣日耳曼夺冠场景，但关键语义信息（文字、物体）均无法正确还原，属于典型的AI幻觉现象。"
+        ],
+        "analysis": "视觉观察发现图中文字（如球衣赞助商）严重乱码，奖杯造型不符合现实物理规律，人物面部及手部细节存在典型生成式AI的扭曲特征。同时，频域分析工具检测到了高置信度的生成伪影，佐证了上述判断。"
+      }
+    },
+    "workflow": {
+      "name": "deepfake_detection",
+      "routing": "single_agent",
+      "steps": [
+        "IFD_Agent"
+      ],
+      "dependencies": []
+    }
+  },
+  "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+  "user_answer": {
+    "judgment": "这是一张由AI生成的合成图像。",
+    "notes": [
+      "虽然画面试图模仿巴黎圣日耳曼夺冠场景，但关键语义信息（文字、物体）均无法正确还原，属于典型的AI幻觉现象。"
+    ],
+    "analysis": "视觉观察发现图中文字（如球衣赞助商）严重乱码，奖杯造型不符合现实物理规律，人物面部及手部细节存在典型生成式AI的扭曲特征。同时，频域分析工具检测到了高置信度的生成伪影，佐证了上述判断。"
+  }
+}

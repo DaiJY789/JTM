@@ -8,7 +8,7 @@ from app.schemas.artifacts import DetectionTask
 from app.schemas.detection import DetectionMode, DetectionTaskType
 from app.schemas.report import DetectionReport
 from app.services.ifd_detection import IFDDetectionService
-from app.services.mmd_detection import MMDDetectionService
+from app.services.mfc_detection import MFCDetectionService
 from app.services.report_builder import DetectionReportBuilder
 
 
@@ -26,12 +26,12 @@ class DetectionOrchestrator:
     def __init__(
         self,
         *,
-        mmd_detection_service: MMDDetectionService,
+        mfc_detection_service: MFCDetectionService,
         ifd_detection_service: IFDDetectionService,
         report_builder: DetectionReportBuilder | None = None,
         response_adapter: DetectionResponseAdapter | None = None,
     ):
-        self.mmd_detection_service = mmd_detection_service
+        self.mfc_detection_service = mfc_detection_service
         self.ifd_detection_service = ifd_detection_service
         self.report_builder = report_builder or DetectionReportBuilder()
         self.response_adapter = response_adapter or DetectionResponseAdapter()
@@ -100,7 +100,7 @@ class DetectionOrchestrator:
             )
         else:
             resolved_question = DEFAULT_TEXT_QUESTION_ZH if language == "zh" else DEFAULT_TEXT_QUESTION_EN
-        result = self.mmd_detection_service.detect(
+        result = self.mfc_detection_service.detect(
             text=normalized_text,
             image_content=normalized_image_contents[0] if normalized_image_contents else None,
             image_url=normalized_image_urls[0] if normalized_image_urls else None,

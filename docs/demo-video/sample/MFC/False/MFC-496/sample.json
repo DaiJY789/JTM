@@ -1,0 +1,43 @@
+{
+  "case_id": "MFC-496",
+  "task": "MFC",
+  "label": "False",
+  "title": "巴黎圣日耳曼夺冠与比分图",
+  "focus": "虚构夺冠画面、比分与文字冲突",
+  "folder": "MFC/False/MFC-496",
+  "text_file": "MFC-496.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "496_01_img_1.jpg",
+      "source": "data/mmd/train/False/496_01_img_1.jpg",
+      "sha256": "93821901c7bf02f6fe40c6ae2dfcad4599968c478288e2002fdea7bd5c7cc7e2"
+    },
+    {
+      "file": "496_02_img_2.jpg",
+      "source": "data/mmd/train/False/496_02_img_2.jpg",
+      "sha256": "f1841844552a765f4c8b44a0a0c0304667193025cca2262a6643b80cf09c6156"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "496",
+  "source_split": "train",
+  "taxonomy": [
+    "T1 Fabrication",
+    "T2 Distortion",
+    "V1 Synthetic Visual Content",
+    "C1 Semantic Inconsistency"
+  ],
+  "reference_rationale": "该样本是错误的，因为占主导地位的多模态叙事是基于虚构或严重扭曲的元素：两个视觉效果及其说明显示了官方加冕、3-0 的比分和 Désiré Doué 的帽子戏法，而可用的文章文本仅谈到 1-0 的胜利，使巴黎更接近冠军，但没有正式宣布。因此，读者收到的是由作为视觉证据呈现的合成图像整合而成的虚假叙述，这颠倒了体育赛事的含义，而不是简单地夸大次要细节。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "False",
+    "confidence": 0.95,
+    "matches_reference": true,
+    "seconds": 21.604,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-496.json"
+  }
+}
