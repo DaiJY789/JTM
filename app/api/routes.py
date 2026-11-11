@@ -1,4 +1,5 @@
 import hashlib
+import json
 from time import perf_counter
 from typing import Optional
 
@@ -307,6 +308,7 @@ async def detect(
         None,
         description="Webpage URL. The backend extracts page text and representative images for multimodal analysis.",
     ),
+    webpage_image_urls: Optional[str] = Form(None, description="JSON array of selected webpage image URLs. An empty array excludes all webpage images."),
     question: Optional[str] = Form(
         None,
         description="Optional short user question that focuses the detection task.",
@@ -329,6 +331,7 @@ async def detect(
     return await _run_detection_request(
         endpoint="/detect", task=task, text=text, image=image, images=images,
         image_url=image_url, image_urls=image_urls, webpage_url=webpage_url,
+        webpage_image_urls=webpage_image_urls,
         question=question, language=language, history=history,
         conversation_id=conversation_id, orchestrator=orchestrator,
     )
@@ -347,6 +350,7 @@ async def detect_mmd(
     image_url: Optional[str] = Form(None, description="Single remote image URL."),
     image_urls: Optional[list[str]] = Form(None, description="Ordered remote image URLs; up to four total."),
     webpage_url: Optional[str] = Form(None, description="Webpage URL for text and image extraction."),
+    webpage_image_urls: Optional[str] = Form(None, description="JSON array of selected webpage image URLs. An empty array excludes all webpage images."),
     question: Optional[str] = Form(None),
     language: str = Form("zh"),
     history: str = Form("[]"),
@@ -357,6 +361,7 @@ async def detect_mmd(
         endpoint="/detect/mmd", task=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
         text=text, image=image, images=images, image_url=image_url,
         image_urls=image_urls, webpage_url=webpage_url, question=question,
+        webpage_image_urls=webpage_image_urls,
         language=language, history=history, conversation_id=conversation_id,
         orchestrator=orchestrator,
     )
@@ -372,6 +377,7 @@ async def detect_deepfake(
     image: Optional[UploadFile] = File(None, description="One image upload."),
     image_url: Optional[str] = Form(None, description="One remote image URL."),
     webpage_url: Optional[str] = Form(None, description="Webpage URL for image extraction."),
+    webpage_image_urls: Optional[str] = Form(None, description="JSON array of selected webpage image URLs. An empty array excludes all webpage images."),
     question: Optional[str] = Form(None),
     language: str = Form("zh"),
     history: str = Form("[]"),
@@ -382,6 +388,7 @@ async def detect_deepfake(
         endpoint="/detect/deepfake", task=DetectionTaskType.DEEPFAKE_DETECTION,
         text=None, image=image, images=None, image_url=image_url,
         image_urls=None, webpage_url=webpage_url, question=question,
+        webpage_image_urls=webpage_image_urls,
         language=language, history=history, conversation_id=conversation_id,
         orchestrator=orchestrator,
     )
@@ -397,6 +404,7 @@ async def _run_detection_request(
     image_url: str | None,
     image_urls: list[str] | None,
     webpage_url: str | None,
+    webpage_image_urls: str | None,
     question: str | None,
     language: str,
     history: str,
@@ -418,6 +426,7 @@ async def _run_detection_request(
         "image_url": image_url,
         "image_urls": image_urls or [],
         "webpage_url": webpage_url,
+        "webpage_image_urls": webpage_image_urls,
         "images": [
             {
                 "filename": upload.filename,
@@ -429,6 +438,14 @@ async def _run_detection_request(
         ],
     })
     try:
+        selected_webpage_images = None
+        if webpage_image_urls is not None:
+            try:
+                selected_webpage_images = json.loads(webpage_image_urls)
+            except json.JSONDecodeError as exc:
+                raise DetectionInputError("网页图片清单必须是 JSON 链接数组。") from exc
+            if not isinstance(selected_webpage_images, list) or not all(isinstance(url, str) for url in selected_webpage_images):
+                raise DetectionInputError("网页图片清单必须是 JSON 链接数组。")
         request = adapt_detection_request(
             task=task,
             text=text,
@@ -445,6 +462,7 @@ async def _run_detection_request(
             image_filenames=[item.filename for item in uploaded_images],
             image_content_types=[item.content_type for item in uploaded_images],
             image_urls=image_urls,
+            webpage_image_urls=selected_webpage_images,
         )
         builder = DetectionInputBuilder(
             webpage_extraction_service,

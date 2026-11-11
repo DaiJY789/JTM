@@ -18,9 +18,9 @@ class StubMMDService:
             "summary": "图文可信。",
             "confidence": 0.8,
             "mmd_detection": {
-                "verdict": "True",
+                "label": "True",
                 "confidence": 0.8,
-                "explanation": {"analysis": "图文可信。", "limitations": []},
+                "user_answer": {"judgment": "图文可信。", "analysis": "图文可信。", "notes": []},
             },
             "evidence": [],
             "claims": [],

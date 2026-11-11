@@ -23,3 +23,4 @@ class DetectionRequest:
     image_filenames: tuple[str | None, ...] = ()
     image_content_types: tuple[str | None, ...] = ()
     image_urls: tuple[str, ...] = ()
+    webpage_image_urls: tuple[str, ...] | None = None

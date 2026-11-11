@@ -10,33 +10,82 @@ const state = {
   conversationHistory: [],
   conversations: [],
   lastInputSignature: "",
+  followupFailure: null,
   primaryInputLocked: false,
   imageSelectionNotice: "",
   confirmedImageUrl: "",
   confirmedWebpageUrl: "",
   urlImportPending: false,
   urlImportToken: 0,
+  textFileReadToken: 0,
+  textFileReading: false,
   webpageExtraction: null,
+  draftImageRevision: 0,
+  draftImagesRestoring: false,
 };
 
 const $ = (selector) => document.querySelector(selector);
+const THEME_KEY = "jtm-theme";
 const CONVERSATION_ID_KEY = "mid_demo_conversation_id";
 const CONVERSATION_LIST_KEY = "mid_demo_conversations";
 const MAX_CONVERSATION_LIST_ITEMS = 30;
 const CONVERSATION_TITLE_LENGTH = 18;
 const MAX_MMD_IMAGES = 4;
+const pendingDetections = new Map();
+const draftFileCache = new Map();
+let draftFileDatabase;
+let runtimeTimer;
 
 function imageInputLimit() {
   return state.task === "deepfake_detection" ? 1 : MAX_MMD_IMAGES;
 }
 
 function updateTaskHeading() {
-  const taskNames = {
-    multimodal_fact_checking: "多模态事实核查",
-    deepfake_detection: "深度伪造检测",
-    aigc_detection: "大模型生成检测",
+  const tasks = {
+    multimodal_fact_checking: {
+      zh: ["多模态事实核查", "输入待核查的文本，可附上图片，查看事实判断与图文依据。"],
+      en: ["Multimodal fact-checking", "Submit text with optional images to review the verdict and supporting evidence."],
+    },
+    deepfake_detection: {
+      zh: ["深度伪造检测", "上传一张图片或导入图片链接，查看是否存在伪造或合成痕迹。"],
+      en: ["Deepfake detection", "Upload one image or import an image link to check for signs of manipulation or synthesis."],
+    },
+    aigc_detection: {
+      zh: ["大模型生成检测", "大模型生成检测暂未开放。"],
+      en: ["AI-generated content detection", "AI-generated content detection is not yet available."],
+    },
   };
-  $("#workspaceTaskName").textContent = taskNames[state.task] || taskNames.multimodal_fact_checking;
+  const task = tasks[state.task] || tasks.multimodal_fact_checking;
+  const [name, description] = task[state.language];
+  $("#workspaceTaskName").textContent = name;
+  $("#workspaceTaskDescription").textContent = description;
+}
+
+function updateThemeToggle() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  const english = state.language === "en";
+  const button = $("#themeToggleBtn");
+  button.setAttribute("aria-pressed", String(dark));
+  button.setAttribute("aria-label", english ? "Night mode" : "夜间模式");
+  button.title = english
+    ? (dark ? "Switch to light mode" : "Switch to night mode")
+    : (dark ? "切换到浅色模式" : "切换到夜间模式");
+}
+
+function bindThemeToggle() {
+  const root = document.documentElement;
+  const updateBrowserColor = () => {
+    $('meta[name="theme-color"]').content = getComputedStyle(root).getPropertyValue("--bg").trim();
+  };
+  updateBrowserColor();
+  updateThemeToggle();
+  $("#themeToggleBtn").addEventListener("click", () => {
+    const theme = root.dataset.theme === "dark" ? "light" : "dark";
+    root.dataset.theme = theme;
+    try { localStorage.setItem(THEME_KEY, theme); } catch { /* Keep the theme active for this page. */ }
+    updateBrowserColor();
+    updateThemeToggle();
+  });
 }
 
 function parsedImageUrls() {
@@ -57,13 +106,16 @@ function updateUrlImportButton() {
   const imported = Boolean(url && [state.confirmedImageUrl, state.confirmedWebpageUrl].includes(url));
   button.textContent = state.urlImportPending ? "解析中" : imported ? "已导入" : "导入";
   button.classList.toggle("confirmed", imported && !state.urlImportPending);
-  button.disabled = state.primaryInputLocked || state.urlImportPending || !url || imported;
+  button.disabled = state.primaryInputLocked || state.urlImportPending || state.textFileReading || state.draftImagesRestoring || !url || imported;
   input.readOnly = state.primaryInputLocked || state.urlImportPending;
+  const textUpload = $("#uploadTextBtn");
+  if (textUpload) textUpload.disabled = state.primaryInputLocked || state.urlImportPending || state.textFileReading;
 }
 
 function setUrlImportStatus(message, status = "") {
   const notice = $("#urlImportStatus");
   notice.textContent = message;
+  notice.title = message;
   notice.dataset.status = status;
   notice.hidden = !message;
 }
@@ -96,7 +148,15 @@ function selectedImageUrls() {
 }
 
 function selectedImageCount() {
-  return selectedImageFiles().length + selectedImageUrls().length;
+  return selectedImageFiles().length + selectedImageUrls().length + selectedWebpageImages().length;
+}
+
+function selectedWebpageImages() {
+  const webpageUrl = selectedWebpageUrl();
+  if (!webpageUrl || state.webpageExtraction?.url !== webpageUrl) return [];
+  const directUrls = selectedImageUrls();
+  const remaining = Math.max(0, imageInputLimit() - selectedImageFiles().length - directUrls.length);
+  return (state.webpageExtraction?.images || []).filter((url) => !directUrls.includes(url)).slice(0, remaining);
 }
 
 function limitSelectedFiles() {
@@ -264,11 +324,14 @@ const uiText = {
     label: "标签",
     confidence: "置信度",
     runtime: "运行时间",
+    status: "运行状态",
     tamper: "篡改风险",
     forgeryTypes: "伪造类型",
     detectionType: "类型",
     noSummary: "暂无摘要",
     running: "检测中...",
+    followupPending: "正在回复…",
+    followupFailed: "追问失败，请重试。",
     analysis: "分析过程",
     conclusion: "最终结论",
     finalJudgment: "最终判断",
@@ -297,11 +360,14 @@ const uiText = {
     label: "Label",
     confidence: "Confidence",
     runtime: "Runtime",
+    status: "Status",
     tamper: "Tamper Risk",
     forgeryTypes: "Forgery Types",
     detectionType: "Type",
     noSummary: "No summary",
     running: "Detecting...",
+    followupPending: "Preparing a reply…",
+    followupFailed: "Could not answer. Please try again.",
     analysis: "Analysis",
     conclusion: "Conclusion",
     finalJudgment: "Final judgment",
@@ -335,40 +401,18 @@ function createConversationId() {
 
 function loadConversation() {
   loadConversationIndex();
-  state.conversationId = localStorage.getItem(CONVERSATION_ID_KEY) || createConversationId();
-  localStorage.setItem(CONVERSATION_ID_KEY, state.conversationId);
-  const current = findConversation(state.conversationId);
-  state.conversationHistory = current?.conversation_history || [];
-  renderConversation();
-  syncConversation(state.conversationId);
+  const conversationId = localStorage.getItem(CONVERSATION_ID_KEY) || createConversationId();
+  activateConversation(conversationId);
+  syncConversation(conversationId);
   syncConversationList();
 }
 
 function newConversation() {
-  persistCurrentConversationDraft();
-  resetUrlImport();
-  state.conversationId = createConversationId();
-  state.conversationHistory = [];
-  state.lastResult = {};
-  state.lastInputSignature = "";
-  setPrimaryInputsLocked(false);
-  localStorage.setItem(CONVERSATION_ID_KEY, state.conversationId);
-  $("#textInput").value = "";
-  $("#questionInput").value = "";
-  $("#webpageUrlInput").value = "";
-  state.confirmedWebpageUrl = "";
-  state.webpageExtraction = null;
-  $("#imageUrlInput").value = "";
-  state.confirmedImageUrl = "";
-  $("#imageInput").value = "";
-  state.imageSelectionNotice = "";
-  clearImageObjectUrl();
-  renderEmptyPreview();
-  updateImageSelectionMeta();
-  updateWebpageUrlConfirmButton();
-  setResult({}, { persist: false });
-  setStatus("idle", "idle");
-  renderConversation();
+  const current = findConversation(state.conversationId);
+  if (current && !isSubmittedConversation(current)) {
+    removeLocalConversation(current.conversation_id);
+  }
+  startEmptyConversation();
 }
 
 function setPrimaryInputsLocked(locked) {
@@ -377,7 +421,7 @@ function setPrimaryInputsLocked(locked) {
   const webpageUrlInput = $("#webpageUrlInput");
   const imageUrlInput = $("#imageUrlInput");
   const imageInput = $("#imageInput");
-  const fileButton = document.querySelector(".file-button");
+  const fileButton = $("#addImageBtn");
   if (textInput) textInput.readOnly = state.primaryInputLocked;
   if (webpageUrlInput) webpageUrlInput.readOnly = state.primaryInputLocked;
   if (imageUrlInput) imageUrlInput.readOnly = state.primaryInputLocked;
@@ -387,9 +431,9 @@ function setPrimaryInputsLocked(locked) {
   });
   if (fileButton) {
     fileButton.disabled = state.primaryInputLocked;
-    fileButton.classList.toggle("disabled", state.primaryInputLocked);
     fileButton.setAttribute("aria-disabled", state.primaryInputLocked ? "true" : "false");
   }
+  document.querySelectorAll(".image-remove").forEach((button) => { button.hidden = state.primaryInputLocked; });
   updateImageUrlConfirmButton();
   updateWebpageUrlConfirmButton();
 }
@@ -407,30 +451,72 @@ function loadConversationIndex() {
 }
 
 function saveConversationIndex() {
-  localStorage.setItem(
-    CONVERSATION_LIST_KEY,
-    JSON.stringify(state.conversations.slice(0, MAX_CONVERSATION_LIST_ITEMS)),
-  );
+  try {
+    localStorage.setItem(
+      CONVERSATION_LIST_KEY,
+      JSON.stringify(state.conversations.slice(0, MAX_CONVERSATION_LIST_ITEMS)),
+    );
+  } catch {
+    // The current session can still keep a draft if browser storage is unavailable or full.
+  }
 }
 
 function findConversation(conversationId) {
   return state.conversations.find((item) => item.conversation_id === conversationId);
 }
 
-function ensureConversationInIndex(conversationId) {
-  if (!conversationId || findConversation(conversationId)) return;
-  const now = Date.now() / 1000;
-  state.conversations.unshift({
-    conversation_id: conversationId,
-    title: uiText.zh.untitledConversation,
-    last_label: "",
-    last_summary: "",
-    created_at: now,
-    updated_at: now,
-    history_count: state.conversationHistory.length,
-    conversation_history: state.conversationHistory,
+function draftFileOperation(mode, operation) {
+  if (typeof indexedDB === "undefined") return Promise.resolve(undefined);
+  draftFileDatabase ??= new Promise((resolve, reject) => {
+    const request = indexedDB.open("mid_demo_drafts", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("images");
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => resolve(null);
   });
+  return draftFileDatabase.then((database) => {
+    if (!database) return undefined;
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction("images", mode);
+      const request = operation(transaction.objectStore("images"));
+      transaction.oncomplete = () => resolve(request.result);
+      transaction.onabort = () => reject(transaction.error);
+    });
+  }).catch(() => undefined);
+}
+
+function rememberDraftFiles(conversationId, files) {
+  const previous = draftFileCache.get(conversationId);
+  if (previous && previous.length === files.length && previous.every((file, index) => file === files[index])) return;
+  draftFileCache.set(conversationId, files);
+  void draftFileOperation("readwrite", (store) =>
+    files.length ? store.put(files, conversationId) : store.delete(conversationId));
+}
+
+function forgetDraftFiles(conversation) {
+  if (!conversation) return;
+  const id = conversation.conversation_id;
+  const cached = draftFileCache.delete(id);
+  if (cached || conversation.draft_input?.has_files) {
+    void draftFileOperation("readwrite", (store) => store.delete(id));
+  }
+}
+
+function removeLocalConversation(conversationId) {
+  forgetDraftFiles(findConversation(conversationId));
+  state.conversations = state.conversations.filter((item) => item.conversation_id !== conversationId);
   saveConversationIndex();
+}
+
+function hasRecordedConversation(item) {
+  return Boolean(
+    item?.conversation_history?.length || Number(item?.history_count || 0) > 0 ||
+    item?.last_label || item?.last_summary || item?.latest_result?.label || item?.latest_result?.summary,
+  );
+}
+
+function isSubmittedConversation(item) {
+  return Boolean(item?.submitted || hasRecordedConversation(item));
 }
 
 function isDefaultConversationTitle(title) {
@@ -442,7 +528,7 @@ function isConversationMeaningful(item) {
   const history = Array.isArray(item.conversation_history) ? item.conversation_history : [];
   const title = String(item.title || "").trim();
   return Boolean(
-    history.length ||
+    item.draft_input || item.submitted || history.length ||
       Number(item.history_count || 0) > 0 ||
       String(item.last_label || "").trim() ||
       String(item.last_summary || "").trim() ||
@@ -452,16 +538,17 @@ function isConversationMeaningful(item) {
 
 function compactConversationTitle(value) {
   const normalized = String(value || "").replace(/\s+/g, " ").trim();
-  if (!normalized) return "";
-  return normalized.length > CONVERSATION_TITLE_LENGTH
-    ? `${normalized.slice(0, CONVERSATION_TITLE_LENGTH)}...`
+  const characters = Array.from(normalized);
+  return characters.length > CONVERSATION_TITLE_LENGTH
+    ? `${characters.slice(0, CONVERSATION_TITLE_LENGTH).join("")}...`
     : normalized;
 }
 
 function titleFromUserInput(userInput) {
   if (!userInput) return "";
   const firstImageUrl = Array.isArray(userInput.image_urls) ? userInput.image_urls[0] : "";
-  const candidates = [userInput.text, userInput.question, userInput.image_url, firstImageUrl];
+  const imageFile = userInput.image_asset?.filename || userInput.image_assets?.[0]?.filename;
+  const candidates = [userInput.text, userInput.webpage_url, userInput.image_url, firstImageUrl, imageFile, userInput.question];
   const value = candidates.map((item) => String(item || "").trim()).find(Boolean);
   if (value) return compactConversationTitle(value);
   return userInput.has_image ? "图片检测" : "";
@@ -472,16 +559,17 @@ function titleFromCurrentInput() {
   const candidates = [
     $("#textInput")?.value,
     $("#webpageUrlInput")?.value,
-    $("#questionInput")?.value,
     $("#imageUrlInput")?.value,
     imageFile?.name,
+    $("#questionInput")?.value,
+    $("#urlInput")?.value,
   ];
   const value = candidates.map((item) => String(item || "").trim()).find(Boolean);
   return value ? compactConversationTitle(value) : "";
 }
 
 function titleFromHistory(history) {
-  const userItem = [...(history || [])].reverse().find((item) => item.role === "user");
+  const userItem = history?.find((item) => item.role === "user" && item.meta?.mode !== "followup");
   return titleFromUserInput(userItem?.meta);
 }
 
@@ -494,6 +582,7 @@ function normalizeConversation(raw, existing = {}) {
       ? conversation.conversation_history
       : [];
   const history = incomingHistory.length ? incomingHistory : existing.conversation_history || [];
+  const initialTitle = conversation.initial_title || existing.initial_title || titleFromHistory(history);
   const incomingTitle = conversation.title || "";
   const incomingHasTitle = Boolean(
     incomingTitle && incomingTitle !== uiText.zh.untitledConversation && incomingTitle !== uiText.en.untitledConversation,
@@ -503,14 +592,15 @@ function normalizeConversation(raw, existing = {}) {
       incomingHistory.length ||
       conversation.history_count ||
       conversation.last_label ||
-      conversation.last_summary ||
-      titleFromHistory(incomingHistory),
+    conversation.last_summary,
   );
-  const fallbackTitle = titleFromHistory(history) || existing.title || uiText.zh.untitledConversation;
   return {
     ...existing,
+    submitted: Boolean(conversation.submitted || existing.submitted),
+    draft_input: conversation.draft_input !== undefined ? conversation.draft_input : existing.draft_input,
     conversation_id: conversationId,
-    title: incomingHasTitle ? incomingTitle : fallbackTitle,
+    title: initialTitle || (incomingHasTitle ? incomingTitle : existing.title || uiText.zh.untitledConversation),
+    initial_title: initialTitle,
     last_label: incomingHasContent ? conversation.last_label || "" : existing.last_label || "",
     last_summary: incomingHasContent ? conversation.last_summary || "" : existing.last_summary || "",
     created_at: conversation.created_at ?? existing.created_at ?? Date.now() / 1000,
@@ -531,6 +621,8 @@ function upsertConversation(raw, options = {}) {
   const normalized = normalizeConversation(raw, existing);
   if (!normalized.conversation_id) return;
   if (!isConversationMeaningful(normalized)) return;
+  if (hasRecordedConversation(normalized)) normalized.draft_input = null;
+  if (existing.draft_input && !normalized.draft_input) forgetDraftFiles(existing);
   if (existingIndex >= 0) {
     state.conversations.splice(existingIndex, 1, normalized);
   } else if (insertPosition === "bottom") {
@@ -538,60 +630,77 @@ function upsertConversation(raw, options = {}) {
   } else {
     state.conversations.unshift(normalized);
   }
-  state.conversations = state.conversations.slice(0, MAX_CONVERSATION_LIST_ITEMS);
+  state.conversations.splice(MAX_CONVERSATION_LIST_ITEMS).forEach(forgetDraftFiles);
   saveConversationIndex();
 }
 
 function upsertConversationFromResult(result) {
   if (!result?.conversation_id) return;
-  const history = Array.isArray(result.conversation_history) ? result.conversation_history : state.conversationHistory;
+  const existing = findConversation(result.conversation_id);
+  const { conversation_history: resultHistory, ...latestResult } = result;
+  const history = Array.isArray(resultHistory) ? resultHistory : existing?.conversation_history || [];
   upsertConversation({
     conversation_id: result.conversation_id,
+    submitted: true,
+    draft_input: null,
     title: result.title || titleFromHistory(history) || titleFromCurrentInput(),
     last_label: result.label || "",
-    last_summary: result.summary || result?.user_answer?.conclusion || result?.user_answer?.analysis || "",
+    last_summary: result.summary || result?.user_answer?.analysis || result?.user_answer?.judgment || result?.user_answer?.conclusion || "",
     updated_at: Date.now() / 1000,
     history_count: history.length,
     conversation_history: history,
-    latest_result: result,
+    latest_result: latestResult,
   });
 }
 
-function persistCurrentConversationDraft() {
-  if (!state.conversationId) return;
-  const existing = findConversation(state.conversationId) || {};
-  const draftTitle = titleFromCurrentInput();
-  const historyTitle = titleFromHistory(state.conversationHistory);
-  const title = draftTitle || historyTitle || existing.title;
-  const hasContent = Boolean(
-    draftTitle ||
-      historyTitle ||
-      state.conversationHistory.length ||
-      state.lastResult?.label ||
-      state.lastResult?.summary ||
-      existing.history_count,
-  );
-  if (!hasContent) return;
+function persistCurrentConversationDraft({ submitted = false } = {}) {
+  const conversationId = state.conversationId;
+  const existing = findConversation(conversationId);
+  if (!conversationId || pendingDetections.has(conversationId) ||
+      hasRecordedConversation(existing) || state.conversationHistory.length) return;
+
+  const files = selectedImageFiles();
+  const draft = {
+    task: state.task,
+    text: $("#textInput").value,
+    question: $("#questionInput").value,
+    url: $("#urlInput").value,
+    webpage_url: selectedWebpageUrl(),
+    image_url: parsedImageUrls()[0] || "",
+    webpage_images: state.webpageExtraction?.images || [],
+    has_files: state.draftImagesRestoring ? Boolean(existing?.draft_input?.has_files) : Boolean(files.length),
+  };
+  const wasSubmitted = submitted || Boolean(existing?.submitted);
+  const hasContent = draft.has_files || [draft.text, draft.question, draft.url, draft.webpage_url, draft.image_url].some((value) => value.trim());
+  if (!hasContent && !wasSubmitted) {
+    if (existing) removeLocalConversation(conversationId);
+    return;
+  }
+  if (!state.draftImagesRestoring && (files.length || existing?.draft_input?.has_files)) {
+    rememberDraftFiles(conversationId, files);
+  }
   upsertConversation({
-    conversation_id: state.conversationId,
-    title: title || uiText.zh.untitledConversation,
-    last_label: state.lastResult?.label || existing.last_label || "",
-    last_summary: state.lastResult?.summary || existing.last_summary || "",
+    conversation_id: conversationId,
+    submitted: wasSubmitted,
+    draft_input: draft,
+    title: titleFromCurrentInput() || existing?.title || uiText.zh.untitledConversation,
     updated_at: Date.now() / 1000,
-    history_count: state.conversationHistory.length || existing.history_count || 0,
-    conversation_history: state.conversationHistory.length ? state.conversationHistory : existing.conversation_history || [],
-    latest_input: existing.latest_input || {},
-    latest_result: state.lastResult?.label ? state.lastResult : existing.latest_result || {},
   });
 }
 
 async function syncConversationList() {
+  const before = new Map(state.conversations.map((item) => [item.conversation_id, item]));
   try {
     const response = await fetch("/conversations");
     if (!response.ok) return;
     const payload = await response.json();
-    state.conversations = [];
-    (payload.conversations || []).forEach((item) => upsertConversation(item, { insertPosition: "bottom" }));
+    const remote = payload.conversations || [];
+    const remoteIds = new Set(remote.map((item) => item.conversation_id));
+    state.conversations = state.conversations.filter((item) =>
+      remoteIds.has(item.conversation_id) || item.draft_input ||
+      (isSubmittedConversation(item) && before.get(item.conversation_id) !== item));
+    remote.forEach((item) => upsertConversation(item, { insertPosition: "bottom" }));
+    state.conversations.sort((a, b) => b.updated_at - a.updated_at);
     saveConversationIndex();
     renderConversation();
   } catch {
@@ -600,51 +709,69 @@ async function syncConversationList() {
 }
 
 async function syncConversation(conversationId) {
-  if (!conversationId) return;
+  if (!conversationId || pendingDetections.has(conversationId)) return;
   const local = findConversation(conversationId);
+  if (local?.draft_input && !isSubmittedConversation(local)) return;
   try {
     const response = await fetch(`/conversations/${encodeURIComponent(conversationId)}`);
     if (!response.ok) return;
     const payload = await response.json();
+    const currentResult = findConversation(conversationId)?.latest_result;
+    if (pendingDetections.has(conversationId) ||
+        (currentResult !== local?.latest_result && isCompletedDetection(currentResult))) return;
     const remoteHistory = Array.isArray(payload.conversation_history) ? payload.conversation_history : [];
-    if (remoteHistory.length || !local?.conversation_history?.length) {
-      upsertConversation(payload);
-      if (state.conversationId === conversationId) {
-        state.conversationHistory = remoteHistory;
-        if (payload.latest_result && Object.keys(payload.latest_result).length) {
-          state.lastResult = payload.latest_result;
-          state.lastResult.conversation_id = conversationId;
-          state.lastResult.conversation_history = remoteHistory;
-          state.lastInputSignature = "";
-          setResult(state.lastResult, { persist: false });
-          restoreInputPreview(payload.latest_input || {});
-          return;
-        }
-        restoreInputPreview(payload.latest_input || {});
-        renderConversation();
-      }
+    if (!hasRecordedConversation(payload) && !hasRecordedConversation(payload.conversation)) return;
+    upsertConversation({
+      ...payload,
+      conversation: { ...payload.conversation, conversation_id: conversationId, submitted: true, draft_input: null },
+    });
+    if (state.conversationId === conversationId) {
+      state.conversationHistory = remoteHistory;
+      state.lastInputSignature = "";
+      setResult({
+        ...(payload.latest_result || {}),
+        label: payload.latest_result?.label || payload.conversation?.last_label || "",
+        summary: payload.latest_result?.summary || payload.conversation?.last_summary || "",
+        conversation_id: conversationId,
+        conversation_history: remoteHistory,
+      }, { persist: false });
+      restoreInputPreview(payload.latest_input || {});
+    } else {
+      renderConversation();
     }
   } catch {
     renderConversation();
   }
 }
 
-function selectConversation(conversationId) {
-  if (!conversationId || conversationId === state.conversationId) return;
-  persistCurrentConversationDraft();
+function activateConversation(conversationId) {
   state.conversationId = conversationId;
+  state.followupFailure = null;
   localStorage.setItem(CONVERSATION_ID_KEY, conversationId);
   const conversation = findConversation(conversationId);
   state.conversationHistory = conversation?.conversation_history || [];
-  state.lastResult = {
+  state.lastInputSignature = "";
+  setResult({
     ...(conversation?.latest_result || {}),
     conversation_id: conversationId,
     conversation_history: state.conversationHistory,
     label: conversation?.latest_result?.label || conversation?.last_label || "",
     summary: conversation?.latest_result?.summary || conversation?.last_summary || "",
-  };
-  setResult(state.lastResult, { persist: false });
-  restoreInputPreview(conversation?.latest_input || {});
+  }, { persist: false });
+  restoreInputPreview(conversation?.latest_input || {}, conversation?.draft_input);
+  const pending = pendingDetections.get(conversationId);
+  if (pending && !pending.question) {
+    setPrimaryInputsLocked(true);
+    setStatus("running", "running");
+    setRunningResultView();
+  }
+  updateSubmitButtonLabel();
+}
+
+function selectConversation(conversationId) {
+  if (!conversationId || conversationId === state.conversationId) return;
+  persistCurrentConversationDraft();
+  activateConversation(conversationId);
   syncConversation(conversationId);
 }
 
@@ -669,8 +796,13 @@ function renderConversation() {
     conversationTitle.textContent = current?.title ? `${current.title} · ${shortId}` : `${copy.conversation} ${shortId}`;
   }
   $("#historyTitle").textContent = copy.history;
+  $("#conclusionTitle").textContent = language === "en" ? "Verdict and evidence" : "核查结论与依据";
+  const textUpload = $("#uploadTextBtn");
+  textUpload.title = language === "en" ? "Choose a TXT file" : "选择 TXT 文件";
+  textUpload.setAttribute("aria-label", textUpload.title);
   renderConversationList(language);
   renderConversationHistory(language);
+  renderFollowupFeedback(language);
 }
 
 function renderConversationList(language) {
@@ -704,6 +836,11 @@ function renderConversationList(language) {
       badge.className = "conversation-label";
       renderVerdictBadge(badge, conversation.last_label, language);
       openButton.appendChild(badge);
+    } else if (conversation.draft_input && !isSubmittedConversation(conversation)) {
+      const badge = document.createElement("span");
+      badge.className = "conversation-label verdict-badge";
+      badge.textContent = language === "en" ? "Draft" : "草稿";
+      openButton.appendChild(badge);
     }
     button.appendChild(openButton);
 
@@ -711,6 +848,7 @@ function renderConversationList(language) {
       const deleteButton = document.createElement("button");
       deleteButton.className = "conversation-delete";
       deleteButton.type = "button";
+      deleteButton.disabled = pendingDetections.has(conversation.conversation_id);
       deleteButton.dataset.conversationId = conversation.conversation_id;
       deleteButton.textContent = "×";
       deleteButton.title = copy.deleteConversation;
@@ -721,13 +859,20 @@ function renderConversationList(language) {
   });
 }
 
-function restoreInputPreview(latestInput) {
+function restoreInputPreview(latestInput, draft) {
   if (!latestInput || typeof latestInput !== "object") return;
   resetUrlImport();
+  resetTextFileImport();
   setPrimaryInputsLocked(false);
   clearImageObjectUrl();
+  state.draftImageRevision += 1;
+  state.draftImagesRestoring = false;
   $("#imageInput").value = "";
-  selectSegmentValue("task", latestInput.task || "multimodal_fact_checking");
+  selectSegmentValue("task", draft?.task || latestInput.task || "multimodal_fact_checking");
+  if (draft) {
+    restoreDraftInput(draft);
+    return;
+  }
   $("#textInput").value = latestInput.text || "";
   $("#questionInput").value = "";
   $("#webpageUrlInput").value = latestInput.webpage_url || "";
@@ -795,15 +940,53 @@ function restoreInputPreview(latestInput) {
   }
 }
 
+function restoreDraftInput(draft) {
+  const conversationId = state.conversationId;
+  const revision = state.draftImageRevision;
+  $("#textInput").value = draft.text || "";
+  $("#questionInput").value = draft.question || "";
+  $("#urlInput").value = draft.url || "";
+  $("#webpageUrlInput").value = state.confirmedWebpageUrl = draft.webpage_url || "";
+  $("#imageUrlInput").value = state.confirmedImageUrl = draft.image_url || "";
+  state.webpageExtraction = draft.webpage_url
+    ? { url: draft.webpage_url, images: draft.webpage_images || [] }
+    : null;
+  state.imageSelectionNotice = "";
+  state.draftImagesRestoring = Boolean(draft.has_files);
+  renderSelectedImagePreviews();
+  updateImageSelectionMeta();
+  updateUrlImportButton();
+  updateSubmitButtonLabel();
+  if (!draft.has_files) return;
+
+  const files = draftFileCache.has(conversationId)
+    ? Promise.resolve(draftFileCache.get(conversationId))
+    : draftFileOperation("readonly", (store) => store.get(conversationId));
+  files.then((storedFiles) => {
+    if (state.conversationId !== conversationId || state.draftImageRevision !== revision) return;
+    state.draftImagesRestoring = false;
+    if (storedFiles?.length && typeof DataTransfer !== "undefined") {
+      const transfer = new DataTransfer();
+      storedFiles.slice(0, imageInputLimit()).forEach((file) => transfer.items.add(file));
+      $("#imageInput").files = transfer.files;
+    }
+    syncImageInputMode();
+    persistCurrentConversationDraft();
+    updateSubmitButtonLabel();
+    renderConversation();
+  });
+}
+
 async function deleteConversation(conversationId) {
-  if (!state.historyDeleteEnabled || !conversationId) return;
-  state.conversations = state.conversations.filter((item) => item.conversation_id !== conversationId);
-  saveConversationIndex();
+  if (!state.historyDeleteEnabled || !conversationId || pendingDetections.has(conversationId)) return;
+  const submitted = isSubmittedConversation(findConversation(conversationId));
+  removeLocalConversation(conversationId);
   if (state.conversationId === conversationId) {
     startEmptyConversation();
   } else {
     renderConversation();
   }
+  if (!submitted) return;
   try {
     await fetch(`/conversations/${encodeURIComponent(conversationId)}`, { method: "DELETE" });
   } catch {
@@ -812,11 +995,15 @@ async function deleteConversation(conversationId) {
 }
 
 function startEmptyConversation() {
+  state.draftImageRevision += 1;
+  state.draftImagesRestoring = false;
   resetUrlImport();
+  resetTextFileImport();
   state.conversationId = createConversationId();
   state.conversationHistory = [];
   state.lastResult = {};
   state.lastInputSignature = "";
+  state.followupFailure = null;
   setPrimaryInputsLocked(false);
   localStorage.setItem(CONVERSATION_ID_KEY, state.conversationId);
   $("#textInput").value = "";
@@ -837,26 +1024,118 @@ function startEmptyConversation() {
   renderConversation();
 }
 
+function questionFromHistory(item, language) {
+  const meta = item.meta || {};
+  const question = typeof meta.question === "string" ? meta.question.trim() : "";
+  if (question) return question;
+
+  const content = typeof item.content === "string" ? item.content.trim() : "";
+  const serialized = /^(?:text|question|image_url|webpage_url|image):[ \t]/.test(content);
+  const hasInputMeta = Boolean(meta.text || meta.has_image || meta.image_url || meta.webpage_url || meta.image_urls?.length);
+  if (!serialized && !hasInputMeta && content && content !== "empty user input") return content;
+  if (serialized && !meta.text) {
+    const legacyQuestion = Array.from(content.matchAll(/(?:^|\n)question:[ \t]*([^\n]+)/g)).at(-1)?.[1].trim();
+    if (legacyQuestion) return legacyQuestion;
+  }
+  const task = meta.task || (meta.mode === "image_only" ? "deepfake_detection" : "");
+  return questionForInput({
+    task,
+    hasWebpage: Boolean(meta.webpage_url || /(?:^|\n)webpage_url:/.test(content)),
+    hasImage: Boolean(meta.has_image || meta.image_url || meta.image_urls?.length || /(?:^|\n)image(?:_url)?:/.test(content)),
+    hasText: Boolean(meta.text || /(?:^|\n)text:/.test(content)),
+  }, language) || (language === "en" ? "Please check the submitted content." : "请核查提交的内容。");
+}
+
+let renderedHistory;
+let renderedHistoryLanguage;
+let renderedHistoryResult;
 function renderConversationHistory(language) {
   const list = $("#conversationHistory");
-  const copy = uiText[language];
-  list.classList.toggle("is-empty", !state.conversationHistory.length);
-  if (!state.conversationHistory.length) {
-    list.textContent = language === "en" ? "Your conversation will appear here after detection." : "检测完成后，可在这里查看对话并继续追问";
+  const history = state.conversationHistory;
+  const result = state.lastResult;
+  if (renderedHistory === history && renderedHistoryLanguage === language && renderedHistoryResult === result) return;
+  const newHistory = renderedHistory !== history;
+  renderedHistory = history;
+  renderedHistoryLanguage = language;
+  renderedHistoryResult = result;
+  list.classList.toggle("is-empty", !history.length);
+  const empty = list.querySelector(".history-empty");
+  const messages = list.querySelector(".history-messages");
+  const conclusion = $("#conversationConclusion");
+  list.insertBefore(conclusion, $("#followupFeedback"));
+  messages.replaceChildren();
+  empty.hidden = Boolean(history.length);
+  if (!history.length) {
+    empty.textContent = language === "en" ? "Your conversation will appear here after detection." : "检测完成后，可在这里查看对话并继续追问";
     return;
   }
-  list.innerHTML = "";
-  state.conversationHistory.slice(-8).forEach((item) => {
-    const node = document.createElement("div");
-    node.className = `history-item ${item.role === "user" ? "user-message" : "assistant-message"}`;
-    const role = document.createElement("strong");
-    role.textContent = item.role === "user" ? (language === "en" ? "You" : "你") : (language === "en" ? "Assistant" : "惊堂木");
-    const content = document.createElement("p");
-    content.textContent = item.content || item.label || "";
-    node.appendChild(role);
-    node.appendChild(content);
-    list.appendChild(node);
+  const hasEvidence = !conclusion.hidden && hasDetectionResult() && !$("#statusPill").classList.contains("running");
+  const conclusionIndex = hasEvidence
+    ? history.findLastIndex((item, index) => item.role === "assistant" && history[index - 1]?.meta?.mode !== "followup")
+    : -1;
+  if (hasEvidence && conclusionIndex === -1) messages.before(conclusion);
+  const normalize = (text) => text.trim().replace(/\s+/g, " ");
+  const evidenceText = Array.from($("#summaryBox").querySelectorAll("p, li"), (node) => normalize(node.textContent));
+  history.forEach((item, index) => {
+    const node = createHistoryMessage(item, language);
+    if (index === conclusionIndex) {
+      const message = node.querySelector(".message-text");
+      message.before(conclusion);
+      if (evidenceText.includes(normalize(message.textContent))) message.remove();
+    }
+    messages.append(node);
   });
+  if (newHistory) list.scrollTop = history.length > 2 ? list.scrollHeight : 0;
+}
+
+function createHistoryMessage(item, language) {
+  const user = item.role === "user";
+  const node = document.createElement("article");
+  node.className = `history-item ${user ? "user-message" : "assistant-message"}`;
+  const avatar = document.createElement("span");
+  avatar.className = "message-avatar";
+  avatar.setAttribute("aria-hidden", "true");
+  if (user) {
+    avatar.append($("#userAvatarIcon").content.cloneNode(true));
+  } else {
+    const logo = document.createElement("img");
+    logo.src = "/static/logo.png";
+    logo.alt = "";
+    avatar.append(logo);
+  }
+  const header = document.createElement("div");
+  header.className = "message-header";
+  const role = document.createElement("strong");
+  role.textContent = user ? (language === "en" ? "User" : "用户") : (language === "en" ? "Assistant" : "惊堂木");
+  header.append(avatar, role);
+  const message = document.createElement("p");
+  message.className = "message-text";
+  message.textContent = user ? questionFromHistory(item, language) : item.content || item.label || "";
+  node.append(header, message);
+  return node;
+}
+
+let renderedFollowup;
+let renderedFollowupLanguage;
+function renderFollowupFeedback(language) {
+  const pending = pendingDetections.get(state.conversationId);
+  const followup = pending?.question ? pending : state.followupFailure;
+  if (followup === renderedFollowup && language === renderedFollowupLanguage) return;
+  renderedFollowup = followup;
+  renderedFollowupLanguage = language;
+  const container = $("#followupFeedback");
+  container.replaceChildren();
+  if (!followup) return;
+
+  const copy = uiText[language];
+  const status = document.createElement("p");
+  const failed = followup.error !== undefined;
+  status.className = failed ? "followup-status is-error" : "followup-status";
+  status.setAttribute("role", "status");
+  status.textContent = failed ? [copy.followupFailed, followup.error].filter(Boolean).join(" ") : copy.followupPending;
+  container.append(createHistoryMessage({ role: "user", meta: { question: followup.question } }, language), status);
+  const history = $("#conversationHistory");
+  history.scrollTop = history.scrollHeight;
 }
 
 function bindSegmentedControls() {
@@ -874,6 +1153,8 @@ function bindSegmentedControls() {
         setUrlImportStatus("");
         state.imageSelectionNotice = "";
         syncImageInputMode();
+        persistCurrentConversationDraft();
+        renderConversation();
         setMobilePanel("content");
         setSidebarOpen(false);
       }
@@ -897,6 +1178,8 @@ function selectSegmentValue(field, value) {
 
 function bindImagePreview() {
   $("#imageInput").addEventListener("change", () => {
+    state.draftImageRevision += 1;
+    state.draftImagesRestoring = false;
     state.imageSelectionNotice = "";
     limitSelectedFiles();
     if (state.task === "deepfake_detection" && selectedImageFiles().length) {
@@ -915,21 +1198,17 @@ function bindImagePreview() {
 function renderWebpageExtraction(payload, requestedUrl) {
   const extractedText = [payload?.title, payload?.text].filter(Boolean).join("\n\n").trim();
   const images = Array.isArray(payload?.images)
-    ? payload.images.map((item) => String(item || "").trim()).filter(Boolean).slice(0, imageInputLimit())
+    ? [...new Set(payload.images.map((item) => String(item || "").trim()).filter(Boolean))].slice(0, imageInputLimit())
     : [];
-  if (!images.length && payload?.image_url) images.push(String(payload.image_url).trim());
+  const fallbackImage = String(payload?.image_url || "").trim();
+  if (!images.length && fallbackImage) images.push(fallbackImage);
 
-  if (extractedText) $("#textInput").value = extractedText;
-  state.webpageExtraction = { url: requestedUrl, text: extractedText, images };
-  if (!selectedImageCount()) {
-    if (images.length === 1) {
-      renderImagePreview(images[0], imageNameFromUrl(images[0], 0), { noReferrer: true });
-    } else if (images.length > 1) {
-      renderImagePreviews(images, images.map((url, index) => imageNameFromUrl(url, index)));
-    } else {
-      renderEmptyPreview();
-    }
+  if (extractedText) {
+    $("#textInput").value = extractedText;
+    setTextFileStatus("");
   }
+  state.webpageExtraction = { url: requestedUrl, text: extractedText, images };
+  renderSelectedImagePreviews();
   state.imageSelectionNotice = "";
   updateImageSelectionMeta();
 }
@@ -958,7 +1237,7 @@ function probeImageUrl(url) {
 async function importUrl() {
   const input = $("#urlInput");
   const url = input.value.trim();
-  if (!url || state.primaryInputLocked || state.urlImportPending) return;
+  if (!url || state.primaryInputLocked || state.urlImportPending || state.textFileReading || state.draftImagesRestoring) return;
   try {
     const parsed = new URL(url);
     if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("unsupported protocol");
@@ -1001,7 +1280,9 @@ async function importUrl() {
       $("#webpageUrlInput").value = url;
       state.confirmedWebpageUrl = url;
       renderWebpageExtraction(payload, url);
-      setUrlImportStatus(`已识别为网页，已提取正文和 ${state.webpageExtraction.images.length} 张图片。`, "success");
+      const count = selectedWebpageImages().length;
+      const extracted = state.webpageExtraction.text ? "已提取正文" : "未找到正文";
+      setUrlImportStatus(`已识别为网页，${extracted}，已选 ${count} 张图片。`, "success");
     }
     persistCurrentConversationDraft();
     renderConversation();
@@ -1022,6 +1303,8 @@ function bindUrlImport() {
     input.setCustomValidity("");
     setUrlImportStatus("");
     updateUrlImportButton();
+    persistCurrentConversationDraft();
+    renderConversation();
   });
   input.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
@@ -1033,7 +1316,9 @@ function bindUrlImport() {
 
 function imageNameFromUrl(url, index) {
   try {
-    return new URL(url).hostname || `remote-${index + 1}`;
+    const parsed = new URL(url);
+    const filename = parsed.pathname.split("/").filter(Boolean).at(-1);
+    return filename ? decodeURIComponent(filename) : parsed.hostname || `remote-${index + 1}`;
   } catch {
     return `remote-${index + 1}`;
   }
@@ -1103,7 +1388,7 @@ function syncImagePreviewsFromResult(result) {
 
 function renderSelectedImagePreviews() {
   const files = selectedImageFiles();
-  const urls = selectedImageUrls();
+  const urls = [...selectedImageUrls(), ...selectedWebpageImages()];
   clearImageObjectUrl();
   state.imageObjectUrls = files.map((file) => URL.createObjectURL(file));
   const sources = [...state.imageObjectUrls, ...urls];
@@ -1111,29 +1396,47 @@ function renderSelectedImagePreviews() {
     ...files.map((file) => file.name),
     ...urls.map((url, index) => imageNameFromUrl(url, index)),
   ];
-  if (!sources.length) {
-    const webpageImages = selectedWebpageUrl()
-      ? (state.webpageExtraction?.images || []).slice(0, imageInputLimit())
-      : [];
-    if (webpageImages.length === 1) {
-      renderImagePreview(
-        webpageImages[0],
-        imageNameFromUrl(webpageImages[0], 0),
-        { noReferrer: true },
-      );
-    } else if (webpageImages.length > 1) {
-      renderImagePreviews(
-        webpageImages,
-        webpageImages.map((url, index) => imageNameFromUrl(url, index)),
-      );
+  const removers = [
+    ...files.map((_, index) => () => removeSelectedImage(index)),
+    ...urls.map((url) => () => removeSelectedImage(url)),
+  ];
+  renderImagePreviews(sources, names, { removers });
+}
+
+function removeSelectedImage(indexOrUrl) {
+  if (state.primaryInputLocked || state.draftImagesRestoring) return;
+  if (typeof indexOrUrl === "number") {
+    const input = $("#imageInput");
+    const remaining = selectedImageFiles().filter((_, index) => index !== indexOrUrl);
+    if (remaining.length) {
+      const transfer = new DataTransfer();
+      remaining.forEach((file) => transfer.items.add(file));
+      input.files = transfer.files;
     } else {
-      renderEmptyPreview();
+      input.value = "";
     }
-  } else if (sources.length === 1) {
-    renderImagePreview(sources[0], names[0] || "Image 1", { noReferrer: urls.length === 1 });
   } else {
-    renderImagePreviews(sources, names);
+    if (state.confirmedImageUrl === indexOrUrl) {
+      state.confirmedImageUrl = "";
+      $("#imageUrlInput").value = "";
+      if ($("#urlInput").value.trim() === indexOrUrl) {
+        $("#urlInput").value = "";
+        setUrlImportStatus("");
+      }
+    }
+    if (state.webpageExtraction?.images.includes(indexOrUrl)) {
+      state.webpageExtraction.images = state.webpageExtraction.images.filter((url) => url !== indexOrUrl);
+      setUrlImportStatus(`网页已导入，已选 ${selectedWebpageImages().length} 张图片。`, "success");
+    }
   }
+  state.imageSelectionNotice = "";
+  renderSelectedImagePreviews();
+  updateImageSelectionMeta();
+  updateUrlImportButton();
+  persistCurrentConversationDraft();
+  updateSubmitButtonLabel();
+  renderConversation();
+  ($(".image-remove:not([hidden])") || $("#addImageBtn")).focus();
 }
 
 function clearImageObjectUrl() {
@@ -1195,8 +1498,28 @@ function renderEmptyPreview() {
   preview.innerHTML = `<div class="preview-empty">
     <div class="upload-illustration" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="24" height="22" rx="4"/><circle cx="11" cy="12" r="2.5"/><path d="m5 23 7-7 5 5 5-8 6 9"/></svg></div>
     <strong>添加图片，补充核查线索</strong>
-    <p>点击右上角 + 添加图片，或在下方导入 URL<br>图片将以原始比例显示</p>
+    <p>点击右上角 + 添加图片，或通过上方链接导入<br>图片将以原始比例显示</p>
   </div>`;
+}
+
+function imageRemoveButton(name, remove) {
+  const button = document.createElement("button");
+  const label = state.language === "en" ? `Remove image: ${name}` : `移除图片：${name}`;
+  button.type = "button";
+  button.className = "image-remove";
+  button.textContent = "×";
+  button.title = label;
+  button.setAttribute("aria-label", label);
+  button.hidden = state.primaryInputLocked;
+  button.addEventListener("click", remove);
+  return button;
+}
+
+function renderUnavailableImage(image) {
+  const notice = document.createElement("span");
+  notice.className = "preview-item-error";
+  notice.textContent = "图片暂时无法加载";
+  image.replaceWith(notice);
 }
 
 function renderImagePreview(src, alt, options = {}) {
@@ -1216,13 +1539,11 @@ function renderImagePreview(src, alt, options = {}) {
   if (options.noReferrer) {
     img.referrerPolicy = "no-referrer";
   }
-  img.addEventListener("error", () => {
-    preview.classList.remove("has-image");
-    preview.innerHTML = "<span>历史图片暂时无法加载。</span>";
-  });
+  img.addEventListener("error", () => renderUnavailableImage(img));
   img.src = src;
   img.addEventListener("load", () => drawSuspiciousRegions(state.lastResult));
   preview.appendChild(img);
+  if (options.onRemove) preview.appendChild(imageRemoveButton(alt, options.onRemove));
 
   const overlay = document.createElement("div");
   overlay.className = "region-overlay";
@@ -1235,7 +1556,11 @@ function renderImagePreviews(sources, names, options = {}) {
     return;
   }
   if (sources.length === 1) {
-    renderImagePreview(sources[0], names[0] || "Image 1");
+    renderImagePreview(sources[0], names[0] || "Image 1", {
+      remember: options.remember,
+      noReferrer: /^https?:\/\//i.test(sources[0]),
+      onRemove: options.removers?.[0],
+    });
     return;
   }
   state.imagePreviewSource = sources.join("|");
@@ -1257,15 +1582,14 @@ function renderImagePreviews(sources, names, options = {}) {
     if (/^https?:\/\//i.test(src)) {
       img.referrerPolicy = "no-referrer";
     }
-    img.addEventListener("error", () => {
-      item.classList.add("preview-item-error");
-      item.innerHTML = "<span>图片暂时无法加载</span>";
-    });
+    img.addEventListener("error", () => renderUnavailableImage(img));
     img.src = src;
     const caption = document.createElement("figcaption");
     caption.textContent = `Image ${index + 1} · ${names[index] || "image"}`;
     item.appendChild(img);
     item.appendChild(caption);
+    const remove = options.removers?.[index];
+    if (remove) item.appendChild(imageRemoveButton(img.alt, remove));
     preview.appendChild(item);
   });
   const overlay = document.createElement("div");
@@ -1282,18 +1606,85 @@ function setStatus(status, text) {
   pill.textContent = names[status] || text;
   $(".result-summary").setAttribute("aria-busy", String(status === "running"));
   $(".conversation-history").setAttribute("aria-busy", String(status === "running"));
+  if (status !== "running" && runtimeTimer !== undefined) {
+    clearInterval(runtimeTimer);
+    runtimeTimer = undefined;
+  }
+}
+
+function renderConclusion(result, language) {
+  const details = $("#conversationConclusion");
+  const container = $("#summaryBox");
+  const hasResult = Boolean(result?.label || result?.summary || result?.error);
+  const wasHidden = details.hidden;
+  details.hidden = !hasResult;
+  container.replaceChildren();
+  if (!hasResult) {
+    details.open = false;
+    return;
+  }
+  if (wasHidden) details.open = true;
+
+  const answer = formatUserAnswer(result, language);
+  const copy = uiText[language];
+
+  if (answer.message) {
+    const status = document.createElement("p");
+    status.className = "conclusion-status";
+    status.textContent = answer.message;
+    container.append(status);
+    return;
+  }
+
+  function appendSection(title, entries, kind) {
+    if (!entries.length) return;
+    const section = document.createElement("section");
+    section.className = `conclusion-section conclusion-${kind}`;
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+    section.append(heading);
+    if (kind === "judgment") {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = entries[0];
+      section.append(paragraph);
+    } else {
+      const list = document.createElement(kind === "reasons" ? "ol" : "ul");
+      for (const entry of entries) {
+        const li = document.createElement("li");
+        li.textContent = entry;
+        list.append(li);
+      }
+      section.append(list);
+    }
+    container.append(section);
+  }
+
+  appendSection(copy.finalJudgment, [answer.conclusion], "judgment");
+  appendSection(language === "en" ? "Key evidence" : "主要依据", answer.reasons, "reasons");
+  appendSection(language === "en" ? "Notes and limitations" : "说明与局限", answer.notes, "notes");
 }
 
 function setRunningResultView() {
-  $("#conversationConclusion").hidden = false;
-  $("#conversationConclusion").open = true;
+  const conclusion = $("#conversationConclusion");
+  const history = $("#conversationHistory");
+  history.insertBefore(conclusion, $("#followupFeedback"));
+  conclusion.hidden = false;
+  conclusion.open = true;
   const language = state.language === "en" ? "en" : "zh";
   const copy = uiText[language];
-  renderVerdictBadge($("#resultLabel"), "", language);
-  $("#resultConfidence").textContent = "-";
-  $("#resultRuntime").textContent = "-";
-  $("#aiScore").textContent = "-";
+  renderResultMetrics({}, language);
+  updateRunningTime();
+  if (runtimeTimer === undefined) runtimeTimer = setInterval(updateRunningTime, 100);
   $("#summaryBox").textContent = copy.running;
+  history.scrollTop = history.scrollHeight;
+}
+
+function updateRunningTime() {
+  const pending = pendingDetections.get(state.conversationId);
+  if (pending && !pending.question) {
+    const seconds = Math.max(0, Date.now() - pending.startedAt) / 1000;
+    $("#resultRuntime").textContent = formatRuntime(seconds, state.language);
+  }
 }
 
 function setResult(result, options = {}) {
@@ -1312,23 +1703,27 @@ function setResult(result, options = {}) {
   renderExtractedWebpageInput(result);
   syncImagePreviewsFromResult(result);
   const language = state.language === "en" ? "en" : "zh";
-  const copy = uiText[language];
-  $("#labelTitle").textContent = copy.label;
-  $("#confidenceTitle").textContent = copy.confidence;
-  $("#aiTitle").textContent = result?.type ? copy.detectionType : copy.forgeryTypes;
-  renderVerdictBadge($("#resultLabel"), result?.label, language);
-  $("#resultConfidence").textContent = formatConfidence(result?.confidence, language);
-  $("#resultRuntime").textContent = formatRuntime(result?.runtime_seconds, language);
-  renderForensicMetrics(result, language);
+  renderResultMetrics(result, language);
   const hasResult = Boolean(result?.label || result?.summary || result?.error);
-  $("#conversationConclusion").hidden = !hasResult;
-  if (!hasResult) $("#aiScore").textContent = "-";
-  $("#summaryBox").textContent = hasResult ? formatUserAnswer(result, language)
-    : language === "en" ? "Add content to see the conclusion and supporting analysis here." : "输入待核查内容后，这里将展示检测结论与分析依据。";
+  renderConclusion(result, language);
   setStatus(result?.label === "Error" || result?.decision_status === "technical_error" ? "error" : hasResult ? "done" : "idle");
   updateSubmitButtonLabel();
   renderConversation();
   drawSuspiciousRegions(result);
+}
+
+function renderResultMetrics(result, language) {
+  const copy = uiText[language];
+  const completed = isCompletedDetection(result);
+  $("#labelTitle").textContent = copy.label;
+  $("#confidenceTitle").textContent = copy.confidence;
+  $("#aiTitle").textContent = copy.forgeryTypes;
+  $("#runtimeTitle").textContent = copy.runtime;
+  $("#statusTitle").textContent = copy.status;
+  renderVerdictBadge($("#resultLabel"), completed ? result.label : "", language);
+  $("#resultConfidence").textContent = completed ? formatConfidence(result.confidence, language) : "-";
+  $("#aiScore").textContent = completed ? formatResultType(result, language) : "-";
+  $("#resultRuntime").textContent = formatRuntime(result?.runtime_seconds, language);
 }
 
 function renderExtractedWebpageInput(result) {
@@ -1361,14 +1756,14 @@ function renderExtractedWebpageInput(result) {
   }
 }
 
-function renderForensicMetrics(result, language) {
+function formatResultType(result, language) {
   const verdict = result?.image_verdict || result?.raw?.image_forensics || {};
-  $("#aiScore").textContent = "-";
-  if (result?.type) {
-    $("#aiScore").textContent = formatDetectionType(result.type, language);
-    return;
-  }
-  $("#aiScore").textContent = formatForgeryTypes(result?.forgery_types || verdict.forgery_types, language);
+  const detection = result?.mmd_detection || result?.raw?.mmd_detection || {};
+  const primaryType = result?.forgery_type ?? detection.forgery_type ?? verdict.forgery_type;
+  if (primaryType) return formatForgeryTypes([primaryType], language);
+  // Older image results used a single-item array; older MMD results have no issue type.
+  if (result?.mmd_detection || result?.raw?.mmd_detection || result?.type === "multimodal_misinformation") return "-";
+  return formatForgeryTypes(result.forgery_types || verdict.forgery_types, language);
 }
 
 function formatDetectionType(value, language) {
@@ -1396,6 +1791,14 @@ function formatForgeryTypes(types, language) {
   const cleaned = values.filter((item) => item && item !== "none");
   if (!cleaned.length) return language === "en" ? "None" : "无";
   const zh = {
+    T1_fabrication: "事实虚构",
+    T2_distortion: "夸大、删减或歪曲",
+    T3_misleading_context: "错误语境",
+    V1_synthetic_visual_content: "生成式画面",
+    V2_visual_editing: "语义性编辑篡改",
+    C1_semantic_inconsistency: "图文语义冲突",
+    C2_contextual_inconsistency: "图文语境冲突",
+    C3_pragmatic_inconsistency: "图文语用误导",
     splicing: "拼接",
     copy_move: "复制移动",
     inpainting: "内容移除",
@@ -1410,7 +1813,9 @@ function formatForgeryTypes(types, language) {
     ai_edited: "局部重绘",
     retouching: "全局编辑",
     global_editing: "全局编辑",
-    ai_generated: "局部重绘",
+    ai_generated: "AI生成",
+    cgi_rendering: "计算机渲染",
+    other_synthetic: "其他合成",
     unknown: "未知",
     unknown_forgery: "未知",
     局部修复: "内容移除",
@@ -1422,6 +1827,14 @@ function formatForgeryTypes(types, language) {
     重绘: "局部重绘",
   };
   const en = {
+    T1_fabrication: "Factual fabrication",
+    T2_distortion: "Exaggeration, omission, or distortion",
+    T3_misleading_context: "Misleading context",
+    V1_synthetic_visual_content: "Synthetic visual content",
+    V2_visual_editing: "Semantic visual editing",
+    C1_semantic_inconsistency: "Image-text semantic conflict",
+    C2_contextual_inconsistency: "Image-text contextual conflict",
+    C3_pragmatic_inconsistency: "Image-text pragmatic misleadingness",
     splicing: "Splicing",
     copy_move: "Copy-move",
     inpainting: "Content removal",
@@ -1436,7 +1849,9 @@ function formatForgeryTypes(types, language) {
     ai_edited: "Local repainting",
     retouching: "Global editing",
     global_editing: "Global editing",
-    ai_generated: "Local repainting",
+    ai_generated: "AI-generated",
+    cgi_rendering: "Computer graphics rendering",
+    other_synthetic: "Other synthesis",
     unknown: "Unknown",
     unknown_forgery: "Unknown",
     无: "None",
@@ -1447,6 +1862,9 @@ function formatForgeryTypes(types, language) {
     人脸篡改: "Face tampering",
     局部重绘: "Local repainting",
     全局编辑: "Global editing",
+    AI生成: "AI-generated",
+    计算机渲染: "Computer graphics rendering",
+    其他合成: "Other synthesis",
     未知: "Unknown",
   };
   const map = language === "en" ? en : zh;
@@ -1491,8 +1909,8 @@ function renderVerdictBadge(element, label, language) {
 function formatRuntime(seconds, language) {
   if (seconds === undefined || seconds === null) return "-";
   const value = Number(seconds);
-  if (Number.isNaN(value)) return "-";
-  return language === "en" ? `${value.toFixed(3)} s` : `${value.toFixed(3)} 秒`;
+  if (!Number.isFinite(value)) return "-";
+  return `${value.toFixed(1)} ${language === "en" ? "s" : "秒"}`;
 }
 
 function formatConfidence(value, language) {
@@ -1505,9 +1923,9 @@ function formatConfidence(value, language) {
 
 function formatUserAnswer(result, language) {
   const copy = uiText[language];
-  if (!result || Object.keys(result).length === 0) return copy.noSummary;
-  if (result.decision_status === "technical_error") return cleanText(result.summary || busyDetectionMessage(language));
-  if (result.label === "Error") return cleanText(result.summary || result.error || copy.noSummary);
+  if (!result || Object.keys(result).length === 0) return { message: copy.noSummary };
+  if (result.decision_status === "technical_error") return { message: cleanText(result.summary || busyDetectionMessage(language)) };
+  if (result.label === "Error") return { message: cleanText(result.summary || result.error || copy.noSummary) };
   if (result.mmd_detection || result.raw?.mmd_detection) {
     return formatMmdAnswer(result, language);
   }
@@ -1526,21 +1944,42 @@ function busyDetectionMessage(language) {
     : "服务器繁忙，检测暂时失败，请稍后重试。";
 }
 
+// New results share one answer contract; aliases only support saved older results.
+function readUserAnswer(result) {
+  const detection = result?.mmd_detection || result?.raw?.mmd_detection || {};
+  const answers = [
+    detection.user_answer,
+    result?.user_answer,
+    result?.image_verdict?.user_answer,
+    result?.raw?.image_forensics?.user_answer,
+    result?.text_verdict?.user_answer,
+    detection.explanation,
+    detection.user_explanation,
+  ].filter((answer) => answer && typeof answer === "object" && !Array.isArray(answer));
+  return {
+    judgment: firstCleanText(
+      ...answers.map((answer) => answer.judgment),
+      ...answers.map((answer) => answer.verdict_statement || answer.conclusion || answer.headline),
+    ),
+    analysis: firstCleanText(
+      ...answers.map((answer) => answer.analysis),
+      ...answers.map((answer) => answer.reason_analysis || answer.summary),
+    ),
+    notes: dedupeText(answers.flatMap((answer) => cleanList(answer.notes ?? answer.limitations))),
+  };
+}
+
 function formatMmdAnswer(result, language) {
   const copy = uiText[language];
   const detection = result?.mmd_detection || result?.raw?.mmd_detection || {};
-  const explanation = detection?.explanation || detection?.user_explanation || result?.user_answer || {};
-  const conclusion = firstCleanText(
-    explanation.verdict_statement,
-    explanation.headline,
-    result?.user_answer?.judgment,
-    fallbackConclusion(result?.label, language),
-  );
+  const answer = readUserAnswer(result);
+  const conclusion = answer.judgment || fallbackConclusion(result?.label || detection.label, language);
   const reasons = [];
-  const summary = firstCleanText(explanation.analysis, explanation.summary, result?.user_answer?.reason_analysis, result?.summary);
+  const summary = firstCleanText(answer.analysis, result?.summary);
   if (summary) reasons.push(summary);
 
-  const findings = Array.isArray(explanation.key_findings) ? explanation.key_findings : [];
+  const legacyAnswer = detection?.explanation || detection?.user_explanation || {};
+  const findings = Array.isArray(legacyAnswer.key_findings) ? legacyAnswer.key_findings : [];
   findings.forEach((item) => {
     if (!item || typeof item !== "object") return;
     const title = cleanText(item.title);
@@ -1551,10 +1990,7 @@ function formatMmdAnswer(result, language) {
     if (line) reasons.push(line);
   });
 
-  const notes = [
-    ...cleanList(explanation.limitations),
-    ...cleanList(result?.user_answer?.notes),
-  ];
+  const notes = [...answer.notes];
   const decisionStatus = detection.decision_status || result?.decision_status;
   if (decisionStatus === "insufficient_evidence") {
     notes.push(language === "en" ? "This is the closest five-way label under limited evidence." : "这是在证据有限情况下给出的最接近五分类标签。");
@@ -1566,8 +2002,8 @@ function formatMmdAnswer(result, language) {
 
 function formatTextAnswer(result, language) {
   const copy = uiText[language];
-  const answer = result?.user_answer || result?.text_verdict?.user_answer || {};
-  const conclusion = cleanText(answer.judgment) || cleanText(answer.conclusion) || fallbackConclusion(result?.label, language);
+  const answer = readUserAnswer(result);
+  const conclusion = cleanText(answer.judgment) || fallbackConclusion(result?.label, language);
   const reasons = [];
   reasons.push(`${copy.textSide}：${formatLabel(result?.label, language)}`);
 
@@ -1577,7 +2013,7 @@ function formatTextAnswer(result, language) {
   const evidenceCount = Array.isArray(result?.evidence) ? result.evidence.length : 0;
   if (evidenceCount) reasons.push(`${copy.foundEvidence}：${evidenceCount}`);
 
-  const analysis = firstCleanText(answer.reason_analysis, answer.analysis, result?.summary, result?.appraisalResults);
+  const analysis = firstCleanText(answer.analysis, result?.summary, result?.appraisalResults);
   const splitAnalysis = splitReasonAndNotes(analysis);
   if (splitAnalysis.reason) reasons.push(splitAnalysis.reason);
 
@@ -1587,25 +2023,18 @@ function formatTextAnswer(result, language) {
 function formatImageAnswer(result, language) {
   const copy = uiText[language];
   const verdict = result?.image_verdict || result?.raw?.image_forensics || result || {};
-  const answer = result?.user_answer || verdict?.user_answer || {};
+  const answer = readUserAnswer(result);
   const label = result?.label || verdict?.label;
-  const conclusion = cleanText(answer.judgment) || cleanText(answer.conclusion) || fallbackConclusion(label, language);
-  return buildResultPanelBlock(copy, conclusion, cleanList(answer.notes));
-}
-
-function buildResultPanelBlock(copy, judgment, notes) {
-  const lines = [copy.finalJudgment, judgment || copy.noSummary];
-  const visibleNotes = dedupeText(notes || []);
-  if (visibleNotes.length) {
-    lines.push("", copy.notes, ...visibleNotes.map((item) => `- ${item}`));
-  }
-  return lines.join("\n");
+  const conclusion = cleanText(answer.judgment) || fallbackConclusion(label, language);
+  const analysis = firstCleanText(answer.analysis, verdict.analysis, result?.summary);
+  const { reason, notes } = splitReasonAndNotes(softenTechnicalAnalysis(analysis, language));
+  return buildFriendlyBlock(copy, conclusion, [reason], [...cleanList(answer.notes), ...notes, ...collectLimitations(result)]);
 }
 
 function formatMultimodalAnswer(result, language) {
   const copy = uiText[language];
-  const answer = result?.user_answer || {};
-  const conclusion = cleanText(answer.judgment) || cleanText(answer.conclusion) || fallbackConclusion(result?.label, language);
+  const answer = readUserAnswer(result);
+  const conclusion = cleanText(answer.judgment) || fallbackConclusion(result?.label, language);
   const statusParts = [];
   const reasons = [];
   const notes = cleanList(answer.notes);
@@ -1635,7 +2064,7 @@ function formatMultimodalAnswer(result, language) {
   notes.push(...splitCrossmodalReason.notes);
 
   if (reasons.length <= 1) {
-    const analysis = firstCleanText(answer.reason_analysis, answer.analysis, result?.summary);
+    const analysis = firstCleanText(answer.analysis, result?.summary);
     const splitAnalysis = splitReasonAndNotes(softenTechnicalAnalysis(analysis, language));
     if (splitAnalysis.reason) reasons.push(splitAnalysis.reason);
     notes.push(...splitAnalysis.notes);
@@ -1651,36 +2080,11 @@ function formatMultimodalAnswer(result, language) {
 }
 
 function buildFriendlyBlock(copy, conclusion, reasons, notes) {
-  const reasonParagraph = toReasonParagraph(reasons, copy.noSummary);
-  const lines = [
-    copy.finalJudgment,
-    conclusion || copy.noSummary,
-    "",
-    copy.mainReasons,
-    reasonParagraph,
-  ];
-  const visibleNotes = dedupeText(notes || []);
-  if (visibleNotes.length) {
-    lines.push("", copy.notes, ...visibleNotes.map((item) => `- ${item}`));
-  }
-  return lines.join("\n");
-}
-
-function toReasonParagraph(reasons, fallback) {
-  const items = dedupeText(reasons).map(trimTrailingPunctuation).filter(Boolean);
-  if (!items.length) return fallback;
-  return items.map(ensureSentence).join(" ");
-}
-
-function ensureSentence(text) {
-  const value = cleanText(text);
-  if (!value) return "";
-  if (/[。.!?！？]$/.test(value)) return value;
-  return `${value}。`;
-}
-
-function trimTrailingPunctuation(text) {
-  return cleanText(text).replace(/[。.!?！？]+$/g, "");
+  return {
+    conclusion: conclusion || copy.noSummary,
+    reasons: dedupeText(reasons).filter((reason) => cleanText(reason) !== cleanText(conclusion)),
+    notes: dedupeText(notes),
+  };
 }
 
 function firstCleanText(...values) {
@@ -1751,8 +2155,7 @@ function collectLimitations(result) {
     ...(Array.isArray(verdict?.limitations) ? verdict.limitations : []),
     ...(Array.isArray(rawImage?.limitations) ? rawImage.limitations : []),
     ...(Array.isArray(result?.crossmodal_verdict?.limitations) ? result.crossmodal_verdict.limitations : []),
-    ...(Array.isArray(result?.mmd_detection?.explanation?.limitations) ? result.mmd_detection.explanation.limitations : []),
-    ...(Array.isArray(result?.mmd_detection?.user_explanation?.limitations) ? result.mmd_detection.user_explanation.limitations : []),
+    ...readUserAnswer(result).notes,
   ];
   return cleanList(limitations);
 }
@@ -1894,7 +2297,10 @@ function buildFormData() {
   const imageUrls = selectedImageUrls();
 
   if (question) formData.append("question", question);
-  if (webpageUrl) formData.append("webpage_url", webpageUrl);
+  if (webpageUrl) {
+    formData.append("webpage_url", webpageUrl);
+    formData.append("webpage_image_urls", JSON.stringify(selectedWebpageImages()));
+  }
   if (state.task === "deepfake_detection") {
     if (imageFiles[0]) formData.append("image", imageFiles[0]);
     if (imageUrls[0]) formData.append("image_url", imageUrls[0]);
@@ -1922,6 +2328,7 @@ function currentInputSignature() {
     task: state.task,
     text: $("#textInput").value.trim(),
     webpage_url: selectedWebpageUrl(),
+    webpage_image_urls: selectedWebpageImages(),
     image_urls: selectedImageUrls(),
     image_files: imageFiles.map(
       (file) => `${file.name}:${file.size}:${file.lastModified}`,
@@ -1929,8 +2336,12 @@ function currentInputSignature() {
   });
 }
 
+function isCompletedDetection(result) {
+  return Boolean(result?.label && result.label !== "Error" && result.decision_status !== "technical_error");
+}
+
 function hasDetectionResult() {
-  return Boolean(state.conversationId && state.lastResult?.label && state.lastResult.label !== "Error");
+  return Boolean(state.conversationId && isCompletedDetection(state.lastResult));
 }
 
 function shouldUseFollowup() {
@@ -1943,10 +2354,7 @@ function shouldUseFollowup() {
 
 function hasPrimaryInput() {
   if (state.task === "deepfake_detection") {
-    return Boolean(
-      (selectedWebpageUrl() && state.webpageExtraction?.images?.length) ||
-        selectedImageCount(),
-    );
+    return selectedImageCount() > 0;
   }
   if (selectedWebpageUrl()) return true;
   const hasText = Boolean($("#textInput").value.trim());
@@ -1954,11 +2362,16 @@ function hasPrimaryInput() {
 }
 
 function defaultQuestionForCurrentInput() {
-  const language = state.language === "en" ? "en" : "zh";
-  const hasImage = selectedImageCount() > 0;
-  const hasText = Boolean($("#textInput").value.trim());
-  const hasWebpage = Boolean(selectedWebpageUrl());
-  if (state.task === "deepfake_detection") {
+  return questionForInput({
+    task: state.task,
+    hasImage: selectedImageCount() > 0,
+    hasText: Boolean($("#textInput").value.trim()),
+    hasWebpage: Boolean(selectedWebpageUrl()),
+  }, state.language);
+}
+
+function questionForInput({ task, hasImage, hasText, hasWebpage }, language) {
+  if (task === "deepfake_detection" || (hasImage && !hasText && !hasWebpage)) {
     return language === "en"
       ? "Please determine whether this image contains signs of deepfake manipulation."
       : "请判断这张图片是否存在深度伪造痕迹。";
@@ -1994,7 +2407,8 @@ function updateSubmitButtonLabel() {
     hasDetectionResult() && state.lastInputSignature && currentInputSignature() === state.lastInputSignature;
   const isFollowupContext = hasDetectionResult() && (state.primaryInputLocked || samePrimaryInput || !hasPrimaryInput());
   button.textContent = isFollowupContext ? copy.send : copy.detecting;
-  button.disabled = state.urlImportPending || (isFollowupContext ? !question : !hasPrimaryInput());
+  button.disabled = state.urlImportPending || state.textFileReading || state.draftImagesRestoring ||
+    pendingDetections.has(state.conversationId) || (isFollowupContext ? !question : !hasPrimaryInput());
 }
 
 function ensureImagePreviewBeforeSubmit(preserveExisting = false) {
@@ -2003,9 +2417,6 @@ function ensureImagePreviewBeforeSubmit(preserveExisting = false) {
     if (!preview?.classList.contains("has-image")) {
       renderRememberedImagePreviews();
     }
-    return;
-  }
-  if (selectedWebpageUrl() && state.webpageExtraction?.images?.length && !selectedImageCount()) {
     return;
   }
   normalizeImageUrls();
@@ -2119,10 +2530,11 @@ function drawCoordinateRegionOverlay(preview, img, overlay, result) {
 }
 
 async function submitDetection() {
-  if (state.urlImportPending) return;
+  const requestConversationId = state.conversationId;
+  if (state.urlImportPending || state.textFileReading || state.draftImagesRestoring || pendingDetections.has(requestConversationId)) return;
   const submitBtn = $("#submitBtn");
-  const requestTitle = titleFromCurrentInput();
   const isFollowup = shouldUseFollowup();
+  const requestTitle = (isFollowup && findConversation(requestConversationId)?.title) || titleFromCurrentInput();
   const signature = currentInputSignature();
   const question = resolvedQuestionForSubmit();
   const previousResult = state.lastResult;
@@ -2138,12 +2550,17 @@ async function submitDetection() {
   try {
     submitBtn.disabled = true;
     ensureImagePreviewBeforeSubmit(isFollowup);
-    persistCurrentConversationDraft();
-    if (!isFollowup) {
+    persistCurrentConversationDraft({ submitted: true });
+    pendingDetections.set(requestConversationId, { startedAt: Date.now(), question: isFollowup ? question : "" });
+    state.followupFailure = null;
+    if (isFollowup) {
+      $("#questionInput").value = "";
+      renderConversation();
+    } else {
       setPrimaryInputsLocked(true);
+      setStatus("running", "running");
+      setRunningResultView();
     }
-    setStatus("running", "running");
-    setRunningResultView();
 
     const detectionEndpoint = state.task === "deepfake_detection" ? "/detect/deepfake" : "/detect/mmd";
     const followupEndpoint = `/conversations/${encodeURIComponent(state.conversationId)}/followup`;
@@ -2157,37 +2574,64 @@ async function submitDetection() {
       throw new Error(response.status >= 500 ? busyDetectionMessage(state.language) : payload.detail || payload.error || `HTTP ${response.status}`);
     }
 
-    if (payload.decision_status === "technical_error") {
-      setStatus("error", "error");
-      setResult(payload, { persist: false });
-      if (!isFollowup && !previousResult?.label) setPrimaryInputsLocked(false);
+    const failed = payload.decision_status === "technical_error" || payload.label === "Error";
+    const history = payload.conversation_history;
+    if (isFollowup && (failed || !Array.isArray(history) || !history.length)) {
+      throw new Error(payload.summary || payload.error || "");
+    }
+    if (isFollowup && history.at(-2)?.meta?.mode !== "auto") {
+      upsertConversationFromResult({
+        ...previousResult,
+        conversation_id: requestConversationId,
+        title: requestTitle,
+        conversation_history: history,
+      });
+      if (state.conversationId === requestConversationId) state.conversationHistory = history;
       return;
     }
 
-    setStatus("done", "done");
+    if (state.conversationId !== requestConversationId) {
+      if (!failed) {
+        upsertConversationFromResult({ ...payload, conversation_id: requestConversationId, title: requestTitle });
+      }
+      return;
+    }
+
+    if (failed) {
+      setResult(payload, { persist: false });
+      if (!previousResult?.label) {
+        setPrimaryInputsLocked(false);
+        renderSelectedImagePreviews();
+      }
+      return;
+    }
+
     payload.title = requestTitle || titleFromHistory(payload.conversation_history);
     if (!isFollowup) {
       state.lastInputSignature = signature;
       setPrimaryInputsLocked(true);
+      $("#questionInput").value = "";
     }
     setResult(payload);
-    $("#questionInput").value = "";
-    updateSubmitButtonLabel();
   } catch (error) {
-    setStatus("error", "error");
-    const errorResult = {
-      ...(isFollowup && previousResult?.label ? previousResult : {}),
+    if (state.conversationId !== requestConversationId) return;
+    if (isFollowup) {
+      state.followupFailure = { question, error: String(error.message || "") };
+      const input = $("#questionInput");
+      if (!input.value.trim()) input.value = question;
+      return;
+    }
+    setResult({
       mode: "auto",
       label: "Error",
       summary: error.message,
       error: String(error.message || error),
-    };
-    setResult(errorResult, { persist: false });
-    if (!isFollowup && !previousResult?.label) {
-      setPrimaryInputsLocked(false);
-    }
+    }, { persist: false });
+    if (!previousResult?.label) setPrimaryInputsLocked(false);
   } finally {
+    pendingDetections.delete(requestConversationId);
     updateSubmitButtonLabel();
+    renderConversation();
   }
 }
 
@@ -2289,6 +2733,84 @@ function bindResponsiveControls() {
   setMobilePanel(state.conversationHistory.length ? "dialogue" : "content");
 }
 
+function setTextFileStatus(message, status = "") {
+  const notice = $("#textFileStatus");
+  notice.textContent = message;
+  notice.title = message;
+  notice.dataset.status = status;
+  notice.hidden = !message;
+}
+
+function resetTextFileImport() {
+  state.textFileReadToken += 1;
+  state.textFileReading = false;
+  $("#textFileInput").value = "";
+  setTextFileStatus("");
+  updateUrlImportButton();
+}
+
+function decodeTextFile(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes[0] === 0xff && bytes[1] === 0xfe) return new TextDecoder("utf-16le", { fatal: true }).decode(bytes);
+  if (bytes[0] === 0xfe && bytes[1] === 0xff) return new TextDecoder("utf-16be", { fatal: true }).decode(bytes);
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("gb18030", { fatal: true }).decode(bytes);
+  }
+}
+
+async function importTextFile(file) {
+  if (!file || state.primaryInputLocked || state.urlImportPending || state.textFileReading) return;
+  const english = state.language === "en";
+  if (!/\.txt$/i.test(file.name)) {
+    setTextFileStatus(english ? "Choose a .txt file." : "请选择 .txt 文件。", "error");
+    return;
+  }
+  const token = ++state.textFileReadToken;
+  const textarea = $("#textInput");
+  const originalText = textarea.value;
+  state.textFileReading = true;
+  updateUrlImportButton();
+  updateSubmitButtonLabel();
+  setTextFileStatus(english ? "Reading TXT…" : "正在读取 TXT…");
+  try {
+    const text = decodeTextFile(await file.arrayBuffer());
+    if (token !== state.textFileReadToken || state.primaryInputLocked) return;
+    if (!text.trim() || text.includes("\0")) {
+      setTextFileStatus(english ? "The file contains no readable text." : "文件为空或没有可读取的文本。", "error");
+      return;
+    }
+    if (textarea.value !== originalText) {
+      setTextFileStatus(english ? "The text was edited while reading. Choose the file again to import it." : "读取时正文已被编辑，请重新选择文件以导入。", "error");
+      return;
+    }
+    textarea.value = text;
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    setTextFileStatus(english ? `Imported: ${file.name}` : `已读取：${file.name}`, "success");
+  } catch {
+    if (token === state.textFileReadToken) {
+      setTextFileStatus(english ? "Could not read the file. Try saving it as UTF-8." : "读取失败，请将文件另存为 UTF-8 后重试。", "error");
+    }
+  } finally {
+    if (token === state.textFileReadToken) {
+      state.textFileReading = false;
+      updateUrlImportButton();
+      updateSubmitButtonLabel();
+    }
+  }
+}
+
+function bindTextFileImport() {
+  const picker = $("#textFileInput");
+  $("#uploadTextBtn").addEventListener("click", () => picker.click());
+  picker.addEventListener("change", () => {
+    const file = picker.files[0];
+    picker.value = "";
+    importTextFile(file);
+  });
+}
+
 function bindConversationDraftTitle() {
   ["#textInput", "#questionInput"].forEach((selector) => {
     $(selector).addEventListener("input", () => {
@@ -2305,10 +2827,12 @@ function bindConversationDraftTitle() {
 }
 
 bindSegmentedControls();
+bindThemeToggle();
 document.querySelectorAll(".segment").forEach((button) => button.setAttribute("aria-pressed", String(button.classList.contains("active"))));
 syncImageInputMode();
 bindImagePreview();
 bindUrlImport();
+bindTextFileImport();
 bindImageViewer();
 updateWebpageUrlConfirmButton();
 bindConversationDraftTitle();
@@ -2327,9 +2851,18 @@ $("#toggleHistoryDeleteBtn").addEventListener("click", () => {
 });
 $("#languageToggleBtn").addEventListener("click", () => {
   state.language = state.language === "zh" ? "en" : "zh";
+  updateTaskHeading();
+  const pill = $("#statusPill");
+  const status = pill.classList.item(1);
+  setStatus(status, pill.textContent);
+  if (status === "running") {
+    setRunningResultView();
+  } else {
+    renderConclusion(state.lastResult, state.language);
+    renderResultMetrics(state.lastResult, state.language);
+  }
   renderConversation();
-  const label = $("#statusPill").classList.contains("running") ? "" : state.lastResult?.label;
-  renderVerdictBadge($("#resultLabel"), label, state.language);
+  updateThemeToggle();
   updateSubmitButtonLabel();
 });
 $("#conversationList").addEventListener("click", (event) => {
@@ -2343,8 +2876,9 @@ $("#conversationList").addEventListener("click", (event) => {
   }
   const item = event.target.closest(".conversation-item");
   if (!item) return;
+  const conversation = findConversation(item.dataset.conversationId);
   selectConversation(item.dataset.conversationId);
-  setMobilePanel("dialogue");
+  setMobilePanel(conversation?.draft_input && !pendingDetections.has(item.dataset.conversationId) ? "content" : "dialogue");
   setSidebarOpen(false);
 });
 window.addEventListener("resize", () => drawSuspiciousRegions(state.lastResult));

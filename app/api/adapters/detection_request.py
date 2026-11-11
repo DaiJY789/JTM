@@ -32,6 +32,7 @@ def adapt_detection_request(
     image_filenames: list[str | None] | tuple[str | None, ...] | None = None,
     image_content_types: list[str | None] | tuple[str | None, ...] | None = None,
     image_urls: list[str] | tuple[str, ...] | None = None,
+    webpage_image_urls: list[str] | None = None,
 ) -> DetectionRequest:
     normalized_urls = tuple(
         dict.fromkeys(
@@ -59,4 +60,5 @@ def adapt_detection_request(
             image_content_types or (() if image_content_type is None else (image_content_type,))
         ),
         image_urls=normalized_urls,
+        webpage_image_urls=None if webpage_image_urls is None else tuple(webpage_image_urls),
     )

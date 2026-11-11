@@ -134,6 +134,7 @@ Requirements:
         return {
             "mode": result.get("mode"),
             "label": result.get("label"),
+            "forgery_type": result.get("forgery_type"),
             "summary": result.get("summary"),
             "confidence": result.get("confidence"),
             "question": result.get("question"),

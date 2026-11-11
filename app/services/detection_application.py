@@ -49,6 +49,7 @@ class DetectionApplicationService:
             image_filenames=request.image_filenames,
             image_content_types=request.image_content_types,
             image_urls=request.image_urls,
+            webpage_image_urls=request.webpage_image_urls,
         )
         input_preparation_seconds = time.perf_counter() - input_started_at
 

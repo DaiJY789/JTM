@@ -1,5 +1,7 @@
+import json
 from io import BytesIO
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -7,8 +9,11 @@ from app.api.dependencies import get_detection_orchestrator
 from app.api import routes
 from app.main import app
 from app.schemas.detection import DetectionResponse
+from app.services.artifact_store import ArtifactStore
+from app.services.conversation_history import ConversationHistoryStore
 from app.services.followup_application import should_rerun_detection
 from app.services.remote_image_downloader import DownloadedRemoteImage
+from app.services.session_service import SessionService
 from app.services.webpage_extraction import WebpageExtractionResult
 
 
@@ -200,7 +205,18 @@ def test_split_detection_routes_dispatch_to_matching_tasks(monkeypatch, tmp_path
     ]
 
 
-def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkeypatch):
+@pytest.mark.parametrize(
+    ("endpoint", "selection", "expected"),
+    [
+        ("/detect", None, ["https://example.com/image.jpg", "https://example.com/other.jpg"]),
+        ("/detect/mmd", ["https://example.com/other.jpg"], ["https://example.com/other.jpg"]),
+        ("/detect/mmd", [], []),
+        ("/detect/deepfake", ["https://example.com/other.jpg"], ["https://example.com/other.jpg"]),
+    ],
+)
+def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkeypatch, tmp_path, endpoint, selection, expected):
+    first_image = "https://example.com/image.jpg" if selection is None else "http://127.0.0.1/private.jpg"
+
     class StubWebpageExtractor:
         def extract(self, url):
             return WebpageExtractionResult(
@@ -208,9 +224,9 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
                 final_url="https://example.com/news",
                 title="网页新闻标题",
                 text="网页正文描述了一张配图。",
-                image_url="https://example.com/image.jpg",
-                images=["https://example.com/image.jpg"],
-                metadata={"text_length": 11, "image_count": 1},
+                image_url=first_image,
+                images=[first_image, "https://example.com/other.jpg"],
+                metadata={"text_length": 11, "image_count": 2},
             )
 
     class StubOrchestrator:
@@ -232,20 +248,27 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
             }
 
     stub_orchestrator = StubOrchestrator()
+    downloaded_urls = []
+
+    class TrackingImageDownloader(StubRemoteImageDownloader):
+        def download(self, url):
+            downloaded_urls.append(url)
+            assert url != "http://127.0.0.1/private.jpg"
+            return super().download(url)
+
+    artifact_store = ArtifactStore(tmp_path)
+    monkeypatch.setattr(routes, "artifact_store", artifact_store)
+    monkeypatch.setattr(routes, "session_service", SessionService(ConversationHistoryStore(log_dir=tmp_path), artifact_store))
     monkeypatch.setattr(routes, "webpage_extraction_service", StubWebpageExtractor())
-    monkeypatch.setattr(routes, "remote_image_downloader", StubRemoteImageDownloader())
+    monkeypatch.setattr(routes, "remote_image_downloader", TrackingImageDownloader())
     app.dependency_overrides[get_detection_orchestrator] = lambda: stub_orchestrator
 
     try:
         client = TestClient(app)
-        response = client.post(
-            "/detect",
-            data={
-                "language": "zh",
-                "webpage_url": "https://example.com/news",
-                "conversation_id": "test-webpage-detect",
-            },
-        )
+        data = {"language": "zh", "webpage_url": "https://example.com/news", "conversation_id": "test-webpage-detect"}
+        if selection is not None:
+            data["webpage_image_urls"] = json.dumps(selection)
+        response = client.post(endpoint, data=data)
     finally:
         app.dependency_overrides.pop(get_detection_orchestrator, None)
 
@@ -254,10 +277,14 @@ def test_detect_accepts_webpage_url_and_passes_extracted_multimodal_input(monkey
     call = stub_orchestrator.calls[0]
     assert call["text"].startswith("网页新闻标题")
     assert call["image_url"] is None
-    assert len(call["image_contents"]) == 1
+    assert len(call["image_contents"]) == len(expected)
     assert call["image_urls"] == []
+    assert downloaded_urls == expected
     assert payload["raw"]["webpage"]["final_url"] == "https://example.com/news"
     assert payload["raw"]["webpage"]["text"] == "网页正文描述了一张配图。"
+    assert payload["raw"]["webpage"]["images"] == expected
+    assets = payload["conversation_history"][0]["meta"]["image_assets"]
+    assert [image["source_url"] for image in assets] == expected
     assert payload["evidence"][0]["type"] == "webpage_source"
 
 

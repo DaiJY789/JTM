@@ -10,7 +10,7 @@ function setup({ image = false, response = { title: '网页标题', text: '正�
   const element = (selector) => {
     if (!elements.has(selector)) elements.set(selector, {
       value: '', files: [], textContent: '', dataset: {}, hidden: false,
-      classList: { toggle() {} }, setCustomValidity(message) { this.validationMessage = message; }, reportValidity() {},
+      classList: { toggle() {} }, setCustomValidity(message) { this.validationMessage = message; }, reportValidity() {}, focus() {},
     });
     return elements.get(selector);
   };
@@ -67,6 +67,34 @@ test('a webpage with an image suffix still extracts text and images as a webpage
   assert.equal(app.element('#textInput').value, '网页标题\n\n正文');
   assert.equal(app.run('state.webpageExtraction.images.length'), 1);
   assert.equal(app.run('buildFormData().get("webpage_url")'), 'https://example.test/article.jpg');
+  assert.deepEqual(JSON.parse(app.run('buildFormData().get("webpage_image_urls")')), ['https://example.test/photo']);
+});
+
+test('removed webpage images stay out of the request, including when all were removed', async () => {
+  const images = ['https://example.test/one.jpg', 'https://example.test/two.jpg'];
+  const app = setup({ response: { text: '正文', images } });
+  app.element('#urlInput').value = 'https://example.test/article';
+  await app.run('importUrl()');
+
+  app.run('removeSelectedImage("https://example.test/one.jpg")');
+  assert.deepEqual(JSON.parse(app.run('buildFormData().get("webpage_image_urls")')), [images[1]]);
+  app.run('removeSelectedImage("https://example.test/two.jpg")');
+  assert.equal(app.run('buildFormData().get("webpage_image_urls")'), '[]');
+  assert.equal(app.run('buildFormData().get("webpage_url")'), 'https://example.test/article');
+  assert.equal(app.element('#textInput').value, '正文');
+});
+
+test('a confirmed webpage without matching image preview state submits an empty selection', () => {
+  const app = setup();
+  const url = 'https://example.test/article';
+  app.element('#webpageUrlInput').value = url;
+  app.context.webpageUrl = url;
+  app.run('state.confirmedWebpageUrl = webpageUrl;');
+  assert.equal(app.run('buildFormData().get("webpage_image_urls")'), '[]');
+
+  app.run('state.webpageExtraction = { url: "https://example.test/old", images: ["http://127.0.0.1/private.png"] };');
+  assert.equal(app.run('buildFormData().get("webpage_url")'), url);
+  assert.equal(app.run('buildFormData().get("webpage_image_urls")'), '[]');
 });
 
 test('invalid URL schemes are rejected before importing', async () => {

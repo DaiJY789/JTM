@@ -108,6 +108,8 @@ class FollowupApplicationService:
         result = orchestrator.detect(**detect_kwargs)
         result["runtime_seconds"] = round(time.perf_counter() - started_at, 3)
         result["conversation_id"] = conversation_id
+        if result.get("decision_status") == "technical_error" or result.get("label") == "Error":
+            return result
         next_input = {
             **latest_input,
             "mode": "auto",

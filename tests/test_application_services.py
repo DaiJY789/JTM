@@ -251,6 +251,29 @@ def test_followup_application_reruns_detection_on_explicit_request(tmp_path):
     assert len(result["conversation_history"]) == 4
 
 
+def test_failed_followup_rerun_preserves_the_saved_detection(tmp_path):
+    class FailingOrchestrator:
+        def detect(self, **_kwargs):
+            return {"mode": "text_only", "label": None, "decision_status": "technical_error"}
+
+    session_service, _ = make_session(tmp_path)
+    original_result = {"mode": "text_only", "label": "True", "summary": "Supported."}
+    session_service.append_detection("rerun-failure", {"text": "claim"}, original_result)
+    application = FollowupApplicationService(session_service, StubFollowupAnalysis())
+
+    result = application.followup(
+        question="请重新检测",
+        conversation_id="rerun-failure",
+        language="zh",
+        orchestrator=FailingOrchestrator(),
+    )
+
+    assert result["decision_status"] == "technical_error"
+    snapshot = session_service.snapshot("rerun-failure")
+    assert snapshot["latest_result"] == original_result
+    assert len(snapshot["conversation_history"]) == 2
+
+
 def test_followup_application_preserves_deepfake_task_on_rerun(tmp_path):
     session_service, _ = make_session(tmp_path)
     session_service.append_detection(
