@@ -18,8 +18,9 @@ class FakeImageService:
 
 def payload():
     return {
-        "verdict": "Mostly False",
+        "label": "Mostly False",
         "confidence": 0.82,
+        "forgery_type": "C2_contextual_inconsistency",
         "atomic_points": [
             {
                 "claim": "图片展示了文字所述事件。",
@@ -32,10 +33,10 @@ def payload():
             "T2_distortion": {"assessment": "confirmed", "severity": 2, "evidence_basis": "text_internal", "analysis": "文字扩大了图片可支持的事实。"},
             "C2_contextual_inconsistency": {"assessment": "confirmed", "severity": 3, "evidence_basis": "visual_input", "analysis": "图片语境不匹配。"},
         },
-        "explanation": {
-            "verdict_statement": "该内容整体上基本虚假。",
+        "user_answer": {
+            "judgment": "该内容整体上基本虚假。",
             "analysis": "图片可能真实，但其语境不能支持文字中的核心事件。",
-            "limitations": ["未使用外部新闻来源核验。"],
+            "notes": ["未使用外部新闻来源核验。"],
         },
     }
 
@@ -64,11 +65,12 @@ def test_mmd_service_exposes_machine_label_and_user_explanation():
     assert result["mmd_detection"]["atomic_points"][0]["point_type"] == "crossmodal_claim"
     assert set(result["mmd_detection"]) == {
         "status",
-        "verdict",
+        "label",
         "confidence",
+        "forgery_type",
         "atomic_points",
         "fine_grained_checks",
-        "explanation",
+        "user_answer",
     }
     assert result["user_answer"]["judgment"] == "该内容整体判断为基本虚假。"
     assert result["raw"]["workflow"]["steps"] == ["MMD_Agent"]
@@ -76,6 +78,11 @@ def test_mmd_service_exposes_machine_label_and_user_explanation():
     assert result["raw"]["timings"]["model_calls"] == 1
     assert result["crossmodal_verdict"]["label"] == "Inconsistent"
     serialized = DetectionResponse.model_validate(result).model_dump(mode="json")
+    assert serialized["mmd_detection"]["label"] == serialized["label"]
+    assert serialized["forgery_type"] == "C2_contextual_inconsistency"
+    assert serialized["mmd_detection"]["forgery_type"] == serialized["forgery_type"]
+    assert serialized["mmd_detection"]["user_answer"] == serialized["user_answer"]
+    assert set(serialized["user_answer"]) == {"judgment", "analysis", "notes"}
     assert "timings" not in serialized["mmd_detection"]
     assert len(serialized["mmd_detection"]["fine_grained_checks"]) == 8
     assert "present" not in serialized["mmd_detection"]["fine_grained_checks"]["C2_contextual_inconsistency"]
@@ -96,8 +103,7 @@ def test_mmd_service_marks_text_only_mode_without_crossmodal_result():
     assert result["crossmodal_verdict"] is None
     assert result["image_verdict"] is None
     assert result["raw"]["workflow"]["name"] == "text_fact_checking"
-    assert result["user_answer"]["visual_analysis"] == ""
-    assert result["user_answer"]["crossmodal_analysis"] == ""
+    assert set(result["user_answer"]) == {"judgment", "analysis", "notes"}
 
 
 def test_mmd_service_reports_busy_after_three_failed_model_attempts():
@@ -163,14 +169,16 @@ def test_mmd_service_exposes_null_label_on_timeout():
     assert result["label"] is None
     assert result["confidence"] is None
     assert result["mmd_detection"]["status"] == "error"
-    assert result["mmd_detection"]["verdict"] is None
+    assert result["mmd_detection"]["label"] is None
+    assert result["forgery_type"] is None
+    assert result["mmd_detection"]["forgery_type"] is None
     assert result["mmd_detection"]["error"] == "Request timed out."
     assert DetectionResponse.model_validate(result).label is None
 
 
 def test_mmd_service_does_not_treat_unverifiable_image_relation_as_conflict():
     data = payload()
-    data["verdict"] = "Mixture"
+    data["label"] = "Mixture"
     data["claim_assessments"] = [
         {
             "claim": "图片展示具体事件。",
@@ -221,7 +229,7 @@ def test_mmd_service_does_not_treat_unverifiable_image_relation_as_conflict():
 
 def test_mmd_service_does_not_map_empty_signals_to_consistent():
     data = payload()
-    data["verdict"] = "True"
+    data["label"] = "True"
     data["claim_assessments"] = []
     data["fine_grained_checks"] = {}
     data.pop("crossmodal_assessment", None)

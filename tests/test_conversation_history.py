@@ -1,3 +1,5 @@
+import json
+
 from app.services.conversation_history import ConversationHistoryStore
 
 
@@ -37,6 +39,26 @@ def test_conversation_history_store_truncates_old_items(tmp_path):
     assert len(history) == 3
     assert history[0]["content"] == "first"
     assert history[-1]["content"] == "second"
+
+
+def test_default_store_keeps_full_history_beyond_the_model_context_window(tmp_path):
+    store = ConversationHistoryStore(log_dir=tmp_path)
+    conversation_id = store.ensure_id("long-conversation")
+    result = {"label": "True", "summary": "Initial answer."}
+    store.append_turn(conversation_id, {"text": "claim"}, result)
+    for number in range(1, 13):
+        history = store.append_followup_turn(
+            conversation_id, f"Question {number}", result, "en", assistant_content=f"Answer {number}",
+        )
+
+    assert len(history) == 26
+    assert history[1]["content"] == "Initial answer."
+    assert history[3]["content"] == "Answer 1"
+    reopened = ConversationHistoryStore(log_dir=tmp_path)
+    assert reopened.snapshot(conversation_id)["conversation_history"] == history
+    assert reopened.list_conversations()[0]["history_count"] == 26
+    assert reopened.get(conversation_id, limit=20) == history[-20:]
+    assert reopened.latest_context(conversation_id, limit=20)["conversation_history"] == history[-20:]
 
 
 def test_conversation_history_store_lists_conversations_with_metadata(tmp_path):
@@ -116,3 +138,28 @@ def test_followup_explanation_does_not_replace_latest_result(tmp_path):
 
     assert history[-1]["content"] == "这是对已有结果的解释。"
     assert snapshot["latest_result"] == original_result
+    assert snapshot["conversation"]["title"] == "判断图片"
+
+
+def test_initial_title_survives_a_rerun_and_reload(tmp_path):
+    store = make_store(tmp_path, max_items=2)
+    result = {"label": "True"}
+    store.append_turn("stable", {"image_asset": {"filename": "source.png"}, "question": "Inspect it"}, result)
+    store.append_turn("stable", {"text": "Later input", "mode": "auto"}, result)
+
+    reopened = make_store(tmp_path, max_items=2)
+    assert reopened.snapshot("stable")["conversation"]["title"] == "source.png"
+
+
+def test_legacy_title_is_restored_from_the_first_input(tmp_path):
+    store = make_store(tmp_path)
+    result = {"label": "True"}
+    store.append_turn("legacy", {"text": "Original claim"}, result)
+    store.append_followup_turn("legacy", "Why?", result, "en")
+    meta_path = tmp_path / "legacy" / "meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    del meta["initial_title"]
+    meta["title"] = "Why?"
+    meta_path.write_text(json.dumps(meta), encoding="utf-8")
+
+    assert make_store(tmp_path).snapshot("legacy")["conversation"]["title"] == "Original claim"

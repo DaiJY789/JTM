@@ -188,7 +188,7 @@ def select_sample_image_indices(
 def extract_text_label(result: dict[str, Any]) -> str | None:
     mmd_detection = result.get("mmd_detection")
     if isinstance(mmd_detection, dict):
-        verdict = str(mmd_detection.get("verdict") or "").strip()
+        verdict = str(mmd_detection.get("label") or mmd_detection.get("verdict") or "").strip()
         if verdict in DATASET_LABELS:
             return verdict
     final_label = str(result.get("label") or "").strip()
@@ -216,11 +216,12 @@ def compact_result(result: dict[str, Any]) -> dict[str, Any]:
         "decision_status": result.get("decision_status") or mmd_detection.get("decision_status"),
         "mmd_detection": {
             "status": mmd_detection.get("status"),
-            "verdict": mmd_detection.get("verdict"),
+            "label": mmd_detection.get("label") or mmd_detection.get("verdict"),
+            "forgery_type": mmd_detection.get("forgery_type"),
             "confidence": mmd_detection.get("confidence"),
             "atomic_points": mmd_detection.get("atomic_points", []),
             "fine_grained_checks": mmd_detection.get("fine_grained_checks", {}),
-            "explanation": mmd_detection.get("explanation", {}),
+            "user_answer": mmd_detection.get("user_answer", mmd_detection.get("explanation", {})),
         },
         "crossmodal_verdict": {
             "label": crossmodal.get("label"),

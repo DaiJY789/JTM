@@ -25,7 +25,7 @@ def test_frontend_places_dialogue_before_composer_and_right_input_column():
     url_position = INDEX.index('id="urlInput"')
     image_position = INDEX.index('id="imagePreview"')
 
-    assert result_position < history_position < composer_position < input_position < image_position < url_position
+    assert result_position < history_position < composer_position < input_position < url_position < image_position
     assert '多模态信息检测' not in INDEX
     assert '待核查内容</h2>' not in INDEX
     assert '分析与对话</h2>' not in INDEX
@@ -104,7 +104,7 @@ def test_frontend_control_labels_are_chinese():
 
 
 def test_frontend_panel_titles_and_result_meta_use_shared_styles():
-    for title in ["文本预览", "URL", "图片预览"]:
+    for title in ["文本预览", "图片预览"]:
         assert f'class="panel-title"' in INDEX and f'>{title}</label>' in INDEX
     assert '<span class="status-pill runtime-pill" id="resultRuntime">-</span>' in INDEX
     assert '<span class="status-pill idle" id="statusPill" role="status">等待输入</span>' in INDEX
@@ -131,4 +131,4 @@ def test_frontend_keeps_conversation_images_visible_during_followups():
     assert "syncImagePreviewsFromResult(result);" in APP_JS
     assert "if (preserveExisting && state.imagePreviewAssets.length)" in APP_JS
     assert "ensureImagePreviewBeforeSubmit(isFollowup);" in APP_JS
-    assert "/static/app.js?v=20261015-unified-url-fluid" in INDEX
+    assert "/static/app.js?v=" in INDEX

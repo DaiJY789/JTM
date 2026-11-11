@@ -87,7 +87,9 @@ class DetectionReportBuilder:
         mmd = payload.get("mmd_detection")
         if isinstance(mmd, dict):
             explanation = (
-                mmd.get("explanation")
+                mmd.get("user_answer")
+                if isinstance(mmd.get("user_answer"), dict)
+                else mmd.get("explanation")
                 if isinstance(mmd.get("explanation"), dict)
                 else mmd.get("user_explanation")
                 if isinstance(mmd.get("user_explanation"), dict)
@@ -96,7 +98,7 @@ class DetectionReportBuilder:
             findings.append(
                 AnalysisFinding(
                     analyzer="mmd_single_agent",
-                    label=str(mmd.get("verdict") or payload.get("label") or ""),
+                    label=str(mmd.get("label") or mmd.get("verdict") or payload.get("label") or ""),
                     summary=str(
                         explanation.get("analysis")
                         or explanation.get("summary")
@@ -125,13 +127,15 @@ class DetectionReportBuilder:
         mmd = payload.get("mmd_detection")
         if isinstance(mmd, dict):
             explanation = (
-                mmd.get("explanation")
+                mmd.get("user_answer")
+                if isinstance(mmd.get("user_answer"), dict)
+                else mmd.get("explanation")
                 if isinstance(mmd.get("explanation"), dict)
                 else mmd.get("user_explanation")
                 if isinstance(mmd.get("user_explanation"), dict)
                 else {}
             )
-            for item in explanation.get("limitations", []) or []:
+            for item in explanation.get("notes", explanation.get("limitations", [])) or []:
                 text = str(item).strip()
                 if text and text not in values:
                     values.append(text)

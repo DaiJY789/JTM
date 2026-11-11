@@ -110,6 +110,7 @@ class ImageVerdict(BaseModel):
     visual_description: str = Field(default="", description="Visible content described by the model.")
     evidence: list[str] = Field(default_factory=list, description="Visual clues used for the image verdict.")
     reasoning: str = Field(default="", description="Reasoning behind the image verdict.")
+    forgery_type: str | None = Field(default=None, description="Most likely single image forgery or synthesis method.")
     forgery_types: list[str] = Field(default_factory=list, description="Forgery type hints from the forensic pipeline.")
     tool_evidence: list[dict[str, Any]] = Field(default_factory=list, description="Tool evidence.")
     suspicious_regions: list[dict[str, Any]] = Field(default_factory=list, description="Global-coordinate suspicious regions.")
@@ -149,10 +150,10 @@ class MMDFineGrainedCheck(BaseModel):
     analysis: str = ""
 
 
-class MMDExplanation(BaseModel):
-    verdict_statement: str = ""
+class DetectionUserAnswer(BaseModel):
+    judgment: str = ""
     analysis: str = ""
-    limitations: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
 
 
 class MMDAtomicPoint(BaseModel):
@@ -166,11 +167,12 @@ class MMDDetectionResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     status: Literal["success", "error"] = "success"
-    verdict: Literal["True", "Mostly True", "Mixture", "Mostly False", "False"] | None = None
+    label: Literal["True", "Mostly True", "Mixture", "Mostly False", "False"] | None = None
+    forgery_type: str | None = Field(default=None, description="Primary fine-grained check key, none, or unknown.")
     confidence: float | None = Field(default=None, ge=0, le=1)
     atomic_points: list[MMDAtomicPoint] = Field(default_factory=list)
     fine_grained_checks: dict[str, MMDFineGrainedCheck] = Field(default_factory=dict)
-    explanation: MMDExplanation = Field(default_factory=MMDExplanation)
+    user_answer: DetectionUserAnswer = Field(default_factory=DetectionUserAnswer)
 
 
 class DetectionResponse(BaseModel):
@@ -225,6 +227,7 @@ class DetectionResponse(BaseModel):
     mode: DetectionMode = Field(description="Resolved detection mode actually used by the service.")
     type: str = Field(default="", description="Detection type, such as 事实核查/fact_checking or 谣言检测/rumor_detection for text.")
     label: str | None = Field(description="Final label, or null when detection fails technically.")
+    forgery_type: str | None = Field(default=None, description="Primary misinformation dimension or most likely image forgery method.")
     summary: str = Field(default="", description="Human-readable summary of the detection result.")
     question: str = Field(default="", description="Resolved user question used to focus the analysis.")
     confidence: float | None = Field(default=None, ge=0, le=1, description="Optional final confidence score.")
@@ -248,5 +251,5 @@ class DetectionResponse(BaseModel):
     conversation_id: str = Field(default="", description="Backend conversation id for this detection session.")
     conversation_history: list[dict[str, Any]] = Field(
         default_factory=list,
-        description="Backend-maintained recent conversation history for this conversation id.",
+        description="Saved conversation history for this conversation id.",
     )

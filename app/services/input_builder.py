@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+from dataclasses import replace
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,7 @@ class DetectionInputBuilder:
         image_filenames: list[str | None] | tuple[str | None, ...] | None = None,
         image_content_types: list[str | None] | tuple[str | None, ...] | None = None,
         image_urls: list[str] | tuple[str, ...] | None = None,
+        webpage_image_urls: tuple[str, ...] | None = None,
     ) -> DetectionTask:
         if task == DetectionTaskType.AIGC_DETECTION:
             raise DetectionInputError("task=aigc_detection 暂未实现。")
@@ -85,6 +87,16 @@ class DetectionInputBuilder:
             upload_filenames = upload_filenames[: len(upload_contents)]
             upload_content_types = upload_content_types[: len(upload_contents)]
         webpage_context = self._extract_webpage(webpage_url)
+        if webpage_context and webpage_image_urls is not None:
+            if any(not self._is_remote_image_url(url) for url in webpage_image_urls):
+                raise DetectionInputError("网页图片链接必须是有效的 http(s) URL。")
+            selected_images = list(dict.fromkeys(url.strip() for url in webpage_image_urls))
+            webpage_context = replace(
+                webpage_context,
+                images=selected_images,
+                image_url=selected_images[0] if selected_images else "",
+                metadata={**webpage_context.metadata, "image_count": len(selected_images)},
+            )
         bundle = EvidenceBundle()
         explicit_text = (text or "").strip()
         if explicit_text:

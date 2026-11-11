@@ -110,7 +110,7 @@ class IFDDetectionService:
                 "claims": [],
                 "raw": {"workflow": {"name": "deepfake_detection", "steps": ["IFD_Agent"]}},
                 "question": resolved_question,
-                "user_answer": {"judgment": message, "reason_analysis": message},
+                "user_answer": {"judgment": message, "analysis": message, "notes": []},
             }
 
         label = self._extract_label(result.get("label"))
@@ -123,6 +123,7 @@ class IFDDetectionService:
             "label": label,
             "summary": final_summary,
             "confidence": result.get("confidence"),
+            "forgery_type": result.get("forgery_type"),
             "image_verdict": {
                 "label": label,
                 "analysis": final_summary,
@@ -139,6 +140,7 @@ class IFDDetectionService:
                 "visual_description": "基于本地图像取证工具生成的综合判定。",
                 "evidence": evidence,
                 "reasoning": final_summary,
+                "forgery_type": result.get("forgery_type"),
                 "forgery_types": result.get("forgery_types", []),
                 "tool_evidence": tool_evidence,
                 "suspicious_regions": suspicious_regions,
@@ -250,6 +252,7 @@ class IFDDetectionService:
             "mode": "image_only",
             "label": "Cannot_Determine",
             "summary": message,
+            "user_answer": {"judgment": message, "analysis": message, "notes": []},
             "confidence": 0.0,
             "image_verdict": {
                 "label": "Cannot_Determine",

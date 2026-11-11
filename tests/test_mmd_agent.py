@@ -1,6 +1,8 @@
 import json
 from threading import Barrier, Lock
 
+import pytest
+
 from app.agents.MMD_Agent import MMDDetectionAgent
 from app.core.config import Settings
 
@@ -17,8 +19,9 @@ class FakeImageService:
 
 def mmd_payload():
     return {
-        "verdict": "Mostly False",
+        "label": "Mostly False",
         "confidence": 0.82,
+        "forgery_type": "C2_contextual_inconsistency",
         "atomic_points": [
             {
                 "claim": "图片展示了文字所述事件。",
@@ -37,10 +40,10 @@ def mmd_payload():
             "C2_contextual_inconsistency": {"assessment": "confirmed", "severity": 3, "evidence_basis": "visual_input", "analysis": "图片语境不匹配。"},
             "C3_pragmatic_inconsistency": {"assessment": "absent", "severity": 0, "evidence_basis": "none", "analysis": "未见讽刺。"},
         },
-        "explanation": {
-            "verdict_statement": "该内容整体上基本虚假。",
+        "user_answer": {
+            "judgment": "该内容整体上基本虚假。",
             "analysis": "图片可能真实，但其语境不能支持文字中的核心事件。",
-            "limitations": ["未使用外部新闻来源核验。"],
+            "notes": ["未使用外部新闻来源核验。"],
         },
     }
 
@@ -57,8 +60,9 @@ def test_mmd_agent_returns_label_and_user_explanation_in_one_call():
 
     assert len(calls) == 1
     assert result["status"] == "success"
-    assert result["verdict"] == "Mostly False"
-    assert result["explanation"]["verdict_statement"] == "该内容整体判断为基本虚假。"
+    assert result["label"] == "Mostly False"
+    assert result["forgery_type"] == "C2_contextual_inconsistency"
+    assert result["user_answer"]["judgment"] == "该内容整体判断为基本虚假。"
     assert result["fine_grained_checks"]["C2_contextual_inconsistency"]["severity"] == 3
     assert result["fine_grained_checks"]["C2_contextual_inconsistency"]["assessment"] == "confirmed"
     assert len(result["fine_grained_checks"]) == 8
@@ -72,9 +76,74 @@ def test_mmd_agent_returns_label_and_user_explanation_in_one_call():
     assert "检测流程（必须按顺序完成）" in calls[0][0]
     assert '"confidence_label"' not in calls[0][0]
     assert '"fine_grained_checks"' in calls[0][0]
-    assert '"explanation"' in calls[0][0]
+    assert '"user_answer"' in calls[0][0]
     assert '"current_date"' in calls[0][0]
     assert '"selected_image_count": 1' in calls[0][0]
+    assert "verdict" not in result
+    assert "explanation" not in result
+    assert set(result["user_answer"]) == {"judgment", "analysis", "notes"}
+
+
+@pytest.mark.parametrize("dimension", MMDDetectionAgent.SIGNAL_KEYS)
+def test_mmd_primary_type_preserves_the_model_choice(dimension):
+    agent = MMDDetectionAgent(FakeImageService(), Settings())
+    data = mmd_payload()
+    # Even a lower-severity active dimension can be the main issue for a core claim.
+    data["fine_grained_checks"][dimension] = {
+        "assessment": "suspected", "severity": 1,
+        "evidence_basis": "visual_input", "analysis": "对核心主张最关键的线索。",
+    }
+    data["forgery_type"] = dimension
+    assert agent._normalize_result(data, "zh")["forgery_type"] == dimension
+
+
+@pytest.mark.parametrize("invalid", [None, "bad_key", "V2_visual_editing", "none"])
+def test_mmd_primary_type_falls_back_only_to_active_dimensions(invalid):
+    agent = MMDDetectionAgent(FakeImageService(), Settings())
+    data = mmd_payload()
+    data["forgery_type"] = invalid
+    result = agent._normalize_result(data, "zh")
+    selected = result["fine_grained_checks"][result["forgery_type"]]
+    assert selected["assessment"] == "confirmed"
+    assert selected["severity"] == 3
+
+
+def test_mmd_primary_type_distinguishes_no_risk_from_unverifiable_text():
+    agent = MMDDetectionAgent(FakeImageService(), Settings())
+    data = mmd_payload()
+    data["label"] = "True"
+    data["forgery_type"] = "V1_synthetic_visual_content"
+    data["fine_grained_checks"] = {
+        key: {"assessment": "absent", "analysis": "未发现风险。"}
+        for key in agent.SIGNAL_KEYS
+    }
+    assert agent._normalize_result(data, "zh", has_image=False)["forgery_type"] == "none"
+    data["fine_grained_checks"]["T1_fabrication"] = {"assessment": "not_verifiable"}
+    assert agent._normalize_result(data, "zh", has_image=False)["forgery_type"] == "unknown"
+    data["fine_grained_checks"]["T2_distortion"] = {
+        "assessment": "confirmed", "severity": 2, "analysis": "夸大了事实。",
+    }
+    assert agent._normalize_result(data, "zh", has_image=False)["forgery_type"] == "T2_distortion"
+
+
+def test_mmd_agent_normalizes_legacy_output_to_new_contract():
+    data = mmd_payload()
+    data["verdict"] = data.pop("label")
+    answer = data.pop("user_answer")
+    data["explanation"] = {
+        "verdict_statement": answer["judgment"],
+        "analysis": answer["analysis"],
+        "limitations": answer["notes"],
+    }
+    agent = MMDDetectionAgent(FakeImageService(), Settings(), evaluator=lambda *_: json.dumps(data))
+    result = agent.detect(text="新闻文字", image_content=b"image", language="zh")
+
+    assert result["status"] == "success"
+    assert result["label"] == "Mostly False"
+    assert result["user_answer"]["analysis"] == answer["analysis"]
+    assert result["user_answer"]["notes"] == answer["notes"]
+    assert "verdict" not in result
+    assert "explanation" not in result
 
 
 def test_mmd_agent_supports_text_only_input():
@@ -125,29 +194,29 @@ def test_mmd_agent_generates_explanation_fallback_without_second_call():
 
     def evaluator(*args):
         calls.append(args)
-        return json.dumps({"verdict": "Mixture", "confidence": 0.4, "fine_grained_checks": {}}, ensure_ascii=False)
+        return json.dumps({"label": "Mixture", "confidence": 0.4, "fine_grained_checks": {}}, ensure_ascii=False)
 
     agent = MMDDetectionAgent(FakeImageService(), Settings(), evaluator=evaluator)
     result = agent.detect(text="待判断内容", image_url="https://example.com/image.jpg", language="zh")
 
     assert len(calls) == 1
-    assert result["verdict"] == "Mixture"
+    assert result["label"] == "Mixture"
     assert result["decision_status"] == "insufficient_evidence"
-    assert result["explanation"]["analysis"]
-    assert result["explanation"]["verdict_statement"]
+    assert result["user_answer"]["analysis"]
+    assert result["user_answer"]["judgment"]
 
 
 def test_mmd_agent_rejects_invalid_verdict_as_technical_error():
     agent = MMDDetectionAgent(
         FakeImageService(),
         Settings(),
-        evaluator=lambda *_: json.dumps({"verdict": "Cannot_Determine"}),
+        evaluator=lambda *_: json.dumps({"label": "Cannot_Determine"}),
     )
 
     result = agent.detect(text="待判断内容", image_content=b"image", language="zh")
 
     assert result["status"] == "error"
-    assert result["verdict"] is None
+    assert result["label"] is None
     assert result["confidence"] is None
     assert result["timings"]["model_calls"] == 3
 
@@ -161,11 +230,11 @@ def test_mmd_agent_timeout_returns_no_verdict():
     result = agent.detect(text="待判断内容", image_content=b"image", language="zh")
 
     assert result["status"] == "error"
-    assert result["verdict"] is None
+    assert result["label"] is None
     assert result["confidence"] is None
     assert result["error"] == "Request timed out."
     assert result["timings"]["model_calls"] == 3
-    assert "不输出五分类标签" in result["explanation"]["analysis"]
+    assert "不输出五分类标签" in result["user_answer"]["analysis"]
 
 
 def test_mmd_agent_recovers_after_transient_model_failure():
@@ -181,7 +250,7 @@ def test_mmd_agent_recovers_after_transient_model_failure():
     result = agent.detect(text="待判断内容", image_content=b"image", language="zh")
 
     assert result["status"] == "success"
-    assert result["verdict"] == "Mostly False"
+    assert result["label"] == "Mostly False"
     assert result["timings"]["model_calls"] == 2
     assert result["timings"]["model_attempts"][0]["error"] == "Temporary timeout"
 
@@ -190,13 +259,13 @@ def test_mmd_agent_returns_no_verdict_for_truncated_json():
     agent = MMDDetectionAgent(
         FakeImageService(),
         Settings(),
-        evaluator=lambda *_: '{"verdict":"Mostly True","confidence":',
+        evaluator=lambda *_: '{"label":"Mostly True","confidence":',
     )
 
     result = agent.detect(text="待判断内容", image_content=b"image", language="zh")
 
     assert result["status"] == "error"
-    assert result["verdict"] is None
+    assert result["label"] is None
     assert result["confidence"] is None
 
 
@@ -217,7 +286,7 @@ def test_mmd_agent_retries_empty_object_then_accepts_valid_json():
     result = agent.detect(text="待判断内容", image_content=b"image", language="zh")
 
     assert result["status"] == "success"
-    assert result["verdict"] == "Mostly False"
+    assert result["label"] == "Mostly False"
     assert result["timings"]["model_calls"] == 2
     assert result["timings"]["invalid_output_retries"] == 1
     assert len(result["timings"]["model_attempts"]) == 2
@@ -241,7 +310,7 @@ def test_mmd_agent_stops_after_two_invalid_output_retries():
     result = agent.detect(text="待判断内容", image_content=b"image", language="zh")
 
     assert result["status"] == "error"
-    assert result["verdict"] is None
+    assert result["label"] is None
     assert len(calls) == 3
     assert result["timings"]["model_calls"] == 3
     assert result["timings"]["invalid_output_retries"] == 2
@@ -380,7 +449,7 @@ def test_mmd_agent_sends_multiple_images_in_order_to_final_model():
 
 def test_mmd_agent_downgrades_false_when_conflict_only_uses_model_knowledge():
     data = mmd_payload()
-    data["verdict"] = "False"
+    data["label"] = "False"
     data["confidence"] = 0.95
     data["claim_assessments"] = [
         {
@@ -398,24 +467,24 @@ def test_mmd_agent_downgrades_false_when_conflict_only_uses_model_knowledge():
 
     result = agent.detect(text="某事件已经发生。", image_content=b"image", language="zh")
 
-    assert result["verdict"] == "Mostly False"
+    assert result["label"] == "Mostly False"
     assert "model_verdict" not in result
     assert "verdict_adjustments" not in result
     assert result["decision_status"] == "low_confidence"
     assert result["confidence"] <= 0.65
-    assert "模型已有知识" in "".join(result["explanation"]["limitations"])
+    assert "模型已有知识" in "".join(result["user_answer"]["notes"])
 
 
 def test_mmd_agent_repairs_missing_comma_between_json_objects():
     agent = MMDDetectionAgent(FakeImageService(), Settings(), evaluator=lambda *_: "")
-    parsed = agent._parse_json('{"verdict":"Mixture","signals":{} "user_explanation":{}}')
+    parsed = agent._parse_json('{"label":"Mixture","signals":{} "user_explanation":{}}')
 
-    assert parsed["verdict"] == "Mixture"
+    assert parsed["label"] == "Mixture"
 
 
 def test_mmd_agent_keeps_true_label_while_marking_evidence_insufficient():
     data = mmd_payload()
-    data["verdict"] = "True"
+    data["label"] = "True"
     data["claim_assessments"] = [
         {
             "claim": "某事件已经发生。",
@@ -432,7 +501,7 @@ def test_mmd_agent_keeps_true_label_while_marking_evidence_insufficient():
 
     result = agent.detect(text="某事件已经发生。", image_content=b"image", language="zh")
 
-    assert result["verdict"] == "True"
+    assert result["label"] == "True"
     assert "raw_confidence" not in result
     assert "confidence_calibration" not in result
     assert result["decision_status"] == "insufficient_evidence"
@@ -441,7 +510,7 @@ def test_mmd_agent_keeps_true_label_while_marking_evidence_insufficient():
 
 def test_mmd_agent_maps_grounded_minor_error_to_mostly_true():
     data = mmd_payload()
-    data["verdict"] = "True"
+    data["label"] = "True"
     data["claim_assessments"] = [
         {
             "claim": "核心事件确实发生。",
@@ -465,7 +534,7 @@ def test_mmd_agent_maps_grounded_minor_error_to_mostly_true():
 
     result = agent.detect(text="核心事件发生并影响全部地区。", image_content=b"image")
 
-    assert result["verdict"] == "Mostly True"
+    assert result["label"] == "Mostly True"
     assert result["diagnostics"]["model_verdict"] == "True"
     assert result["diagnostics"]["verdict_adjustments"] == [
         "true_has_grounded_minor_issue"

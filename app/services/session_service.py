@@ -7,6 +7,9 @@ from app.services.artifact_store import ArtifactStore
 from app.services.conversation_history import ConversationHistoryStore
 
 
+DETECTION_CONTEXT_LIMIT = 20
+
+
 class SessionService:
     """Coordinate conversation state and conversation-scoped artifacts."""
 
@@ -20,7 +23,7 @@ class SessionService:
         request_history: list[dict[str, Any]],
     ) -> tuple[str, list[dict[str, Any]]]:
         resolved_id = self.conversation_store.ensure_id(conversation_id)
-        history = [*self.conversation_store.get(resolved_id), *request_history]
+        history = [*self.conversation_store.get(resolved_id, limit=DETECTION_CONTEXT_LIMIT), *request_history]
         return resolved_id, history
 
     def append_detection(
@@ -52,7 +55,7 @@ class SessionService:
 
     def latest_context(self, conversation_id: str | None) -> tuple[str, dict[str, Any]]:
         resolved_id = self.conversation_store.ensure_id(conversation_id)
-        return resolved_id, self.conversation_store.latest_context(resolved_id)
+        return resolved_id, self.conversation_store.latest_context(resolved_id, limit=DETECTION_CONTEXT_LIMIT)
 
     def list_conversations(self) -> list[dict[str, Any]]:
         return self.conversation_store.list_conversations()

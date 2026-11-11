@@ -186,7 +186,7 @@ class MMDDetectionAgent:
                     candidate = self._parse_json(raw_output)
                     if not candidate:
                         raise ValueError("MMD model output must be a non-empty JSON object")
-                    if self._normalize_verdict(candidate.get("verdict") or candidate.get("label")) is None:
+                    if self._normalize_verdict(candidate.get("label") or candidate.get("verdict")) is None:
                         raise ValueError("MMD model output must contain a valid five-way verdict")
                     parsed = candidate
                 except ValueError as exc:
@@ -252,9 +252,9 @@ class MMDDetectionAgent:
         if attempt_index == 0:
             return prompt
         correction = (
-            "上一次调用失败、响应为空对象或 JSON/标签无效。本次必须返回非空 JSON 对象，并完整包含 verdict、confidence、atomic_points、claim_assessments、fine_grained_checks 和 explanation；不要返回 {}。"
+            "上一次调用失败、响应为空对象或 JSON/标签无效。本次必须返回非空 JSON 对象，并完整包含 label、confidence、forgery_type、atomic_points、claim_assessments、fine_grained_checks 和 user_answer；不要返回 {}。"
             if is_zh(language)
-            else "The previous call failed or returned an empty object, invalid JSON, or invalid verdict. Return a non-empty JSON object containing verdict, confidence, atomic_points, claim_assessments, fine_grained_checks, and explanation. Never return {}."
+            else "The previous call failed or returned an empty object, invalid JSON, or invalid verdict. Return a non-empty JSON object containing label, confidence, forgery_type, atomic_points, claim_assessments, fine_grained_checks, and user_answer. Never return {}."
         )
         return f"{prompt}\n\nRETRY_REQUIREMENT_{attempt_index}: {correction}"
 
@@ -335,7 +335,7 @@ class MMDDetectionAgent:
         if text_only:
             return (
                 "本次未提供图片，仅执行文本事实核查。visual_observation 留空；"
-                "V1–V2 与 C1–C3 标记 not_verifiable、severity=0、evidence_basis=none，且不得影响 verdict。"
+                "V1–V2 与 C1–C3 标记 not_verifiable、severity=0、evidence_basis=none，且不得影响 label。"
                 if is_zh(language)
                 else "No image was supplied. Perform text-only fact-checking. Leave visual_observation empty; mark V1-V2 and C1-C3 not_verifiable with severity 0 and evidence_basis none, and do not use them to determine the verdict."
             )
@@ -739,7 +739,7 @@ class MMDDetectionAgent:
         external_search_available: bool = False,
         has_image: bool = True,
     ) -> dict[str, Any]:
-        model_verdict = self._normalize_verdict(parsed.get("verdict"))
+        model_verdict = self._normalize_verdict(parsed.get("label") or parsed.get("verdict"))
         if model_verdict is None:
             raise ValueError("MMD verdict is missing or invalid")
         raw_confidence = self._bounded_float(parsed.get("confidence"), 0.5)
@@ -807,8 +807,10 @@ class MMDDetectionAgent:
             evidence_coverage,
             model_knowledge_only,
         )
-        explanation = self._normalize_explanation(
-            parsed.get("explanation")
+        user_answer = self._normalize_user_answer(
+            parsed.get("user_answer")
+            if isinstance(parsed.get("user_answer"), dict)
+            else parsed.get("explanation")
             if isinstance(parsed.get("explanation"), dict)
             else parsed.get("user_explanation"),
             verdict,
@@ -820,14 +822,15 @@ class MMDDetectionAgent:
             external_search_available=external_search_available,
         )
         return {
-            "verdict": verdict,
+            "label": verdict,
             "confidence": confidence,
+            "forgery_type": self._normalize_forgery_type(parsed.get("forgery_type"), signals, has_image=has_image),
             "decision_status": decision_status,
             "atomic_points": atomic_points,
             "claim_assessments": claim_assessments,
             "crossmodal_assessment": crossmodal_assessment,
             "fine_grained_checks": signals,
-            "explanation": explanation,
+            "user_answer": user_answer,
             "diagnostics": {
                 "model_verdict": model_verdict,
                 "verdict_adjustments": verdict_adjustments,
@@ -846,6 +849,24 @@ class MMDDetectionAgent:
                 ),
             },
         }
+
+    def _normalize_forgery_type(
+        self, value: Any, signals: dict[str, Any], *, has_image: bool
+    ) -> str:
+        applicable = {key: signals[key] for key in self.SIGNAL_KEYS if has_image or key.startswith("T")}
+        candidates = {
+            key: signal for key, signal in applicable.items()
+            if signal["assessment"] in {"confirmed", "suspected"} and signal["severity"] > 0
+        }
+        selected = str(value or "").strip()
+        if selected in candidates:
+            return selected
+        if candidates:
+            # Older or inconsistent responses may omit the selection. Only use active checks.
+            return max(candidates, key=lambda key: (
+                candidates[key]["assessment"] == "confirmed", candidates[key]["severity"]
+            ))
+        return "unknown" if any(item["assessment"] == "not_verifiable" for item in applicable.values()) else "none"
 
     def _normalize_verdict(self, value: Any) -> str | None:
         text = str(value or "").strip()
@@ -1172,7 +1193,7 @@ class MMDDetectionAgent:
             calibrated = min(calibrated, 0.65)
         return round(min(status_cap, max(0.05, calibrated)), 4)
 
-    def _normalize_explanation(
+    def _normalize_user_answer(
         self,
         value: Any,
         verdict: str,
@@ -1203,7 +1224,7 @@ class MMDDetectionAgent:
                 else "Some clues rely only on model knowledge, suspicion, or unverifiable information and were not treated as confirmed conflicts."
             )
             analysis = f"{analysis} {boundary}".strip()
-        limitations = self._string_list(source.get("limitations"))
+        limitations = self._string_list(source.get("notes") if "notes" in source else source.get("limitations"))
         bases = {
             item.get("evidence_basis")
             for item in claim_assessments
@@ -1237,9 +1258,9 @@ class MMDDetectionAgent:
                 else "The decision uses only the supplied text and image; key context was not externally verified."
             )
         return {
-            "verdict_statement": verdict_statement,
+            "judgment": verdict_statement,
             "analysis": analysis,
-            "limitations": list(dict.fromkeys(limitations))[:2],
+            "notes": list(dict.fromkeys(limitations))[:2],
         }
 
     def _structured_findings(
@@ -1343,8 +1364,9 @@ class MMDDetectionAgent:
         )
         return {
             "status": "error",
-            "verdict": None,
+            "label": None,
             "confidence": None,
+            "forgery_type": None,
             "decision_status": "insufficient_evidence",
             "atomic_points": [],
             "claim_assessments": [],
@@ -1356,14 +1378,14 @@ class MMDDetectionAgent:
             "fine_grained_checks": {
                 key: self._normalize_signal(None) for key in self.SIGNAL_KEYS
             },
-            "explanation": {
-                "verdict_statement": (
+            "user_answer": {
+                "judgment": (
                     "本次检测未形成有效结论。"
                     if is_zh(language)
                     else "This detection did not produce a valid conclusion."
                 ),
                 "analysis": fallback_note,
-                "limitations": [message],
+                "notes": [message],
             },
             "timings": {"model_calls": model_calls, "model_seconds": elapsed, "total_seconds": elapsed},
         }

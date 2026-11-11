@@ -14,7 +14,7 @@ from uuid import uuid4
 class ConversationHistoryStore:
     """Conversation history persisted under a local conversations directory."""
 
-    def __init__(self, max_items: int = 20, log_dir: str | Path = "conversations"):
+    def __init__(self, max_items: int | None = None, log_dir: str | Path = "conversations"):
         self.max_items = max_items
         self.log_dir = Path(log_dir)
         self._items: dict[str, list[dict[str, Any]]] = {}
@@ -36,9 +36,13 @@ class ConversationHistoryStore:
             self._meta[new_id] = self._new_meta(new_id)
         return new_id
 
-    def get(self, conversation_id: str) -> list[dict[str, Any]]:
+    def get(self, conversation_id: str, *, limit: int | None = None) -> list[dict[str, Any]]:
         with self._lock:
-            return deepcopy(self._items.get(conversation_id, []))
+            return deepcopy(self._recent_items(conversation_id, limit))
+
+    def _recent_items(self, conversation_id: str, limit: int | None) -> list[dict[str, Any]]:
+        history = self._items.get(conversation_id, [])
+        return history if limit is None else history[max(0, len(history) - limit) :]
 
     def snapshot(self, conversation_id: str) -> dict[str, Any]:
         with self._lock:
@@ -53,12 +57,12 @@ class ConversationHistoryStore:
                 "latest_result": deepcopy(meta.get("latest_result", {})),
             }
 
-    def latest_context(self, conversation_id: str) -> dict[str, Any]:
+    def latest_context(self, conversation_id: str, *, limit: int | None = None) -> dict[str, Any]:
         with self._lock:
             meta = self._meta.get(conversation_id, {})
             return {
                 "conversation_id": conversation_id,
-                "conversation_history": deepcopy(self._items.get(conversation_id, [])),
+                "conversation_history": deepcopy(self._recent_items(conversation_id, limit)),
                 "latest_input": deepcopy(meta.get("latest_input", {})),
                 "latest_result": deepcopy(meta.get("latest_result", {})),
             }
@@ -139,8 +143,7 @@ class ConversationHistoryStore:
             history = self._items.setdefault(conversation_id, [])
             self._meta.setdefault(conversation_id, self._new_meta(conversation_id))
             history.extend(turn_items)
-            if len(history) > self.max_items:
-                del history[: len(history) - self.max_items]
+            self._trim_history(history)
             self._meta[conversation_id]["latest_input"] = deepcopy(user_input)
             self._meta[conversation_id]["latest_result"] = deepcopy(result)
             self._update_meta(conversation_id, user_input, result, history)
@@ -179,19 +182,23 @@ class ConversationHistoryStore:
             history = self._items.setdefault(conversation_id, [])
             self._meta.setdefault(conversation_id, self._new_meta(conversation_id))
             history.extend(turn_items)
-            if len(history) > self.max_items:
-                del history[: len(history) - self.max_items]
+            self._trim_history(history)
             if update_latest_result:
                 self._meta[conversation_id]["latest_result"] = deepcopy(result)
             self._update_meta(conversation_id, user_input, result, history)
             self._persist(conversation_id)
             return deepcopy(history)
 
+    def _trim_history(self, history: list[dict[str, Any]]) -> None:
+        if self.max_items is not None and len(history) > self.max_items:
+            del history[: len(history) - self.max_items]
+
     def _new_meta(self, conversation_id: str) -> dict[str, Any]:
         now = time()
         return {
             "conversation_id": conversation_id,
             "title": "新对话",
+            "initial_title": "",
             "last_label": "",
             "last_summary": "",
             "created_at": now,
@@ -209,17 +216,29 @@ class ConversationHistoryStore:
         history: list[dict[str, Any]],
     ) -> None:
         meta = self._meta[conversation_id]
-        title = self._title_from_input(user_input)
-        if title:
-            meta["title"] = title
+        if not meta.get("initial_title") and user_input.get("mode") != "followup":
+            title = self._title_from_input(user_input)
+            if title:
+                meta["title"] = meta["initial_title"] = title
         meta["last_label"] = str(result.get("label") or "")
         meta["last_summary"] = str(result.get("summary") or "")[:160]
         meta["updated_at"] = time()
         meta["history_count"] = len(history)
 
     def _title_from_input(self, user_input: dict[str, Any]) -> str:
-        for key in ["text", "question", "image_url"]:
-            value = " ".join(str(user_input.get(key) or "").split())
+        image_urls = user_input.get("image_urls")
+        image_assets = user_input.get("image_assets")
+        image = user_input.get("image_asset") or (image_assets[0] if isinstance(image_assets, list) and image_assets else None)
+        candidates = (
+            user_input.get("text"),
+            user_input.get("webpage_url"),
+            user_input.get("image_url"),
+            image_urls[0] if isinstance(image_urls, list) and image_urls else "",
+            image.get("filename") if isinstance(image, dict) else "",
+            user_input.get("question"),
+        )
+        for candidate in candidates:
+            value = " ".join(str(candidate or "").split())
             if value:
                 return f"{value[:18]}..." if len(value) > 18 else value
         if user_input.get("has_image"):
@@ -241,8 +260,8 @@ class ConversationHistoryStore:
     def _assistant_content(self, result: dict[str, Any]) -> str:
         answer = result.get("user_answer") if isinstance(result.get("user_answer"), dict) else {}
         return str(
-            answer.get("reason_analysis")
-            or answer.get("analysis")
+            answer.get("analysis")
+            or answer.get("reason_analysis")
             or answer.get("judgment")
             or answer.get("conclusion")
             or result.get("summary")
@@ -277,11 +296,23 @@ class ConversationHistoryStore:
                 history = []
             if not isinstance(meta, dict):
                 meta = self._new_meta(conversation_id)
+            self._trim_history(history)
             meta["conversation_id"] = conversation_id
             meta["history_count"] = len(history)
             meta["latest_input"] = self._read_json(directory / "latest_input.json", meta.get("latest_input", {}))
             meta["latest_result"] = self._read_json(directory / "latest_result.json", meta.get("latest_result", {}))
-            self._items[conversation_id] = history[-self.max_items :]
+            if not meta.get("initial_title"):
+                first_input = next(
+                    (item.get("meta") for item in history if isinstance(item, dict) and item.get("role") == "user"),
+                    None,
+                )
+                if not isinstance(first_input, dict) or first_input.get("mode") == "followup":
+                    first_input = meta["latest_input"]
+                if isinstance(first_input, dict):
+                    meta["initial_title"] = self._title_from_input(first_input)
+            if meta.get("initial_title"):
+                meta["title"] = meta["initial_title"]
+            self._items[conversation_id] = history
             self._meta[conversation_id] = meta
 
     def _persist(self, conversation_id: str) -> None:

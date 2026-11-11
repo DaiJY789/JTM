@@ -36,20 +36,15 @@ class MMDDetectionService:
             question=question,
             language=language,
         )
-        if detection.get("status") != "success" or not detection.get("verdict"):
+        if detection.get("status") != "success" or not detection.get("label"):
             return self._error_response(detection, question, language, has_image=has_image)
 
-        verdict = str(detection["verdict"])
+        verdict = str(detection["label"])
         public_detection = self._public_detection(detection)
-        explanation = dict(detection.get("explanation") or {})
-        limitations = self._strings(explanation.get("limitations"))
+        explanation = dict(detection.get("user_answer") or {})
+        limitations = self._strings(explanation.get("notes"))
         crossmodal = self._crossmodal_verdict(detection, language) if has_image else None
-        user_answer = self._user_answer(
-            detection,
-            language,
-            crossmodal or {},
-            has_image=has_image,
-        )
+        user_answer = self._user_answer(detection)
         evidence = self._evidence(detection)
         tool_dependencies = self._tool_dependencies(detection)
         workflow = {
@@ -61,8 +56,9 @@ class MMDDetectionService:
         report = {
             "label": verdict,
             "type": "multimodal_misinformation",
-            "summary": str(explanation.get("analysis") or explanation.get("verdict_statement") or "").strip(),
+            "summary": str(explanation.get("analysis") or explanation.get("judgment") or "").strip(),
             "confidence": detection.get("confidence"),
+            "forgery_type": detection.get("forgery_type"),
             "risk_level": self._risk_level(verdict),
             "decision_status": detection.get("decision_status"),
             "limitations": limitations,
@@ -75,6 +71,7 @@ class MMDDetectionService:
             "type": "multimodal_misinformation",
             "summary": report["summary"],
             "confidence": detection.get("confidence"),
+            "forgery_type": detection.get("forgery_type"),
             "decision_status": detection.get("decision_status"),
             "mmd_detection": public_detection,
             "text_verdict": {
@@ -121,36 +118,12 @@ class MMDDetectionService:
             "question": question,
         }
 
-    def _user_answer(
-        self,
-        detection: dict[str, Any],
-        language: str,
-        crossmodal: dict[str, Any],
-        *,
-        has_image: bool,
-    ) -> dict[str, Any]:
-        explanation = dict(detection.get("explanation") or {})
-        checks = (
-            detection.get("fine_grained_checks")
-            if isinstance(detection.get("fine_grained_checks"), dict)
-            else {}
-        )
-        limitations = self._strings(explanation.get("limitations"))
+    def _user_answer(self, detection: dict[str, Any]) -> dict[str, Any]:
+        answer = dict(detection.get("user_answer") or {})
         return {
-            "judgment": str(explanation.get("verdict_statement") or "").strip(),
-            "reason_analysis": str(explanation.get("analysis") or "").strip(),
-            "text_analysis": self._signal_summary(checks, "T", language),
-            "visual_analysis": self._signal_summary(checks, "V", language) if has_image else "",
-            "crossmodal_analysis": (
-                str(crossmodal.get("reasoning") or "").strip() if has_image else ""
-            ),
-            "evidence_summary": str(explanation.get("analysis") or "").strip(),
-            "notes": limitations,
-            "headline": str(explanation.get("verdict_statement") or "").strip(),
-            "summary": str(explanation.get("analysis") or "").strip(),
-            "key_findings": [],
-            "limitations": limitations,
-            "decision_status": detection.get("decision_status"),
+            "judgment": str(answer.get("judgment") or "").strip(),
+            "analysis": str(answer.get("analysis") or "").strip(),
+            "notes": self._strings(answer.get("notes")),
         }
 
     def _signal_summary(self, signals: dict[str, Any], prefix: str, language: str) -> str:
@@ -221,7 +194,7 @@ class MMDDetectionService:
                 "mismatched_elements": mismatched,
                 "missing_elements": missing,
                 "reasoning": reason,
-                "limitations": self._strings(detection.get("explanation", {}).get("limitations")),
+                "limitations": self._strings(detection.get("user_answer", {}).get("notes")),
                 "consistency_score": scores[explicit_label],
             }
 
@@ -284,7 +257,7 @@ class MMDDetectionService:
             "mismatched_elements": mismatched,
             "missing_elements": missing,
             "reasoning": reasoning,
-            "limitations": self._strings(detection.get("explanation", {}).get("limitations")),
+            "limitations": self._strings(detection.get("user_answer", {}).get("notes")),
             "consistency_score": consistency_score,
         }
 
@@ -411,7 +384,7 @@ class MMDDetectionService:
     ) -> dict[str, Any]:
         verdict = None
         confidence = None
-        explanation = dict(detection.get("explanation") or {})
+        explanation = dict(detection.get("user_answer") or {})
         model_attempted = int(detection.get("timings", {}).get("model_calls") or 0) > 0
         message = (
             "服务器繁忙，检测暂时失败，请稍后重试。"
@@ -420,26 +393,18 @@ class MMDDetectionService:
         ) if model_attempted else str(explanation.get("analysis") or "").strip() or (
             "检测服务暂时不可用。" if is_zh(language) else "The detection service is temporarily unavailable."
         )
-        limitations = self._strings(explanation.get("limitations")) or [message]
+        limitations = self._strings(explanation.get("notes")) or [message]
         user_answer = {
             "judgment": message,
-            "reason_analysis": message,
-            "text_analysis": "",
-            "visual_analysis": "",
-            "crossmodal_analysis": "",
-            "evidence_summary": "",
+            "analysis": message,
             "notes": limitations,
-            "headline": message,
-            "summary": message,
-            "key_findings": [],
-            "limitations": limitations,
-            "decision_status": "technical_error",
         }
         tool_dependencies = self._tool_dependencies(detection)
         return {
             "mode": "multimodal" if has_image else "text_only",
             "label": verdict,
             "type": "multimodal_misinformation",
+            "forgery_type": None,
             "summary": message,
             "confidence": confidence,
             "decision_status": "technical_error",
@@ -510,11 +475,12 @@ class MMDDetectionService:
             public_checks[key] = check
         result = {
             "status": detection.get("status"),
-            "verdict": detection.get("verdict"),
+            "label": detection.get("label"),
             "confidence": detection.get("confidence"),
+            "forgery_type": detection.get("forgery_type"),
             "atomic_points": detection.get("atomic_points", []),
             "fine_grained_checks": public_checks,
-            "explanation": detection.get("explanation", {}),
+            "user_answer": detection.get("user_answer", {}),
         }
         if detection.get("error"):
             result["error"] = detection["error"]

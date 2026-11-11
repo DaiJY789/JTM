@@ -390,7 +390,8 @@ class IFDDetectionAgent:
         if self._is_local_tampering_label(label) and not suspicious_regions:
             suspicious_regions = self._fallback_visual_region(image_context, language)
 
-        forgery_types = self._normalize_forgery_types(payload.get("forgery_types"), label, tool_calls, language)
+        forgery_type = self._normalize_forgery_type(payload.get("forgery_type"), label, payload.get("forgery_types"))
+        forgery_types = [self._canonical_forgery_type(forgery_type, language)]
         if self._is_real_label(label):
             suspicious_regions = []
 
@@ -428,6 +429,7 @@ class IFDDetectionAgent:
             "tamper_score": tamper_score,
             "ai_generated_score": ai_generated_score,
             "visual_analysis": visual_analysis,
+            "forgery_type": forgery_type,
             "forgery_types": forgery_types,
             "tool_evidence": tool_evidence,
             "suspicious_regions": suspicious_regions,
@@ -463,7 +465,7 @@ class IFDDetectionAgent:
             "label": label,
             "probability": probability,
             "confidence": 0.62 if self._is_real_label(label) else 0.68,
-            "forgery_types": self._infer_forgery_types(label, tool_calls),
+            "forgery_type": "none" if self._is_real_label(label) else "unknown",
             "tool_evidence": self._build_evidence_chain(tool_calls),
             "suspicious_regions": (regions[:1] or self._fallback_visual_region(image_context, language)) if self._is_local_tampering_label(label) else regions[:1],
             "limitations": (
@@ -966,41 +968,20 @@ class IFDDetectionAgent:
             calibrated = min(calibrated, 0.55)
         return self._bounded_float(calibrated, 0.55 if self._is_real_label(label) else 0.65)
 
-    def _infer_forgery_types(self, label: str, tool_calls: list[dict[str, Any]]) -> list[str]:
-        used = {item["tool"] for item in tool_calls}
+    def _normalize_forgery_type(self, value: Any, label: str, legacy_types: Any = None) -> str:
+        if self._is_real_label(label):
+            return "none"
+        if value is None and isinstance(legacy_types, list) and legacy_types:
+            value = legacy_types[0]
+        selected = self._canonical_forgery_type(value, "en")
         if self._is_ai_label(label):
-            return ["none"]
-        if self._is_local_tampering_label(label):
-            if "Noise_Analyzer" in used:
-                return ["splicing"]
-            if "PatchDense_Scanner" in used:
-                return ["copy_move"]
-            if "CFA_Validator" in used:
-                return ["inpainting"]
-            return ["unknown"]
-        return ["none"]
-
-    def _normalize_forgery_types(
-        self,
-        value: Any,
-        label: str,
-        tool_calls: list[dict[str, Any]],
-        language: str,
-    ) -> list[str]:
-        none_value = "无" if is_zh(language) else "none"
-        if self._is_real_label(label) or self._is_ai_label(label):
-            return [none_value]
-
-        candidates = value if isinstance(value, list) else []
-        candidates = [str(item).strip() for item in candidates if str(item or "").strip()]
-        candidates = [item for item in candidates if item.lower() not in {"none", "无"}]
-        if candidates:
-            return [self._canonical_forgery_type(candidates[0], language)]
-
-        inferred = self._infer_forgery_types(label, tool_calls)
-        if not inferred:
-            return ["未知" if is_zh(language) else "unknown"]
-        return [self._canonical_forgery_type(inferred[0], language)]
+            allowed = {"ai_generated", "cgi_rendering", "other_synthetic"}
+        else:
+            allowed = {
+                "splicing", "copy_move", "content_removal", "content_replacement",
+                "face_tampering", "local_repainting", "global_editing",
+            }
+        return selected if selected in allowed else "unknown"
 
     def _canonical_forgery_type(self, value: Any, language: str) -> str:
         first = str(value or "").strip()
@@ -1024,6 +1005,11 @@ class IFDDetectionAgent:
             "ai辅助编辑": "局部重绘",
             "ai局部编辑": "局部重绘",
             "全局编辑": "全局编辑",
+            "AI生成": "AI生成",
+            "ai生成": "AI生成",
+            "计算机渲染": "计算机渲染",
+            "计算机图形渲染": "计算机渲染",
+            "其他合成": "其他合成",
             "修饰改动": "全局编辑",
             "未知": "未知",
         }
@@ -1043,7 +1029,9 @@ class IFDDetectionAgent:
             "repainting": "局部重绘",
             "local_repainting": "局部重绘",
             "ai_edited": "局部重绘",
-            "ai_generated": "局部重绘",
+            "ai_generated": "AI生成",
+            "cgi_rendering": "计算机渲染",
+            "other_synthetic": "其他合成",
             "retouching": "全局编辑",
             "global_editing": "全局编辑",
             "global_edit": "全局编辑",
@@ -1062,6 +1050,9 @@ class IFDDetectionAgent:
             "人脸篡改": "face_tampering",
             "局部重绘": "local_repainting",
             "全局编辑": "global_editing",
+            "AI生成": "ai_generated",
+            "计算机渲染": "cgi_rendering",
+            "其他合成": "other_synthetic",
             "未知": "unknown",
         }
         return zh_to_en.get(zh_value, "unknown")
@@ -1244,27 +1235,25 @@ class IFDDetectionAgent:
     ) -> dict[str, Any]:
         if isinstance(value, dict):
             judgment = str(value.get("judgment") or value.get("conclusion") or "").strip()
-            reason_analysis = str(value.get("reason_analysis") or value.get("analysis") or "").strip()
+            analysis = str(value.get("analysis") or value.get("reason_analysis") or "").strip()
             notes = value.get("notes")
         else:
             judgment = ""
-            reason_analysis = ""
+            analysis = ""
             notes = []
 
         if not judgment:
             judgment = final_summary
-        if not reason_analysis:
-            reason_analysis = self._build_user_analysis(evidence_chain, limitations, language, visual_analysis)
+        if not analysis:
+            analysis = self._build_user_analysis(evidence_chain, limitations, language, visual_analysis)
         if not isinstance(notes, list):
             notes = [notes] if notes else []
         clean_notes = [str(item).strip() for item in notes if str(item or "").strip()]
 
         return {
             "judgment": judgment,
-            "reason_analysis": reason_analysis,
             "notes": clean_notes,
-            "conclusion": judgment,
-            "analysis": reason_analysis,
+            "analysis": analysis,
         }
 
     def _collect_artifacts(self, tool_calls: list[dict[str, Any]]) -> dict[str, str]:

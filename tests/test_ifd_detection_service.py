@@ -1,5 +1,8 @@
 from io import BytesIO
+import json
 import time
+
+import pytest
 
 from app.services.ifd_detection import IFDDetectionService
 from app.agents.IFD_Agent import IFDDetectionAgent
@@ -487,6 +490,7 @@ def test_image_prompt_treats_visible_text_as_image_semantics():
 
 def test_ifd_prompt_uses_simplified_output_and_preferred_core_tools():
     for prompt in (IFD_PROMPT_ZH, IFD_PROMPT_EN):
+        assert '"forgery_type"' in prompt
         assert "probability" not in prompt
         assert "forgery_types" not in prompt
         assert "forgery_regions" not in prompt
@@ -520,7 +524,8 @@ def test_image_forensic_pipeline_keeps_regions_for_synthetic_image(tmp_path):
     assert result["label"] == "合成图像"
     assert len(result["suspicious_regions"]) == 1
     assert result["suspicious_regions"][0]["region"] == "10,20,30,50"
-    assert result["forgery_types"] == ["无"]
+    assert result["forgery_type"] == "ai_generated"
+    assert result["forgery_types"] == ["AI生成"]
 
 
 def test_image_forensic_pipeline_adds_region_for_forged_label_without_tool_coordinates(tmp_path):
@@ -554,16 +559,16 @@ def test_image_forensic_pipeline_preserves_model_user_answer(tmp_path):
             '{"label": "真实图像", "probability": 0.2, "confidence": 0.7, '
             '"forgery_types": ["无"], "suspicious_regions": [], '
             '"tool_evidence": [], "limitations": [], "final_summary": "图片更可能真实。", '
-            '"user_answer": {"judgment": "图片更可能真实。", "reason_analysis": "画面结构自然，辅助检测未发现稳定异常。", "notes": ["工具结果仅作辅助。"]}}'
+            '"user_answer": {"judgment": "图片更可能真实。", "analysis": "画面结构自然，辅助检测未发现稳定异常。", "notes": ["工具结果仅作辅助。"]}}'
         ),
     )
 
     result = pipeline.detect(str(image_path), language="zh")
 
     assert result["user_answer"]["judgment"] == "图片更可能真实。"
-    assert result["user_answer"]["reason_analysis"] == "画面结构自然，辅助检测未发现稳定异常。"
+    assert result["user_answer"]["analysis"] == "画面结构自然，辅助检测未发现稳定异常。"
     assert result["user_answer"]["notes"] == ["工具结果仅作辅助。"]
-    assert result["user_answer"]["conclusion"] == "图片更可能真实。"
+    assert set(result["user_answer"]) == {"judgment", "analysis", "notes"}
     assert result["user_answer"]["analysis"] == "画面结构自然，辅助检测未发现稳定异常。"
 
 
@@ -577,7 +582,7 @@ def test_image_forensic_pipeline_ignores_removed_user_answer_forgery_regions(tmp
             '{"label": "伪造图像", "probability": 0.7, "confidence": 0.65, '
             '"forgery_types": ["拼接"], "suspicious_regions": [], '
             '"tool_evidence": [], '
-            '"user_answer": {"judgment": "图片存在局部伪造。", "reason_analysis": "主体边缘与背景不一致。", '
+            '"user_answer": {"judgment": "图片存在局部伪造。", "analysis": "主体边缘与背景不一致。", '
             '"notes": ["区域为综合判断结果。"], '
             '"forgery_regions": [{"region": "5,6,30,40", "score": 0.74, "reason": "主体边缘异常"}]}}'
         ),
@@ -598,7 +603,7 @@ def test_image_forensic_pipeline_keeps_only_one_forgery_type(tmp_path):
         evaluator=lambda prompt: (
             '{"label": "伪造图像", "probability": 0.7, "confidence": 0.65, '
             '"forgery_types": ["拼接", "复制移动"], '
-            '"user_answer": {"judgment": "图片存在伪造。", "reason_analysis": "局部区域异常。", '
+            '"user_answer": {"judgment": "图片存在伪造。", "analysis": "局部区域异常。", '
             '"forgery_regions": [{"region": "5,6,30,40", "score": 0.74, "reason": "局部异常"}]}}'
         ),
     )
@@ -606,6 +611,46 @@ def test_image_forensic_pipeline_keeps_only_one_forgery_type(tmp_path):
     result = pipeline.detect(str(image_path), language="zh")
 
     assert result["forgery_types"] == ["拼接"]
+
+
+@pytest.mark.parametrize(("label", "selected", "expected"), [
+    ("真实图像", "splicing", "none"),
+    ("伪造图像", "copy_move", "copy_move"),
+    ("伪造图像", "局部重绘", "local_repainting"),
+    ("伪造图像", "ai_generated", "unknown"),
+    ("伪造图像", "none", "unknown"),
+    ("伪造图像", "invalid", "unknown"),
+    ("合成图像", "ai_generated", "ai_generated"),
+    ("合成图像", "cgi_rendering", "cgi_rendering"),
+    ("合成图像", "other_synthetic", "other_synthetic"),
+    ("合成图像", "splicing", "unknown"),
+])
+def test_ifd_primary_type_agrees_with_authenticity_label(label, selected, expected):
+    agent = IFDDetectionAgent(evaluator=lambda _: "{}")
+    assert agent._normalize_forgery_type(selected, label) == expected
+
+
+@pytest.mark.parametrize("selected", ["content_replacement", None])
+def test_ifd_service_exposes_model_type_without_inference_from_tool_name(tmp_path, selected):
+    image_path = tmp_path / "input.png"
+    Image.new("RGB", (80, 60), color="white").save(image_path)
+    payload = {
+        "label": "伪造图像", "confidence": 0.7,
+        "visual_analysis": "文字存在替换迹象。",
+        "suspicious_regions": [{"region": "5,5,40,40", "reason": "文字异常"}],
+    }
+    if selected is not None:
+        payload["forgery_type"] = selected
+    agent = IFDDetectionAgent(
+        config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
+        tools={"Noise_Analyzer": StubVisionTool("Noise_Analyzer")},
+        evaluator=lambda _: json.dumps(payload),
+    )
+    result = IFDDetectionService(StubImageService(), agent).detect(image_path=str(image_path))
+    serialized = DetectionResponse.model_validate(result).model_dump(mode="json")
+    # A noise tool being used must never force the type to splicing.
+    assert serialized["forgery_type"] == (selected or "unknown")
+    assert serialized["image_verdict"]["forgery_type"] == serialized["forgery_type"]
 
 
 class StubQwenCompletion:
