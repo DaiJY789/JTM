@@ -1,0 +1,37 @@
+{
+  "case_id": "IFD-08",
+  "task": "IFD",
+  "label": "Synthetic_Image",
+  "title": "生成的海上冲突画面",
+  "folder": "IFD/Synthetic_Image/IFD-08",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "178_01_img_1.jpg",
+      "source": "data/mmd/train/False/178_01_img_1.jpg",
+      "sha256": "eda4353cbea939aaeb3f632ce9ce211322b3ce44ebe4ed1d1e957c03dfd371c8"
+    }
+  ],
+  "label_basis": "derived_from_image_specific_annotation",
+  "label_explanation": "原始标注包含 V1，且理由明确说明两张配图均为生成式图片；选择第一张。",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_original_label": "False",
+  "source_sample_id": "178",
+  "source_image_number": 1,
+  "taxonomy": [
+    "T1 Fabrication",
+    "V1 Synthetic Visual Content",
+    "C1 Semantic Inconsistency"
+  ],
+  "reference_rationale": "该样本把来源中带有个人推演、专家设想和未经证实的战事情景，改写成已经发生并被“多家媒体报道”“最新海上画面显示”的既成事实，核心叙述缺乏可验证证据支撑。同时，两张配图均为生成式图片，却被包装成现场画面和局势图来为文本背书，导致文本事实层面与图像证据层面同时失真，整体核心主张不成立。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Real_Image",
+    "confidence": 0.95,
+    "matches_reference": false,
+    "seconds": 9.264,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-08.json"
+  }
+}

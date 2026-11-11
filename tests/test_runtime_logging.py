@@ -39,9 +39,9 @@ def test_logging_rolls_over_to_new_date_without_restart(tmp_path, monkeypatch):
         with monkeypatch.context() as date_patch:
             date_patch.setattr("app.core.logging._local_day", lambda: day[0])
             first = setup_logging(str(tmp_path / "app.log"))
-            log_io_event("request_input", "request-1", "/detect/mmd", {"text": "第一天"})
+            log_io_event("request_input", "request-1", "/detect/mfc", {"text": "第一天"})
             day[0] = "2026-09-23"
-            log_io_event("request_output", "request-2", "/detect/mmd", {"label": "第二天"})
+            log_io_event("request_output", "request-2", "/detect/mfc", {"label": "第二天"})
 
         second = tmp_path / "app_2026-09-23.log"
         assert first.name == "app_2026-09-22.log"

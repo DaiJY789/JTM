@@ -29,12 +29,12 @@ class DetectionInputBuilder:
         self,
         webpage_extraction_service: WebpageExtractionService,
         artifact_store: ArtifactStore,
-        max_mmd_images: int = settings.mmd_max_images,
+        max_mfc_images: int = settings.mfc_max_images,
         remote_image_downloader: RemoteImageDownloader | None = None,
     ):
         self.webpage_extraction_service = webpage_extraction_service
         self.artifact_store = artifact_store
-        self.max_mmd_images = max(1, int(max_mmd_images))
+        self.max_mfc_images = max(1, int(max_mfc_images))
         self.remote_image_downloader = remote_image_downloader or RemoteImageDownloader()
 
     def build(
@@ -83,7 +83,7 @@ class DetectionInputBuilder:
         for url in remote_urls:
             self._validate_image_url(url)
         if task == DetectionTaskType.MULTIMODAL_FACT_CHECKING:
-            upload_contents = upload_contents[: self.max_mmd_images]
+            upload_contents = upload_contents[: self.max_mfc_images]
             upload_filenames = upload_filenames[: len(upload_contents)]
             upload_content_types = upload_content_types[: len(upload_contents)]
         webpage_context = self._extract_webpage(webpage_url)
@@ -161,7 +161,7 @@ class DetectionInputBuilder:
         if task == DetectionTaskType.DEEPFAKE_DETECTION:
             bundle.image_artifacts = bundle.image_artifacts[:1]
         else:
-            bundle.image_artifacts = bundle.image_artifacts[: self.max_mmd_images]
+            bundle.image_artifacts = bundle.image_artifacts[: self.max_mfc_images]
 
         persisted_images = []
         persisted_contents = []

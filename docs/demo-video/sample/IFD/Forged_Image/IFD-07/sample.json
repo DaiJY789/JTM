@@ -1,0 +1,37 @@
+{
+  "case_id": "IFD-07",
+  "task": "IFD",
+  "label": "Forged_Image",
+  "title": "船只画面添加爆炸与烟雾",
+  "folder": "IFD/Forged_Image/IFD-07",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "113_01_img_1.jpg",
+      "source": "data/mmd/train/Mostly False/113_01_img_1.jpg",
+      "sha256": "e8c9a6747dfde78a7cf65822517cc0b9451013b1a44feb86bf4688c7cb014424"
+    }
+  ],
+  "label_basis": "derived_from_image_specific_annotation",
+  "label_explanation": "原始标注明确说明配图添加爆炸、烟雾和尾迹；选择相应第一张船只图片。",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_original_label": "Mostly False",
+  "source_sample_id": "113",
+  "source_image_number": 1,
+  "taxonomy": [
+    "T2 Distortion",
+    "V2 Visual Editing",
+    "C1 Semantic Inconsistency"
+  ],
+  "reference_rationale": "样本文本并非完全凭空捏造，而是把有限来源中的“护送/通行/军事伴随”信息显著强化为“正式展开高强度护航并重新恢复商业航线”的既成事实，还把战果与局势变化表述得过于确定。与此同时，配图经过后期添加爆炸、烟雾和尾迹等效果，制造出正在交火拦截的视觉印象，但这些画面本身并不能真实证明文中所述的击毁6艘伊朗快艇、拦截导弹和恢复航道等核心语义，因此整体上以误导为主，判为 Mostly False。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Synthetic_Image",
+    "confidence": 0.95,
+    "matches_reference": false,
+    "seconds": 14.642,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-07.json"
+  }
+}

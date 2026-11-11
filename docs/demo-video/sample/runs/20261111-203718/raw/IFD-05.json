@@ -1,0 +1,586 @@
+{
+  "mode": "image_only",
+  "label": "Forged_Image",
+  "summary": "图像判定为Forged_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+  "confidence": 0.95,
+  "type": "splicing",
+  "image_verdict": {
+    "label": "Forged_Image",
+    "analysis": "图像判定为Forged_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+    "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+    "deepfake_risk": "low",
+    "manipulation_risk": "high",
+    "probability": 0.0,
+    "confidence": 0.95,
+    "tamper_score": 0.0,
+    "ai_generated_score": 0.0,
+    "visual_analysis": "图像具有明显的新闻海报或社交媒体合成图特征，而非真实拍摄的单张照片。1. 结构异常：左上角叠加了一张白底的专利文件截图（US 11,241,774 B2），右上角叠加了辉瑞（Pfizer）的Logo，右下角叠加了一个疫苗瓶素材，这些元素均带有清晰的矩形边界或圆形遮罩，直接覆盖在背景照片之上，属于典型的后期拼接。2. 文字排版：底部包含巨大的中文标题“全球关注”、“辉瑞疫苗专利公开引发热议”等，字体清晰锐利，与背景照片的景深和颗粒感完全不符，是后期添加的图层。3. 语义逻辑：将专利文档、公司Logo、现场照片和宣传标语组合在一起，是为了传达特定信息而制作的合成海报。",
+    "visual_description": "基于本地图像取证工具生成的综合判定。",
+    "evidence": [
+      {
+        "step": 1,
+        "tool": "Spectrum_Grid_Analyzer",
+        "why": "检查是否存在AI生成特有的频域网格伪影。",
+        "key_findings": [
+          "未发现显著的AI生成频域网格特征，排除了整图由扩散模型生成的可能性。"
+        ],
+        "artifacts": []
+      },
+      {
+        "step": 2,
+        "tool": "SRM_Filter",
+        "why": "检查高阶残差噪声中的局部统计异常。",
+        "key_findings": [
+          "未检测到显著的高阶残差异常，说明底图可能为真实照片，但无法检测明显的图形叠加。"
+        ],
+        "artifacts": []
+      }
+    ],
+    "reasoning": "图像判定为Forged_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+    "type": "splicing",
+    "forgery_types": [
+      "拼接"
+    ],
+    "suspicious_regions": [
+      {
+        "region": "0,0,1024,1024",
+        "score": 0.95,
+        "reason": "整张图像是由背景照片、左上角专利文档、右上角Logo、右下角疫苗瓶以及底部文字排版共同拼接而成的合成海报。",
+        "coordinate_space": "original_image",
+        "region_reliability": "model_estimated"
+      }
+    ],
+    "limitations": [],
+    "artifacts": {
+      "annotated_image_path": "outputs/vision/81722069f2564a0283c963ed16d1f80a/annotated_suspicious_regions.png"
+    },
+    "user_answer": {
+      "judgment": "这是一张伪造图像（合成海报）。",
+      "notes": [
+        "虽然取证工具未发现明显的像素级篡改痕迹（如模糊边缘），但这符合数字平面设计（Graphic Design）的特征，即使用透明PNG或矢量文字进行叠加，而非传统的修图涂抹。"
+      ],
+      "analysis": "该图像并非单张真实照片，而是经过后期编辑合成的图片。视觉证据显示，左上角的专利文件、右上角的品牌Logo、右下角的疫苗瓶以及底部的中文标题均为独立图层，被直接粘贴在背景照片上。这种图文混排是典型的信息图或新闻海报制作方式，改变了原始照片的内容属性。"
+    }
+  },
+  "evidence": [
+    {
+      "type": "visual_tool_evidence",
+      "source": "Spectrum_Grid_Analyzer",
+      "content": [
+        "未发现显著的AI生成频域网格特征，排除了整图由扩散模型生成的可能性。"
+      ]
+    },
+    {
+      "type": "visual_tool_evidence",
+      "source": "SRM_Filter",
+      "content": [
+        "未检测到显著的高阶残差异常，说明底图可能为真实照片，但无法检测明显的图形叠加。"
+      ]
+    },
+    {
+      "type": "suspicious_region",
+      "content": {
+        "region": "0,0,1024,1024",
+        "score": 0.95,
+        "reason": "整张图像是由背景照片、左上角专利文档、右上角Logo、右下角疫苗瓶以及底部文字排版共同拼接而成的合成海报。",
+        "coordinate_space": "original_image",
+        "region_reliability": "model_estimated"
+      }
+    }
+  ],
+  "claims": [],
+  "raw": {
+    "image_forensics": {
+      "label": "Forged_Image",
+      "probability": 0.0,
+      "confidence": 0.95,
+      "tamper_score": 0.0,
+      "ai_generated_score": 0.0,
+      "visual_analysis": "图像具有明显的新闻海报或社交媒体合成图特征，而非真实拍摄的单张照片。1. 结构异常：左上角叠加了一张白底的专利文件截图（US 11,241,774 B2），右上角叠加了辉瑞（Pfizer）的Logo，右下角叠加了一个疫苗瓶素材，这些元素均带有清晰的矩形边界或圆形遮罩，直接覆盖在背景照片之上，属于典型的后期拼接。2. 文字排版：底部包含巨大的中文标题“全球关注”、“辉瑞疫苗专利公开引发热议”等，字体清晰锐利，与背景照片的景深和颗粒感完全不符，是后期添加的图层。3. 语义逻辑：将专利文档、公司Logo、现场照片和宣传标语组合在一起，是为了传达特定信息而制作的合成海报。",
+      "type": "splicing",
+      "forgery_types": [
+        "拼接"
+      ],
+      "evidence": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "检查是否存在AI生成特有的频域网格伪影。",
+          "key_findings": [
+            "未发现显著的AI生成频域网格特征，排除了整图由扩散模型生成的可能性。"
+          ],
+          "artifacts": []
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "检查高阶残差噪声中的局部统计异常。",
+          "key_findings": [
+            "未检测到显著的高阶残差异常，说明底图可能为真实照片，但无法检测明显的图形叠加。"
+          ],
+          "artifacts": []
+        }
+      ],
+      "suspicious_regions": [
+        {
+          "region": "0,0,1024,1024",
+          "score": 0.95,
+          "reason": "整张图像是由背景照片、左上角专利文档、右上角Logo、右下角疫苗瓶以及底部文字排版共同拼接而成的合成海报。",
+          "coordinate_space": "original_image",
+          "region_reliability": "model_estimated"
+        }
+      ],
+      "limitations": [],
+      "final_summary": "图像判定为Forged_Image，被操纵概率约为 0.00，可疑区域：0,0,1024,1024。",
+      "artifacts": {
+        "annotated_image_path": "outputs/vision/81722069f2564a0283c963ed16d1f80a/annotated_suspicious_regions.png"
+      },
+      "tool_calls": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+                "summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.202857,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+                "coordinate_space": "frequency"
+              },
+              "regions": [],
+              "spectrum_statistics": {
+                "peak_count": 80,
+                "raw_peak_count": 172,
+                "paired_peak_count": 80,
+                "conjugate_pair_ratio": 0.465116,
+                "lattice_peak_count": 2,
+                "lattice_ratio": 0.142857,
+                "candidate_for_followup": false,
+                "peak_ratio": 0.00029161,
+                "peak_threshold": 10.88381293,
+                "energy_hole_count": 5,
+                "energy_hole_indices": [
+                  81,
+                  220,
+                  236,
+                  248,
+                  275
+                ],
+                "processed_size": {
+                  "width": 768,
+                  "height": 768
+                },
+                "original_size": {
+                  "width": 1024,
+                  "height": 1024
+                }
+              },
+              "evidence_scores": {
+                "peak_sparsity_score": 0.0,
+                "peak_density_score": 0.1,
+                "energy_hole_score": 1.0,
+                "conjugate_pair_score": 0.465116,
+                "lattice_ratio_score": 0.142857,
+                "spectral_artifact_score": 0.202857
+              },
+              "top_grid_peaks": [
+                {
+                  "x": 305,
+                  "y": 373,
+                  "dx_from_center": -79,
+                  "dy_from_center": -11,
+                  "strength": 11.171188,
+                  "radius": 79.7621
+                },
+                {
+                  "x": 463,
+                  "y": 395,
+                  "dx_from_center": 79,
+                  "dy_from_center": 11,
+                  "strength": 11.171188,
+                  "radius": 79.7621
+                }
+              ],
+              "artifacts": {
+                "spectrum_logmag_path": "",
+                "grid_peak_mask_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "Spectrum_Grid_Analyzer",
+              "execution_time_ms": 56
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "error_message": null,
+            "tool_name": "Spectrum_Grid_Analyzer",
+            "execution_time_ms": 56,
+            "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+            "report_summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "peak_sparsity_score": 0.0,
+              "peak_density_score": 0.1,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 0.465116,
+              "lattice_ratio_score": 0.142857,
+              "spectral_artifact_score": 0.202857
+            },
+            "evidence_scores": {
+              "peak_sparsity_score": 0.0,
+              "peak_density_score": 0.1,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 0.465116,
+              "lattice_ratio_score": 0.142857,
+              "spectral_artifact_score": 0.202857
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.202857,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+              "coordinate_space": "frequency"
+            },
+            "regions": [],
+            "artifacts": {
+              "spectrum_logmag_path": "",
+              "grid_peak_mask_path": ""
+            },
+            "spectrum_statistics": {
+              "peak_count": 80,
+              "raw_peak_count": 172,
+              "paired_peak_count": 80,
+              "conjugate_pair_ratio": 0.465116,
+              "lattice_peak_count": 2,
+              "lattice_ratio": 0.142857,
+              "candidate_for_followup": false,
+              "peak_ratio": 0.00029161,
+              "peak_threshold": 10.88381293,
+              "energy_hole_count": 5,
+              "energy_hole_indices": [
+                81,
+                220,
+                236,
+                248,
+                275
+              ],
+              "processed_size": {
+                "width": 768,
+                "height": 768
+              },
+              "original_size": {
+                "width": 1024,
+                "height": 1024
+              }
+            }
+          }
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Spatial Rich Model residual filter bank",
+                "filter_count": 16,
+                "truncate_threshold": 3.0,
+                "top_suspicious_regions": [],
+                "summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.483379,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_residual_tail_heuristic",
+                "coordinate_space": "original"
+              },
+              "regions": [],
+              "residual_statistics": [
+                {
+                  "filter": "fo_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.124539,
+                  "std": 1.694187,
+                  "kurtosis": -0.195263
+                },
+                {
+                  "filter": "fo_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.236937,
+                  "std": 1.777246,
+                  "kurtosis": -0.453367
+                },
+                {
+                  "filter": "fo_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.422612,
+                  "std": 1.921797,
+                  "kurtosis": -0.795618
+                },
+                {
+                  "filter": "fo_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.420622,
+                  "std": 1.918421,
+                  "kurtosis": -0.789357
+                },
+                {
+                  "filter": "so_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 0.913113,
+                  "std": 1.465976,
+                  "kurtosis": 0.658307
+                },
+                {
+                  "filter": "so_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.049112,
+                  "std": 1.582627,
+                  "kurtosis": 0.163899
+                },
+                {
+                  "filter": "so_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.255375,
+                  "std": 1.756018,
+                  "kurtosis": -0.400205
+                },
+                {
+                  "filter": "so_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.253709,
+                  "std": 1.753362,
+                  "kurtosis": -0.394699
+                },
+                {
+                  "filter": "to_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 0.836355,
+                  "std": 1.384557,
+                  "kurtosis": 1.097156
+                },
+                {
+                  "filter": "to_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 0.971288,
+                  "std": 1.499707,
+                  "kurtosis": 0.489498
+                },
+                {
+                  "filter": "fo4_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 0.899114,
+                  "std": 1.435277,
+                  "kurtosis": 0.804373
+                },
+                {
+                  "filter": "fo4_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.041984,
+                  "std": 1.554422,
+                  "kurtosis": 0.247099
+                },
+                {
+                  "filter": "nl_mix1",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.049196,
+                  "std": 1.561332,
+                  "kurtosis": 0.228899
+                },
+                {
+                  "filter": "nl_mix2",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.767386,
+                  "std": 1.323644,
+                  "kurtosis": 1.395012
+                },
+                {
+                  "filter": "nl_mix3",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 0.705499,
+                  "std": 1.251667,
+                  "kurtosis": 1.949028
+                },
+                {
+                  "filter": "nl_mix4",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.660866,
+                  "std": 1.178549,
+                  "kurtosis": 2.406009
+                }
+              ],
+              "evidence_scores": {
+                "avg_abs_kurtosis": 0.400673,
+                "residual_tail_score": 0.483379
+              },
+              "artifacts": {
+                "srm_heatmap_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "SRM_Filter",
+              "execution_time_ms": 289
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "error_message": null,
+            "tool_name": "SRM_Filter",
+            "execution_time_ms": 289,
+            "method": "Spatial Rich Model residual filter bank",
+            "report_summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "avg_abs_kurtosis": 0.400673,
+              "residual_tail_score": 0.483379
+            },
+            "evidence_scores": {
+              "avg_abs_kurtosis": 0.400673,
+              "residual_tail_score": 0.483379
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.483379,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_residual_tail_heuristic",
+              "coordinate_space": "original"
+            },
+            "regions": [],
+            "artifacts": {
+              "srm_heatmap_path": ""
+            }
+          }
+        }
+      ],
+      "user_answer": {
+        "judgment": "这是一张伪造图像（合成海报）。",
+        "notes": [
+          "虽然取证工具未发现明显的像素级篡改痕迹（如模糊边缘），但这符合数字平面设计（Graphic Design）的特征，即使用透明PNG或矢量文字进行叠加，而非传统的修图涂抹。"
+        ],
+        "analysis": "该图像并非单张真实照片，而是经过后期编辑合成的图片。视觉证据显示，左上角的专利文件、右上角的品牌Logo、右下角的疫苗瓶以及底部的中文标题均为独立图层，被直接粘贴在背景照片上。这种图文混排是典型的信息图或新闻海报制作方式，改变了原始照片的内容属性。"
+      }
+    },
+    "workflow": {
+      "name": "deepfake_detection",
+      "routing": "single_agent",
+      "steps": [
+        "IFD_Agent"
+      ],
+      "dependencies": []
+    }
+  },
+  "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+  "user_answer": {
+    "judgment": "这是一张伪造图像（合成海报）。",
+    "notes": [
+      "虽然取证工具未发现明显的像素级篡改痕迹（如模糊边缘），但这符合数字平面设计（Graphic Design）的特征，即使用透明PNG或矢量文字进行叠加，而非传统的修图涂抹。"
+    ],
+    "analysis": "该图像并非单张真实照片，而是经过后期编辑合成的图片。视觉证据显示，左上角的专利文件、右上角的品牌Logo、右下角的疫苗瓶以及底部的中文标题均为独立图层，被直接粘贴在背景照片上。这种图文混排是典型的信息图或新闻海报制作方式，改变了原始照片的内容属性。"
+  }
+}

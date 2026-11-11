@@ -63,14 +63,14 @@ class FollowupAnalysisService:
                 else "You answer follow-up questions about a detection result. Use only the existing result and evidence, and respond directly in natural language."
             )
             completion = client.chat.completions.create(
-                model=self.config.mmd_vision_model,
+                model=self.config.mfc_vision_model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0,
                 max_tokens=1000,
-                extra_body={"enable_thinking": self.config.mmd_enable_thinking},
+                extra_body={"enable_thinking": self.config.mfc_enable_thinking},
             )
             return completion.choices[0].message.content or ""
         except Exception:
@@ -134,17 +134,18 @@ Requirements:
         return {
             "mode": result.get("mode"),
             "label": result.get("label"),
-            "forgery_type": result.get("forgery_type"),
+            "type": result.get("type"),
             "summary": result.get("summary"),
             "confidence": result.get("confidence"),
             "question": result.get("question"),
             "user_answer": result.get("user_answer"),
+            "mfc_detection": result.get("mfc_detection") or result.get("mmd_detection"),
             "claims": result.get("claims", []),
             "text_verdict": result.get("text_verdict"),
             "image_verdict": image_verdict,
             "crossmodal_verdict": result.get("crossmodal_verdict"),
             "report": result.get("report"),
-            "tool_evidence": image_forensics.get("tool_evidence", []),
+            "evidence": image_forensics.get("evidence") or image_verdict.get("evidence") or image_forensics.get("tool_evidence") or result.get("evidence", []),
             "suspicious_regions": image_forensics.get("suspicious_regions")
             or image_verdict.get("suspicious_regions", []),
             "forgery_types": image_forensics.get("forgery_types") or image_verdict.get("forgery_types", []),

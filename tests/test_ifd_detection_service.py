@@ -19,9 +19,9 @@ class StubImageService:
 
 def test_extract_image_label():
     service = IFDDetectionService(StubImageService())
-    assert service._extract_label("Label: Deepfake_Suspected\nReasoning: ...") == "合成图像"
-    assert service._extract_label("Label: 局部篡改\nReasoning: ...") == "伪造图像"
-    assert service._extract_label("Label: AI_Manipulated\nReasoning: ...") == "合成图像"
+    assert service._extract_label("Label: Deepfake_Suspected\nReasoning: ...") == "Synthetic_Image"
+    assert service._extract_label("Label: 局部篡改\nReasoning: ...") == "Forged_Image"
+    assert service._extract_label("Label: AI_Manipulated\nReasoning: ...") == "Synthetic_Image"
 
 
 def test_extract_image_field():
@@ -207,10 +207,11 @@ def test_image_forensic_pipeline_runs_multi_round_and_marks_region(tmp_path):
 
     result = pipeline.detect(str(image_path), language="zh")
 
-    assert result["label"] == "伪造图像"
+    assert result["label"] == "Forged_Image"
     assert "verdict" not in result
     assert "consistency_check" not in result
-    assert "tool_evidence" in result
+    assert "evidence" in result
+    assert "tool_evidence" not in result
     assert result["suspicious_regions"][0]["region"] == "10,20,30,50"
     assert result["artifacts"]["annotated_image_path"]
     annotated = Image.open(result["artifacts"]["annotated_image_path"]).convert("RGB")
@@ -238,7 +239,7 @@ def test_ifd_agent_retries_transient_model_failure_then_succeeds(tmp_path):
 
     result = agent.detect(str(image_path), language="zh")
     assert len(calls) == 2
-    assert result["label"] == "真实图像"
+    assert result["label"] == "Real_Image"
 
 
 def test_ifd_service_reports_busy_after_three_invalid_model_outputs(tmp_path):
@@ -415,7 +416,7 @@ def test_image_forensic_pipeline_selects_first_tool_by_context():
     assert pipeline._choose_first_tool({}) == "SRM_Filter"
 
 
-def test_image_forensic_pipeline_keeps_model_probability_and_confidence_when_tools_are_weak():
+def test_image_forensic_pipeline_keeps_model_probability_when_tools_are_weak():
     pipeline = IFDDetectionAgent.__new__(IFDDetectionAgent)
     tool_calls = [
         {
@@ -429,10 +430,58 @@ def test_image_forensic_pipeline_keeps_model_probability_and_confidence_when_too
     ]
 
     probability = pipeline._calibrate_probability("真实图像", 0.9, tool_calls, [], {})
-    confidence = pipeline._calibrate_confidence("合成图像", 0.95, tool_calls, [])
 
     assert probability == 0.9
-    assert confidence == 0.95
+
+
+@pytest.mark.parametrize("label", ["真实图像", "伪造图像", "合成图像", "Real_Image", "Forged_Image", "Synthetic_Image"])
+@pytest.mark.parametrize("confidence", [0.0, 1.0, 0.987654321])
+def test_ifd_preserves_legal_model_labels_and_exact_confidence_despite_tool_failures(tmp_path, label, confidence):
+    pipeline = IFDDetectionAgent.__new__(IFDDetectionAgent)
+    result = pipeline._normalize_final_result(
+        {"label": label, "confidence": confidence, "probability": 0.9},
+        [{"step": 1, "tool": "Noise_Analyzer", "why": "核查噪声", "summary": {"success": False, "status": "error"}}],
+        str(tmp_path / "unused.png"), tmp_path, "zh", {},
+    )
+    assert result["label"] == pipeline._normalize_label(label)
+    assert result["confidence"] == confidence
+
+
+@pytest.mark.parametrize(("raw_label", "expected"), [
+    ("ai_generated", "Synthetic_Image"), ("local_tampering", "Forged_Image"),
+    ("authentic", "Real_Image"),
+])
+def test_ifd_maps_legacy_aliases_only(raw_label, expected):
+    agent = IFDDetectionAgent.__new__(IFDDetectionAgent)
+    assert agent._normalize_label(raw_label) == expected
+
+
+@pytest.mark.parametrize("value", [None, "0.9", True, -0.1, 1.1, float("nan"), float("inf")])
+def test_ifd_does_not_invent_or_clip_missing_or_invalid_confidence(tmp_path, value):
+    pipeline = IFDDetectionAgent.__new__(IFDDetectionAgent)
+    result = pipeline._normalize_final_result(
+        {"label": "真实图像", "confidence": value}, [],
+        str(tmp_path / "unused.png"), tmp_path, "zh", {},
+    )
+    assert result["confidence"] is None
+
+
+def test_ifd_unmappable_label_returns_technical_failure_instead_of_guessing_real(tmp_path):
+    image_path = tmp_path / "input.png"
+    Image.new("RGB", (80, 60), color="white").save(image_path)
+    calls = []
+    def evaluate(_):
+        calls.append(1)
+        return json.dumps({"label": "uncertain", "confidence": 0.9, "probability": 0.9})
+    agent = IFDDetectionAgent(
+        config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
+        tools={"Noise_Analyzer": StubVisionTool("Noise_Analyzer")}, evaluator=evaluate,
+    )
+    result = IFDDetectionService(StubImageService(), agent).detect(image_path=str(image_path))
+    assert len(calls) == 3
+    assert result["decision_status"] == "technical_error"
+    assert result["label"] is None
+    assert result["confidence"] is None
 
 
 def test_image_forensic_pipeline_caps_real_probability_when_tools_strongly_conflict():
@@ -463,10 +512,10 @@ def test_image_forensic_pipeline_prompt_exposes_gate_context(tmp_path):
     context = pipeline._build_image_context(str(image_path), question="这张图片是真的假的？")
     prompt = pipeline._build_interaction_prompt([], "这张图片是真的假的？", "zh", False, context)
 
-    assert "条件工具规则" in prompt
-    assert "视觉判断优先" in prompt
-    assert "绶带、衣服、标牌、海报" in prompt
-    assert "内容意图问题不影响真实性" in prompt
+    assert "视觉核查说明" in prompt
+    assert "只调用运行时列出的可用工具" in prompt
+    assert "相机来源依据" in prompt
+    assert "先在 visual_analysis 中转写关键文字" in prompt
     assert "visual_analysis" in prompt
     assert "CFA_Validator" not in pipeline._eligible_remaining_tools([], context)
 
@@ -483,14 +532,17 @@ def test_english_image_prompt_uses_english_labels_only():
 
 def test_image_prompt_treats_visible_text_as_image_semantics():
     assert "画面内可读文字" in IFD_PROMPT_ZH
-    assert "不能把它解释成“内容意图问题，不影响图像真实性”" in IFD_PROMPT_ZH
+    assert "不能仅以“内容意图”回避" in IFD_PROMPT_ZH
     assert "Readable text" in IFD_PROMPT_EN
     assert "content intent" in IFD_PROMPT_EN
 
 
 def test_ifd_prompt_uses_simplified_output_and_preferred_core_tools():
     for prompt in (IFD_PROMPT_ZH, IFD_PROMPT_EN):
-        assert '"forgery_type"' in prompt
+        assert '"type"' in prompt
+        assert '"evidence"' in prompt
+        assert "forgery_type" not in prompt
+        assert "tool_evidence" not in prompt
         assert "probability" not in prompt
         assert "forgery_types" not in prompt
         assert "forgery_regions" not in prompt
@@ -501,6 +553,51 @@ def test_ifd_prompt_uses_simplified_output_and_preferred_core_tools():
     assert "必须且只能给出一个 suspicious_regions 条目" in IFD_PROMPT_ZH
     assert "Core forensic tools (preferred)" in IFD_PROMPT_EN
     assert "must provide exactly one suspicious_regions item" in IFD_PROMPT_EN
+
+
+def test_ifd_canonical_fields_reach_public_response_and_english_labels_are_language_independent(tmp_path):
+    image_path = tmp_path / "input.png"
+    Image.new("RGB", (80, 60), color="white").save(image_path)
+    evidence = [{
+        "step": 1, "tool": "Noise_Analyzer", "why": "核验文字区域的噪声差异",
+        "key_findings": ["文字区域与背景的噪声分布不同。"], "artifacts": [],
+    }]
+    payload = {
+        "label": "Forged_Image", "confidence": 0.987654321,
+        "type": "content_replacement", "visual_analysis": "关键文字与载体褶皱不一致。",
+        "evidence": evidence,
+        "suspicious_regions": [{"region": "5,5,40,40", "reason": "文字替换线索"}],
+        "user_answer": {"judgment": "图像存在伪造。", "analysis": "文字贴合和噪声线索相互支持。", "notes": []},
+    }
+    agent = IFDDetectionAgent(
+        config=Settings(vision_output_dir=str(tmp_path / "vision"), vision_max_rounds=1),
+        tools={"Noise_Analyzer": StubVisionTool("Noise_Analyzer")},
+        evaluator=lambda _: json.dumps(payload),
+    )
+    result = IFDDetectionService(StubImageService(), agent).detect(image_path=str(image_path), language="zh")
+    public = DetectionResponse.model_validate(result).model_dump(mode="json")
+    assert public["label"] == public["image_verdict"]["label"] == "Forged_Image"
+    assert public["type"] == public["image_verdict"]["type"] == "content_replacement"
+    assert public["confidence"] == 0.987654321
+    assert public["image_verdict"]["evidence"] == evidence
+    assert public["raw"]["image_forensics"]["evidence"] == evidence
+    assert public["evidence"][0]["type"] == "visual_tool_evidence"
+    for item in [public, public["image_verdict"], public["raw"]["image_forensics"]]:
+        assert "forgery_type" not in item
+        assert "tool_evidence" not in item
+
+
+def test_ifd_runtime_prompt_uses_same_english_labels_and_keeps_visual_rules_in_one_section(tmp_path):
+    image_path = tmp_path / "input.png"
+    Image.new("RGB", (80, 60), color="white").save(image_path)
+    agent = IFDDetectionAgent(config=Settings(vision_output_dir=str(tmp_path)), tools={})
+    context = agent._build_image_context(str(image_path))
+    prompt = agent._build_interaction_prompt([], "检查图像", "zh", True, context)
+    assert "Real_Image|Forged_Image|Synthetic_Image" in prompt
+    assert "最终 label 只能输出中文" not in prompt
+    assert "tool_evidence" not in prompt
+    assert "forgery_type" not in prompt
+    assert prompt.count("先在 visual_analysis 中转写关键文字") == 1
 
 
 def test_image_forensic_pipeline_keeps_regions_for_synthetic_image(tmp_path):
@@ -521,10 +618,10 @@ def test_image_forensic_pipeline_keeps_regions_for_synthetic_image(tmp_path):
 
     result = pipeline.detect(str(image_path), language="zh")
 
-    assert result["label"] == "合成图像"
+    assert result["label"] == "Synthetic_Image"
     assert len(result["suspicious_regions"]) == 1
     assert result["suspicious_regions"][0]["region"] == "10,20,30,50"
-    assert result["forgery_type"] == "ai_generated"
+    assert result["type"] == "ai_generated"
     assert result["forgery_types"] == ["AI生成"]
 
 
@@ -543,7 +640,7 @@ def test_image_forensic_pipeline_adds_region_for_forged_label_without_tool_coord
 
     result = pipeline.detect(str(image_path), language="zh")
 
-    assert result["label"] == "伪造图像"
+    assert result["label"] == "Forged_Image"
     assert result["suspicious_regions"]
     assert result["suspicious_regions"][0]["region"] == "20,15,60,45"
     assert result["suspicious_regions"][0]["region_reliability"] == "model_estimated_fallback"
@@ -627,7 +724,7 @@ def test_image_forensic_pipeline_keeps_only_one_forgery_type(tmp_path):
 ])
 def test_ifd_primary_type_agrees_with_authenticity_label(label, selected, expected):
     agent = IFDDetectionAgent(evaluator=lambda _: "{}")
-    assert agent._normalize_forgery_type(selected, label) == expected
+    assert agent._normalize_type(selected, label) == expected
 
 
 @pytest.mark.parametrize("selected", ["content_replacement", None])
@@ -649,8 +746,8 @@ def test_ifd_service_exposes_model_type_without_inference_from_tool_name(tmp_pat
     result = IFDDetectionService(StubImageService(), agent).detect(image_path=str(image_path))
     serialized = DetectionResponse.model_validate(result).model_dump(mode="json")
     # A noise tool being used must never force the type to splicing.
-    assert serialized["forgery_type"] == (selected or "unknown")
-    assert serialized["image_verdict"]["forgery_type"] == serialized["forgery_type"]
+    assert serialized["type"] == (selected or "unknown")
+    assert serialized["image_verdict"]["type"] == serialized["type"]
 
 
 class StubQwenCompletion:

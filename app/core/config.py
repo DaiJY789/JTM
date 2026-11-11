@@ -15,8 +15,16 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
+def env_value(name: str, default: str = "") -> str:
+    """Prefer MFC settings while accepting existing MMD environment variables."""
+    value = os.getenv(name)
+    if value is None and name.startswith("MFC_"):
+        value = os.getenv("MMD_" + name.removeprefix("MFC_"))
+    return default if value is None else value
+
+
 def optional_timeout_from_env(name: str, default: float) -> float | None:
-    raw_value = os.getenv(name, "").strip()
+    raw_value = env_value(name).strip()
     if not raw_value:
         return default
     if raw_value.lower() in {"none", "null", "false", "0"}:
@@ -28,7 +36,7 @@ def optional_timeout_from_env(name: str, default: float) -> float | None:
 
 
 def bool_from_env(name: str, default: bool) -> bool:
-    raw_value = os.getenv(name, "").strip().lower()
+    raw_value = env_value(name).strip().lower()
     if not raw_value:
         return default
     return raw_value in {"1", "true", "yes", "on"}
@@ -56,26 +64,28 @@ class Settings:
     anthropic_model: str = os.getenv("ANTHROPIC_MODEL", "qwen3.8-flash")
     qwen_text_model: str = os.getenv("QWEN_TEXT_MODEL", "qwen-plus")
     qwen_vision_model: str = os.getenv("QWEN_VISION_MODEL", "qwen3-vl-plus")
-    mmd_vision_model: str = os.getenv("MMD_VISION_MODEL", "qwen3.7-flash")
-    mmd_enable_thinking: bool = bool_from_env("MMD_ENABLE_THINKING", False)
-    mmd_thinking_budget: int = int(os.getenv("MMD_THINKING_BUDGET", "1024"))
-    mmd_detection_timeout_seconds: float | None = optional_timeout_from_env("MMD_DETECTION_TIMEOUT_SECONDS", 60)
-    mmd_invalid_output_max_retries: int = int(
-        os.getenv("MMD_INVALID_OUTPUT_MAX_RETRIES", "2")
+    mfc_vision_model: str = env_value("MFC_VISION_MODEL", "qwen3.7-flash")
+    mfc_enable_thinking: bool = bool_from_env("MFC_ENABLE_THINKING", False)
+    mfc_thinking_budget: int = int(env_value("MFC_THINKING_BUDGET", "1024"))
+    mfc_detection_timeout_seconds: float | None = optional_timeout_from_env("MFC_DETECTION_TIMEOUT_SECONDS", 60)
+    mfc_agent_timeout_seconds: float | None = optional_timeout_from_env("MFC_AGENT_TIMEOUT_SECONDS", 120)
+    mfc_max_tool_rounds: int = int(env_value("MFC_MAX_TOOL_ROUNDS", "3"))
+    mfc_invalid_output_max_retries: int = int(
+        env_value("MFC_INVALID_OUTPUT_MAX_RETRIES", "2")
     )
     ifd_model_failure_max_retries: int = int(os.getenv("IFD_MODEL_FAILURE_MAX_RETRIES", "2"))
-    mmd_max_tokens: int = int(os.getenv("MMD_MAX_TOKENS", "1800"))
-    mmd_image_max_side: int = int(os.getenv("MMD_IMAGE_MAX_SIDE", "768"))
-    mmd_max_images: int = int(os.getenv("MMD_MAX_IMAGES", "4"))
-    mmd_ocr_timeout_seconds: float | None = optional_timeout_from_env("MMD_OCR_TIMEOUT_SECONDS", 30)
-    mmd_ocr_max_tokens: int = int(os.getenv("MMD_OCR_MAX_TOKENS", "900"))
-    mmd_ocr_image_max_side: int = int(os.getenv("MMD_OCR_IMAGE_MAX_SIDE", "1600"))
-    mmd_ocr_enabled: bool = bool_from_env("MMD_OCR_ENABLED", True)
-    mmd_external_evidence_enabled: bool = bool_from_env("MMD_EXTERNAL_EVIDENCE_ENABLED", True)
-    mmd_search_query_count: int = int(os.getenv("MMD_SEARCH_QUERY_COUNT", "3"))
-    mmd_search_results_per_query: int = int(os.getenv("MMD_SEARCH_RESULTS_PER_QUERY", "3"))
-    mmd_search_total_results: int = int(os.getenv("MMD_SEARCH_TOTAL_RESULTS", "6"))
-    mmd_search_snippet_characters: int = int(os.getenv("MMD_SEARCH_SNIPPET_CHARACTERS", "250"))
+    mfc_max_tokens: int = int(env_value("MFC_MAX_TOKENS", "1800"))
+    mfc_image_max_side: int = int(env_value("MFC_IMAGE_MAX_SIDE", "768"))
+    mfc_max_images: int = int(env_value("MFC_MAX_IMAGES", "4"))
+    mfc_ocr_timeout_seconds: float | None = optional_timeout_from_env("MFC_OCR_TIMEOUT_SECONDS", 30)
+    mfc_ocr_max_tokens: int = int(env_value("MFC_OCR_MAX_TOKENS", "900"))
+    mfc_ocr_image_max_side: int = int(env_value("MFC_OCR_IMAGE_MAX_SIDE", "1600"))
+    mfc_ocr_enabled: bool = bool_from_env("MFC_OCR_ENABLED", True)
+    mfc_external_evidence_enabled: bool = bool_from_env("MFC_EXTERNAL_EVIDENCE_ENABLED", True)
+    mfc_search_query_count: int = int(env_value("MFC_SEARCH_QUERY_COUNT", "3"))
+    mfc_search_results_per_query: int = int(env_value("MFC_SEARCH_RESULTS_PER_QUERY", "3"))
+    mfc_search_total_results: int = int(env_value("MFC_SEARCH_TOTAL_RESULTS", "6"))
+    mfc_search_snippet_characters: int = int(env_value("MFC_SEARCH_SNIPPET_CHARACTERS", "250"))
 
     redis_host: str = os.getenv("REDIS_HOST", "localhost")
     redis_port: int = int(os.getenv("REDIS_PORT", "6379"))

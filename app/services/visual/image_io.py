@@ -77,15 +77,15 @@ class ImageService:
             return {"type": "image_url", "image_url": {"url": cleaned_url}}
         return None
 
-    def build_mmd_image_content_part(
+    def build_mfc_image_content_part(
         self,
         image_content: bytes | None = None,
         image_url: str | None = None,
     ) -> dict[str, Any] | None:
-        """Build a size-bounded image input for the latency-sensitive MMD path."""
+        """Build a size-bounded image input for the latency-sensitive MFC path."""
         if not image_content:
             return self.build_image_content_part(image_content, image_url)
-        optimized = self._optimize_mmd_image(image_content)
+        optimized = self._optimize_mfc_image(image_content)
         if optimized is None:
             return None
         encoded = base64.b64encode(optimized).decode("utf-8")
@@ -105,13 +105,13 @@ class ImageService:
         encoded = base64.b64encode(optimized).decode("utf-8")
         return {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded}"}}
 
-    def _optimize_mmd_image(self, content: bytes) -> bytes | None:
+    def _optimize_mfc_image(self, content: bytes) -> bytes | None:
         try:
             with Image.open(BytesIO(content)) as source:
                 image = ImageOps.exif_transpose(source)
                 if min(image.size) < 11:
                     return None
-                max_side = max(64, int(self.config.mmd_image_max_side))
+                max_side = max(64, int(self.config.mfc_image_max_side))
                 image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
                 if "A" in image.getbands():
                     background = Image.new("RGB", image.size, "white")
@@ -131,7 +131,7 @@ class ImageService:
                 image = ImageOps.exif_transpose(source)
                 if min(image.size) < 11:
                     return None
-                max_side = max(256, int(self.config.mmd_ocr_image_max_side))
+                max_side = max(256, int(self.config.mfc_ocr_image_max_side))
                 image.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
                 if "A" in image.getbands():
                     background = Image.new("RGB", image.size, "white")

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class DetectionMode(str, Enum):
@@ -18,11 +18,11 @@ class DetectionTaskType(str, Enum):
 
 
 class DetectionLabel(str, Enum):
-    MMD_TRUE = "True"
-    MMD_MOSTLY_TRUE = "Mostly True"
-    MMD_MIXTURE = "Mixture"
-    MMD_MOSTLY_FALSE = "Mostly False"
-    MMD_FALSE = "False"
+    MFC_TRUE = "True"
+    MFC_MOSTLY_TRUE = "Mostly True"
+    MFC_MIXTURE = "Mixture"
+    MFC_MOSTLY_FALSE = "Mostly False"
+    MFC_FALSE = "False"
     COMPLETELY_FALSE = "Completely_False"
     MOSTLY_FALSE = "Mostly_False"
     MIXED = "Mixed"
@@ -98,7 +98,7 @@ class TextVerdict(BaseModel):
 class ImageVerdict(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    label: str = Field(default="真实图像", description="Image authenticity label.")
+    label: str = Field(default="Real_Image", description="English image authenticity label; legacy labels remain readable.")
     analysis: str = Field(default="", description="Raw model analysis for the image.")
     question: str = Field(default="", description="Optional user question used to focus the analysis.")
     deepfake_risk: str = Field(default="unknown", description="Deepfake risk level or explanation.")
@@ -108,11 +108,17 @@ class ImageVerdict(BaseModel):
     tamper_score: float | None = Field(default=None, ge=0, le=1, description="Fused local tampering score from forensic tools.")
     ai_generated_score: float | None = Field(default=None, ge=0, le=1, description="Fused AI-generated image score from forensic tools.")
     visual_description: str = Field(default="", description="Visible content described by the model.")
-    evidence: list[str] = Field(default_factory=list, description="Visual clues used for the image verdict.")
+    evidence: list[dict[str, Any] | str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("evidence", "tool_evidence"),
+        description="Tool evidence entries; strings are accepted for older visual clues.",
+    )
     reasoning: str = Field(default="", description="Reasoning behind the image verdict.")
-    forgery_type: str | None = Field(default=None, description="Most likely single image forgery or synthesis method.")
+    type: str | None = Field(
+        default=None, validation_alias=AliasChoices("type", "forgery_type"),
+        description="Most likely single image forgery or synthesis method.",
+    )
     forgery_types: list[str] = Field(default_factory=list, description="Forgery type hints from the forensic pipeline.")
-    tool_evidence: list[dict[str, Any]] = Field(default_factory=list, description="Tool evidence.")
     suspicious_regions: list[dict[str, Any]] = Field(default_factory=list, description="Global-coordinate suspicious regions.")
     limitations: list[Any] = Field(default_factory=list, description="Known evidence limitations.")
     artifacts: dict[str, Any] = Field(default_factory=dict, description="Generated forensic artifact paths.")
@@ -134,7 +140,7 @@ class CrossmodalVerdict(BaseModel):
     consistency_score: float | None = Field(default=None, ge=0, le=1, description="Optional image-text consistency score.")
 
 
-class MMDFineGrainedCheck(BaseModel):
+class MFCFineGrainedCheck(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     assessment: Literal["confirmed", "suspected", "not_verifiable", "absent"] = "not_verifiable"
@@ -156,23 +162,36 @@ class DetectionUserAnswer(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
-class MMDAtomicPoint(BaseModel):
+class MFCAtomicPoint(BaseModel):
     claim: str = ""
     visual_observation: str = ""
     search_query: str = ""
     point_type: Literal["factual_claim", "visual_claim", "crossmodal_claim"] = "factual_claim"
 
 
-class MMDDetectionResult(BaseModel):
+class MFCSearchEvidence(BaseModel):
+    evidence_id: str
+    query_id: str
+    title: str = ""
+    url: str
+    snippet: str = ""
+    domain: str = ""
+    site_name: str = ""
+    source_tier: str = "other"
+    date_last_crawled: str = Field(default="", description="Crawl time, not publication time.")
+
+
+class MFCDetectionResult(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     status: Literal["success", "error"] = "success"
     label: Literal["True", "Mostly True", "Mixture", "Mostly False", "False"] | None = None
-    forgery_type: str | None = Field(default=None, description="Primary fine-grained check key, none, or unknown.")
+    type: str | None = Field(default=None, description="Primary fine-grained check key, none, or unknown.")
     confidence: float | None = Field(default=None, ge=0, le=1)
-    atomic_points: list[MMDAtomicPoint] = Field(default_factory=list)
-    fine_grained_checks: dict[str, MMDFineGrainedCheck] = Field(default_factory=dict)
+    atomic_points: list[MFCAtomicPoint] = Field(default_factory=list)
+    fine_grained_checks: dict[str, MFCFineGrainedCheck] = Field(default_factory=dict)
     user_answer: DetectionUserAnswer = Field(default_factory=DetectionUserAnswer)
+    evidence: list[MFCSearchEvidence] = Field(default_factory=list, description="Actual retrieved candidates, not automatically verified facts.")
 
 
 class DetectionResponse(BaseModel):
@@ -225,9 +244,8 @@ class DetectionResponse(BaseModel):
     )
 
     mode: DetectionMode = Field(description="Resolved detection mode actually used by the service.")
-    type: str = Field(default="", description="Detection type, such as 事实核查/fact_checking or 谣言检测/rumor_detection for text.")
+    type: str = Field(default="", description="Primary MFC misinformation dimension or IFD forgery/synthesis method.")
     label: str | None = Field(description="Final label, or null when detection fails technically.")
-    forgery_type: str | None = Field(default=None, description="Primary misinformation dimension or most likely image forgery method.")
     summary: str = Field(default="", description="Human-readable summary of the detection result.")
     question: str = Field(default="", description="Resolved user question used to focus the analysis.")
     confidence: float | None = Field(default=None, ge=0, le=1, description="Optional final confidence score.")
@@ -239,8 +257,9 @@ class DetectionResponse(BaseModel):
         default=None,
         description="Image-text consistency result, only present for multimodal detection.",
     )
-    mmd_detection: MMDDetectionResult | None = Field(
+    mfc_detection: MFCDetectionResult | None = Field(
         default=None,
+        validation_alias=AliasChoices("mfc_detection", "mmd_detection"),
         description="Direct five-way multimodal misinformation result with evidence and user explanation.",
     )
     evidence: list[EvidenceItem] = Field(default_factory=list, description="Evidence collected for the final result.")

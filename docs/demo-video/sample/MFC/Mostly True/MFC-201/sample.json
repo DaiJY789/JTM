@@ -1,0 +1,41 @@
+{
+  "case_id": "MFC-201",
+  "task": "MFC",
+  "label": "Mostly True",
+  "title": "JAPAN JAM 公演取消",
+  "focus": "核心事件真实，配图时间语境需要区分",
+  "folder": "MFC/Mostly True/MFC-201",
+  "text_file": "MFC-201.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "201_01_img_1.jpg",
+      "source": "data/mmd/test/Mostly True/201_01_img_1.jpg",
+      "sha256": "d4ffc8dcf10a5d6b43e1a54519fca7da3a902187564b3a18fbd1e602fe2b42c2"
+    },
+    {
+      "file": "201_02_img_2.jpg",
+      "source": "data/mmd/test/Mostly True/201_02_img_2.jpg",
+      "sha256": "eb4644d0764924b0a2d02ec1c7cfe501b072c6f9accdce2f83d8490ff9216f80"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "201",
+  "source_split": "test",
+  "taxonomy": [
+    "T2 Distortion",
+    "C2 Contextual Inconsistency"
+  ],
+  "reference_rationale": "演出取消的核心细节、日期、时间、地点、原因、退款信息与材料摘要一致。另一方面，文本的结尾有些概括了影响的程度，图像显示的是不同时间点的常规事件的图像，而不是当天的取消情况，这在上下文方面略有误导。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Mixture",
+    "confidence": 0.95,
+    "matches_reference": false,
+    "seconds": 18.128,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-201.json"
+  }
+}

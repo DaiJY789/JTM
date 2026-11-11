@@ -1,0 +1,42 @@
+{
+  "case_id": "MFC-178",
+  "task": "MFC",
+  "label": "False",
+  "title": "霍尔木兹海峡冲突现场",
+  "focus": "未经证实的事件叙事与生成图片",
+  "folder": "MFC/False/MFC-178",
+  "text_file": "MFC-178.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "178_01_img_1.jpg",
+      "source": "data/mmd/train/False/178_01_img_1.jpg",
+      "sha256": "eda4353cbea939aaeb3f632ce9ce211322b3ce44ebe4ed1d1e957c03dfd371c8"
+    },
+    {
+      "file": "178_02_img_2.jpg",
+      "source": "data/mmd/train/False/178_02_img_2.jpg",
+      "sha256": "d08705b81f8cb6129f098b38a406a4d7dd25168e9fbf443b0b4b8a01e74943ea"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "178",
+  "source_split": "train",
+  "taxonomy": [
+    "T1 Fabrication",
+    "V1 Synthetic Visual Content",
+    "C1 Semantic Inconsistency"
+  ],
+  "reference_rationale": "该样本把来源中带有个人推演、专家设想和未经证实的战事情景，改写成已经发生并被“多家媒体报道”“最新海上画面显示”的既成事实，核心叙述缺乏可验证证据支撑。同时，两张配图均为生成式图片，却被包装成现场画面和局势图来为文本背书，导致文本事实层面与图像证据层面同时失真，整体核心主张不成立。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Mixture",
+    "confidence": 0.85,
+    "matches_reference": false,
+    "seconds": 23.837,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-178.json"
+  }
+}

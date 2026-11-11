@@ -1,0 +1,47 @@
+{
+  "case_id": "MFC-006",
+  "task": "MFC",
+  "label": "Mostly False",
+  "title": "邮轮病例与专利、品牌拼图",
+  "focus": "真实监测背景与错误关联及拼接图",
+  "folder": "MFC/Mostly False/MFC-006",
+  "text_file": "MFC-006.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "006_01_img_1.jpg",
+      "source": "data/mmd/test/Mostly False/006_01_img_1.jpg",
+      "sha256": "bd489863197ac0fe2fa7a3f1ab60e7b4d74af85d19779918da151ea7016e93f7"
+    },
+    {
+      "file": "006_02_img_2.jpg",
+      "source": "data/mmd/test/Mostly False/006_02_img_2.jpg",
+      "sha256": "80dccc7bac8740ee1a72c50e5f5f5aa18e1335ca2c0353915297db1872c80176"
+    },
+    {
+      "file": "006_03_img_3.jpg",
+      "source": "data/mmd/test/Mostly False/006_03_img_3.jpg",
+      "sha256": "c978e0b471adb773f90a8419d00103e068be88430f08cbc3258e22a279cb6daf"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "006",
+  "source_split": "test",
+  "taxonomy": [
+    "T2 Distortion",
+    "V2 Visual Editing",
+    "C1 Semantic Inconsistency"
+  ],
+  "reference_rationale": "样本文本前半段关于CDC追踪邮轮相关汉坦病毒病例线索有一定事实基础，但后半段通过把零散社交媒体猜测、旧专利信息与当前邮轮事件放在同一叙事链中，显著放大了“辉瑞副作用”和“提前布局”的联想。配图又经过拼接编辑，加入专利页、Pfizer 标识和疫苗图标，使受众更容易误以为这些元素与邮轮病例存在现实证据关联，因此整体主要印象仍然是误导性的。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Mixture",
+    "confidence": 0.85,
+    "matches_reference": false,
+    "seconds": 31.166,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-006.json"
+  }
+}

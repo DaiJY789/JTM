@@ -1,0 +1,33 @@
+{
+  "case_id": "IFD-04",
+  "task": "IFD",
+  "label": "Real_Image",
+  "title": "微距与浅景深",
+  "folder": "IFD/Real_Image/IFD-04",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "0090.jpg",
+      "source": "data/ifd/openfake_sample_100/images/0090.jpg",
+      "sha256": "57a35b64e23bbdf924f2020c1e0a8e72412b9d165028873b9b62423add954e03"
+    }
+  ],
+  "label_basis": "source_binary_real_label",
+  "label_explanation": "OpenFake 原始 real 标签；用于区分浅景深效果与合成异常。",
+  "source_metadata": "data/ifd/openfake_sample_100/metadata.jsonl",
+  "source_original_label": "real",
+  "source_index": 90,
+  "source_media_type": "image",
+  "taxonomy": [],
+  "reference_rationale": "OpenFake 原始 real 标签；用于区分浅景深效果与合成异常。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Real_Image",
+    "confidence": 0.95,
+    "matches_reference": true,
+    "seconds": 16.66,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/IFD-04.json"
+  }
+}

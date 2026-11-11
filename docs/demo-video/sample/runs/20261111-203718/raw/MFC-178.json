@@ -1,0 +1,600 @@
+{
+  "mode": "multimodal",
+  "label": "Mixture",
+  "type": "T3_misleading_context",
+  "summary": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+  "confidence": 0.85,
+  "decision_status": "confident",
+  "mfc_detection": {
+    "status": "success",
+    "label": "Mixture",
+    "type": "T3_misleading_context",
+    "confidence": 0.85,
+    "atomic_points": [
+      {
+        "claim": "2024年6月18日霍尔木兹海峡发生油轮遇袭起火及岛屿遭打击事件",
+        "visual_observation": "Image 2明确标注当前时间为2024年6月18日，并展示了班达尔阿巴斯、格什姆岛等地遭受打击的态势图。",
+        "search_query": "2024年6月18日 霍尔木兹海峡 油轮起火 袭击",
+        "point_type": "factual_claim"
+      },
+      {
+        "claim": "近期（2026年）霍尔木兹海峡局势紧张，存在油轮遇袭和军事打击情况",
+        "visual_observation": "Image 1显示一艘大型船只正在燃烧，浓烟滚滚，有直升机在旁盘旋，符合油轮遇袭起火的描述。",
+        "search_query": "霍尔木兹海峡 油轮遇袭 2026",
+        "point_type": "crossmodal_claim"
+      }
+    ],
+    "fine_grained_checks": {
+      "T1_fabrication": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "事件本身（油轮起火、岛屿受袭）真实发生过，并非完全捏造。"
+      },
+      "T2_distortion": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "主要问题在于时间错位，而非程度夸大。"
+      },
+      "T3_misleading_context": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "external_search",
+        "analysis": "将2026年的冲突画面/态势强行标注为2024年6月18日，属于典型的移花接木，误导受众对事件发生时间的认知。"
+      },
+      "V1_synthetic_visual_content": {
+        "assessment": "not_verifiable",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "无法确定是否为AI生成，但内容符合新闻摄影特征。"
+      },
+      "V2_visual_editing": {
+        "assessment": "suspected",
+        "severity": 3,
+        "evidence_basis": "visual_input",
+        "analysis": "Image 2中的日期标签“2024年6月18日”极可能是后期添加或修改以匹配虚假语境。"
+      },
+      "C1_semantic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "图文语义一致，均指向战争冲突。"
+      },
+      "C2_contextual_inconsistency": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "external_search",
+        "analysis": "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。"
+      },
+      "C3_pragmatic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "无明显语用误导。"
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+      "notes": [
+        "S1、S2证实油轮起火发生于2026年10月。",
+        "Image 2的时间标签与外部证据矛盾。"
+      ]
+    },
+    "evidence": [
+      {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "title": "霍尔木兹海峡一艘油轮遇袭起火_天下_新闻频道_福州新闻网",
+        "url": "https://news.fznews.com.cn/gngj/20261030/qsUZq73D0N.shtml",
+        "domain": "news.fznews.com.cn",
+        "site_name": "福州新闻网",
+        "snippet": "霍尔木兹海峡一艘油轮遇袭起火\n2026-10-30\n13:32:18来源:央视新闻客户端\n英国海上贸易行动办公室10月30日通报说,一艘油轮在驶出霍尔木兹海峡途中被安放爆炸装置,爆炸导致船舱起火。目前",
+        "source_tier": "other",
+        "date_last_crawled": "2026-10-30T00:00:00Z"
+      },
+      {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "title": "霍尔木兹海峡一艘油轮遇袭起火_大众新闻_大众新媒体大平台",
+        "url": "https://dzrb.dzng.com/general/0/NEWS3784042GKUWSGKDGOVRE",
+        "domain": "dzrb.dzng.com",
+        "site_name": "大众日报",
+        "snippet": "英国海上贸易行动办公室10月30日通报说,一艘油轮在驶出霍尔木兹海峡途中被安放爆炸装置,爆炸导致船舱起火。目前船员报告安全,火已被扑灭。通报说,事件发生于协调世界时29日22时12分(北京时间30日6",
+        "source_tier": "other",
+        "date_last_crawled": "2026-10-30T13:31:16Z"
+      },
+      {
+        "evidence_id": "S3",
+        "query_id": "Q2",
+        "title": "霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击_网易视频",
+        "url": "https://m.163.com/v/video/VY1ADO579.html",
+        "domain": "m.163.com",
+        "site_name": "网易",
+        "snippet": "霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击\n霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击\n声明:个人原创,仅供参考\n打开网易新闻\n体验效果更佳",
+        "source_tier": "other",
+        "date_last_crawled": "2026-07-20T00:23:35Z"
+      },
+      {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "title": "美国不担心伊朗成为另一个越南 霍尔木兹海峡成焦点_军事频道_中华网",
+        "url": "https://military.china.com/news/13004177/20260320/49338919_1.html",
+        "domain": "military.china.com",
+        "site_name": "中华网军事",
+        "snippet": "据美媒报道,美军登陆作战可能瞄准两个方向:占领霍尔木兹海峡两侧大小岛屿,特别是格什姆岛,它将霍尔木兹海峡分成了南北两个航道。占领格什姆岛不仅可以直接威胁伊朗岸防阵地和北航道,也可在反斜面方向布设防空导",
+        "source_tier": "other",
+        "date_last_crawled": "2026-03-20T09:07:06Z"
+      },
+      {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "title": "美军打击伊朗境内目标 霍尔木兹海峡冲突升级 - 今日头条",
+        "url": "https://www.toutiao.com/video/7661661366347891200/",
+        "domain": "toutiao.com",
+        "site_name": "今日头条",
+        "snippet": "展开美军打击伊朗境内目标\n霍尔木兹海峡冲突升级播放\n9发布于\n2026-07-12\n23:19暂无评论,发表第一条评论抢沙发网站地图",
+        "source_tier": "other",
+        "date_last_crawled": "2026-07-12T23:19:00Z"
+      }
+    ]
+  },
+  "text_verdict": {
+    "type": "T3_misleading_context",
+    "label": "Mixture",
+    "appraisalResults": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+    "explainInDetail": {
+      "fine_grained_checks": {
+        "T1_fabrication": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "事件本身（油轮起火、岛屿受袭）真实发生过，并非完全捏造。",
+          "evidence": "事件本身（油轮起火、岛屿受袭）真实发生过，并非完全捏造。"
+        },
+        "T2_distortion": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "主要问题在于时间错位，而非程度夸大。",
+          "evidence": "主要问题在于时间错位，而非程度夸大。"
+        },
+        "T3_misleading_context": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "external_search",
+          "analysis": "将2026年的冲突画面/态势强行标注为2024年6月18日，属于典型的移花接木，误导受众对事件发生时间的认知。",
+          "evidence": "将2026年的冲突画面/态势强行标注为2024年6月18日，属于典型的移花接木，误导受众对事件发生时间的认知。"
+        },
+        "V1_synthetic_visual_content": {
+          "assessment": "not_verifiable",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "无法确定是否为AI生成，但内容符合新闻摄影特征。",
+          "evidence": "无法确定是否为AI生成，但内容符合新闻摄影特征。"
+        },
+        "V2_visual_editing": {
+          "assessment": "suspected",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "visual_input",
+          "analysis": "Image 2中的日期标签“2024年6月18日”极可能是后期添加或修改以匹配虚假语境。",
+          "evidence": "Image 2中的日期标签“2024年6月18日”极可能是后期添加或修改以匹配虚假语境。"
+        },
+        "C1_semantic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "图文语义一致，均指向战争冲突。",
+          "evidence": "图文语义一致，均指向战争冲突。"
+        },
+        "C2_contextual_inconsistency": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "external_search",
+          "analysis": "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。",
+          "evidence": "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。"
+        },
+        "C3_pragmatic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "无明显语用误导。",
+          "evidence": "无明显语用误导。"
+        }
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+      "notes": [
+        "S1、S2证实油轮起火发生于2026年10月。",
+        "Image 2的时间标签与外部证据矛盾。"
+      ]
+    },
+    "limitations": [
+      "S1、S2证实油轮起火发生于2026年10月。",
+      "Image 2的时间标签与外部证据矛盾。"
+    ]
+  },
+  "image_verdict": null,
+  "crossmodal_verdict": {
+    "label": "Inconsistent",
+    "analysis": "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。",
+    "matched_elements": [],
+    "mismatched_elements": [
+      "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。"
+    ],
+    "missing_elements": [],
+    "reasoning": "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。",
+    "limitations": [
+      "S1、S2证实油轮起火发生于2026年10月。",
+      "Image 2的时间标签与外部证据矛盾。"
+    ],
+    "consistency_score": 0.0
+  },
+  "evidence": [
+    {
+      "type": "external_search_result",
+      "source": "福州新闻网",
+      "title": "霍尔木兹海峡一艘油轮遇袭起火_天下_新闻频道_福州新闻网",
+      "url": "https://news.fznews.com.cn/gngj/20261030/qsUZq73D0N.shtml",
+      "snippet": "霍尔木兹海峡一艘油轮遇袭起火\n2026-10-30\n13:32:18来源:央视新闻客户端\n英国海上贸易行动办公室10月30日通报说,一艘油轮在驶出霍尔木兹海峡途中被安放爆炸装置,爆炸导致船舱起火。目前",
+      "content": {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "domain": "news.fznews.com.cn",
+        "date_last_crawled": "2026-10-30T00:00:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "大众日报",
+      "title": "霍尔木兹海峡一艘油轮遇袭起火_大众新闻_大众新媒体大平台",
+      "url": "https://dzrb.dzng.com/general/0/NEWS3784042GKUWSGKDGOVRE",
+      "snippet": "英国海上贸易行动办公室10月30日通报说,一艘油轮在驶出霍尔木兹海峡途中被安放爆炸装置,爆炸导致船舱起火。目前船员报告安全,火已被扑灭。通报说,事件发生于协调世界时29日22时12分(北京时间30日6",
+      "content": {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "domain": "dzrb.dzng.com",
+        "date_last_crawled": "2026-10-30T13:31:16Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "网易",
+      "title": "霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击_网易视频",
+      "url": "https://m.163.com/v/video/VY1ADO579.html",
+      "snippet": "霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击\n霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击\n声明:个人原创,仅供参考\n打开网易新闻\n体验效果更佳",
+      "content": {
+        "evidence_id": "S3",
+        "query_id": "Q2",
+        "domain": "m.163.com",
+        "date_last_crawled": "2026-07-20T00:23:35Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "中华网军事",
+      "title": "美国不担心伊朗成为另一个越南 霍尔木兹海峡成焦点_军事频道_中华网",
+      "url": "https://military.china.com/news/13004177/20260320/49338919_1.html",
+      "snippet": "据美媒报道,美军登陆作战可能瞄准两个方向:占领霍尔木兹海峡两侧大小岛屿,特别是格什姆岛,它将霍尔木兹海峡分成了南北两个航道。占领格什姆岛不仅可以直接威胁伊朗岸防阵地和北航道,也可在反斜面方向布设防空导",
+      "content": {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "domain": "military.china.com",
+        "date_last_crawled": "2026-03-20T09:07:06Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "今日头条",
+      "title": "美军打击伊朗境内目标 霍尔木兹海峡冲突升级 - 今日头条",
+      "url": "https://www.toutiao.com/video/7661661366347891200/",
+      "snippet": "展开美军打击伊朗境内目标\n霍尔木兹海峡冲突升级播放\n9发布于\n2026-07-12\n23:19暂无评论,发表第一条评论抢沙发网站地图",
+      "content": {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "domain": "toutiao.com",
+        "date_last_crawled": "2026-07-12T23:19:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "2024年6月18日霍尔木兹海峡发生油轮遇袭起火及岛屿遭打击事件",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "Image 2明确标注当前时间为2024年6月18日，并展示了班达尔阿巴斯、格什姆岛等地遭受打击的态势图。",
+        "search_query": "2024年6月18日 霍尔木兹海峡 油轮起火 袭击"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "近期（2026年）霍尔木兹海峡局势紧张，存在油轮遇袭和军事打击情况",
+      "content": {
+        "point_type": "crossmodal_claim",
+        "visual_observation": "Image 1显示一艘大型船只正在燃烧，浓烟滚滚，有直升机在旁盘旋，符合油轮遇袭起火的描述。",
+        "search_query": "霍尔木兹海峡 油轮遇袭 2026"
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "T3_misleading_context",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "external_search",
+        "observation": "将2026年的冲突画面/态势强行标注为2024年6月18日，属于典型的移花接木，误导受众对事件发生时间的认知。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "V2_visual_editing",
+      "content": {
+        "severity": 3,
+        "assessment": "suspected",
+        "evidence_basis": "visual_input",
+        "observation": "Image 2中的日期标签“2024年6月18日”极可能是后期添加或修改以匹配虚假语境。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C2_contextual_inconsistency",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "external_search",
+        "observation": "配图的时间戳（2024年）与实际新闻事件发生时间（2026年）严重不符。",
+        "regions": []
+      }
+    }
+  ],
+  "claims": [],
+  "report": {
+    "label": "Mixture",
+    "type": "T3_misleading_context",
+    "summary": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+    "confidence": 0.85,
+    "risk_level": "medium",
+    "decision_status": "confident",
+    "limitations": [
+      "S1、S2证实油轮起火发生于2026年10月。",
+      "Image 2的时间标签与外部证据矛盾。"
+    ],
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+      "notes": [
+        "S1、S2证实油轮起火发生于2026年10月。",
+        "Image 2的时间标签与外部证据矛盾。"
+      ]
+    },
+    "agent_trace": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    }
+  },
+  "user_answer": {
+    "judgment": "该内容整体判断为真伪混合。",
+    "analysis": "文字和图片描述了真实的霍尔木兹海峡冲突场景（如油轮起火、格什姆岛受袭），经搜索核实这些事件主要发生在2026年（如S1显示2026年10月油轮遇袭）。然而，Image 2明确标注时间为“2024年6月18日”，这与实际发生时间不符，属于利用旧图或错误时间戳制造假象，误导读者认为这是2024年的新闻。",
+    "notes": [
+      "S1、S2证实油轮起火发生于2026年10月。",
+      "Image 2的时间标签与外部证据矛盾。"
+    ]
+  },
+  "raw": {
+    "workflow": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    },
+    "mfc_diagnostics": {
+      "model_verdict": "Mixture",
+      "verdict_adjustments": [],
+      "evidence_coverage": 1.0,
+      "core_supported": 0,
+      "core_contradicted": 1,
+      "supporting_contradicted": 0
+    },
+    "mfc_tool_evidence": {
+      "enabled": true,
+      "ocr": {
+        "status": "not_run"
+      },
+      "search": {
+        "status": "success",
+        "queries": [
+          {
+            "query_id": "Q1",
+            "strategy": "model_selected",
+            "query": "霍尔木兹海峡 油轮起火 2024年6月18日",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          },
+          {
+            "query_id": "Q2",
+            "strategy": "model_selected",
+            "query": "霍尔木兹海峡态势图 班达尔阿巴斯 格什姆岛 打击目标",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          }
+        ],
+        "results": [
+          {
+            "evidence_id": "S1",
+            "query_id": "Q1",
+            "title": "霍尔木兹海峡一艘油轮遇袭起火_天下_新闻频道_福州新闻网",
+            "url": "https://news.fznews.com.cn/gngj/20261030/qsUZq73D0N.shtml",
+            "domain": "news.fznews.com.cn",
+            "site_name": "福州新闻网",
+            "snippet": "霍尔木兹海峡一艘油轮遇袭起火\n2026-10-30\n13:32:18来源:央视新闻客户端\n英国海上贸易行动办公室10月30日通报说,一艘油轮在驶出霍尔木兹海峡途中被安放爆炸装置,爆炸导致船舱起火。目前",
+            "source_tier": "other",
+            "date_last_crawled": "2026-10-30T00:00:00Z"
+          },
+          {
+            "evidence_id": "S2",
+            "query_id": "Q1",
+            "title": "霍尔木兹海峡一艘油轮遇袭起火_大众新闻_大众新媒体大平台",
+            "url": "https://dzrb.dzng.com/general/0/NEWS3784042GKUWSGKDGOVRE",
+            "domain": "dzrb.dzng.com",
+            "site_name": "大众日报",
+            "snippet": "英国海上贸易行动办公室10月30日通报说,一艘油轮在驶出霍尔木兹海峡途中被安放爆炸装置,爆炸导致船舱起火。目前船员报告安全,火已被扑灭。通报说,事件发生于协调世界时29日22时12分(北京时间30日6",
+            "source_tier": "other",
+            "date_last_crawled": "2026-10-30T13:31:16Z"
+          },
+          {
+            "evidence_id": "S3",
+            "query_id": "Q2",
+            "title": "霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击_网易视频",
+            "url": "https://m.163.com/v/video/VY1ADO579.html",
+            "domain": "m.163.com",
+            "site_name": "网易",
+            "snippet": "霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击\n霍尔木兹海峡战略要地格什姆岛,多个地点遭导弹袭击\n声明:个人原创,仅供参考\n打开网易新闻\n体验效果更佳",
+            "source_tier": "other",
+            "date_last_crawled": "2026-07-20T00:23:35Z"
+          },
+          {
+            "evidence_id": "S4",
+            "query_id": "Q2",
+            "title": "美国不担心伊朗成为另一个越南 霍尔木兹海峡成焦点_军事频道_中华网",
+            "url": "https://military.china.com/news/13004177/20260320/49338919_1.html",
+            "domain": "military.china.com",
+            "site_name": "中华网军事",
+            "snippet": "据美媒报道,美军登陆作战可能瞄准两个方向:占领霍尔木兹海峡两侧大小岛屿,特别是格什姆岛,它将霍尔木兹海峡分成了南北两个航道。占领格什姆岛不仅可以直接威胁伊朗岸防阵地和北航道,也可在反斜面方向布设防空导",
+            "source_tier": "other",
+            "date_last_crawled": "2026-03-20T09:07:06Z"
+          },
+          {
+            "evidence_id": "S5",
+            "query_id": "Q2",
+            "title": "美军打击伊朗境内目标 霍尔木兹海峡冲突升级 - 今日头条",
+            "url": "https://www.toutiao.com/video/7661661366347891200/",
+            "domain": "toutiao.com",
+            "site_name": "今日头条",
+            "snippet": "展开美军打击伊朗境内目标\n霍尔木兹海峡冲突升级播放\n9发布于\n2026-07-12\n23:19暂无评论,发表第一条评论抢沙发网站地图",
+            "source_tier": "other",
+            "date_last_crawled": "2026-07-12T23:19:00Z"
+          }
+        ],
+        "images": [
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://image.fznews.com.cn/app/pic/2026-10/30/663130_77baa4e7-2464-4c4b-9524-3e48b5bc156c.png",
+            "thumbnail_url": "https://image.fznews.com.cn/app/pic/2026-10/30/663130_77baa4e7-2464-4c4b-9524-3e48b5bc156c.png"
+          },
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://img.qiluyidian.net/17782466876672740.jpg?imageView2/2/w/1080",
+            "thumbnail_url": "https://img.qiluyidian.net/17782466876672740.jpg?imageView2/2/w/1080"
+          }
+        ],
+        "limitations": [
+          "搜索摘要是候选外部证据，仍需检查来源、发布时间和正文语境。"
+        ]
+      },
+      "errors": [],
+      "timings": {
+        "ocr_seconds": 0.0,
+        "search_seconds": 0.3132,
+        "model_calls": 0
+      }
+    },
+    "timings": {
+      "agents": {
+        "MFC_Agent": 23.8342
+      },
+      "critical_path_seconds": 23.8342,
+      "parallel_groups": [
+        [
+          "BoChaSearchTool:Q1",
+          "BoChaSearchTool:Q2"
+        ]
+      ],
+      "model_calls": 2,
+      "image_preprocess_seconds": 0.0588,
+      "enrichment_seconds": 0.0,
+      "tool_seconds": 0.3132,
+      "tool_rounds": 1,
+      "search_calls": 2,
+      "ocr_seconds": 0.0,
+      "search_seconds": 0.3132,
+      "model_seconds": 23.4616,
+      "model_output_characters": 2876,
+      "input_image_count": 2,
+      "thinking_enabled": false,
+      "thinking_characters": 0,
+      "finish_reason": "end_turn",
+      "prompt_tokens": 5515,
+      "completion_tokens": 1345,
+      "reasoning_tokens": 0,
+      "invalid_output_retries": 0,
+      "total_model_output_characters": 3088,
+      "model_attempts": [
+        {
+          "attempt": 1,
+          "turn": 1,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 4157,
+          "completion_tokens": 82,
+          "reasoning_tokens": 0,
+          "output_characters": 212,
+          "kind": "tool_request",
+          "seconds": 2.5843
+        },
+        {
+          "attempt": 2,
+          "turn": 2,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 1358,
+          "completion_tokens": 1263,
+          "reasoning_tokens": 0,
+          "output_characters": 2876,
+          "kind": "final",
+          "seconds": 20.8774
+        }
+      ]
+    }
+  },
+  "question": "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+}

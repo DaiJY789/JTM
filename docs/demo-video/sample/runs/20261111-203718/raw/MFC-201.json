@@ -1,0 +1,630 @@
+{
+  "mode": "multimodal",
+  "label": "Mixture",
+  "type": "C2_contextual_inconsistency",
+  "summary": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+  "confidence": 0.95,
+  "decision_status": "confident",
+  "mfc_detection": {
+    "status": "success",
+    "label": "Mixture",
+    "type": "C2_contextual_inconsistency",
+    "confidence": 0.95,
+    "atomic_points": [
+      {
+        "claim": "JAPAN JAM 2026于5月4日因强风取消在千叶市曾我体育公园的公演。",
+        "visual_observation": "",
+        "search_query": "JAPAN JAM 2026 5月4日 千叶市曾我体育公园 公演取消 强风",
+        "point_type": "factual_claim"
+      },
+      {
+        "claim": "配图展示的是JAPAN JAM 2026的活动现场。",
+        "visual_observation": "Image 1显示大型户外音乐节舞台及观众；Image 2背景板清晰可见“JAPAN JAM 2025”字样。",
+        "search_query": "JAPAN JAM 2025 举办时间 地点",
+        "point_type": "crossmodal_claim"
+      }
+    ],
+    "fine_grained_checks": {
+      "T1_fabrication": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "external_search",
+        "analysis": "新闻文字所述事件真实发生，非虚构。"
+      },
+      "T2_distortion": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "external_search",
+        "analysis": "对取消原因（强风）的描述准确无误。"
+      },
+      "T3_misleading_context": {
+        "assessment": "confirmed",
+        "severity": 2,
+        "evidence_basis": "visual_input",
+        "analysis": "将2025年的活动照片用于报道2026年的新闻，语境错误。"
+      },
+      "V1_synthetic_visual_content": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图片具有真实摄影特征，无AI生成迹象。"
+      },
+      "V2_visual_editing": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "未见明显的后期篡改痕迹，主要是直接使用了旧图。"
+      },
+      "C1_semantic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图文主题均为音乐节，语义上无明显冲突。"
+      },
+      "C2_contextual_inconsistency": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "visual_input",
+        "analysis": "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。"
+      },
+      "C3_pragmatic_inconsistency": {
+        "assessment": "suspected",
+        "severity": 1,
+        "evidence_basis": "visual_input",
+        "analysis": "使用往年照片可能误导读者认为这是今年的现场画面。"
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+      "notes": [
+        "外部搜索证实了2026年5月4日的取消事件。",
+        "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+      ]
+    },
+    "evidence": [
+      {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "title": "春の嵐...「JAPAN JAM」「OTODAMA」...音楽フェスが続々当日中止発表 昨夜から未明にかけての天候不良の影響 - スポーツ報知",
+        "url": "https://hochi.news/articles/20260504-OHT1T51046.html",
+        "domain": "hochi.news",
+        "site_name": "スポーツ報知",
+        "snippet": "ゴールデンウィーク中の4日、各地で開催予定だった大型音楽フェスが相次いで中止となった。いずれも強風や暴風雨による安全リスクで、来場者や出演者の安全確保が困難と判断した。\n千葉市の蘇我スポーツ公園で開催",
+        "source_tier": "other",
+        "date_last_crawled": "2026-05-04T09:52:00Z"
+      },
+      {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "title": "JAPAN JAM音乐节因强风取消演出 艺人紧急线上直播回馈观众 - 日本通",
+        "url": "https://www.517japan.com/viewnews-120132.html",
+        "domain": "517japan.com",
+        "site_name": "日本通",
+        "snippet": "摘要:受恶劣天气影响,原定4日举行的日本大型户外音乐节JAPAN\nJAM\n2026被迫取消。M!LK、ME:I、ILLIT等参演艺人随即通过YouTube、Instagram等平台进行紧急直播,为无法",
+        "source_tier": "other",
+        "date_last_crawled": "2026-05-05T10:30:00Z"
+      },
+      {
+        "evidence_id": "S3",
+        "query_id": "Q1",
+        "title": "大阪の音楽イベント「OTODAMA」本日4日の中止を発表、暴風雨で施工物が損傷/関西/芸能/デイリースポーツ online",
+        "url": "https://www.daily.co.jp/leisure/kansai/2026/05/04/0020319681.shtml",
+        "domain": "daily.co.jp",
+        "site_name": "デイリースポーツonline",
+        "snippet": "5月4日に開催予定だった、関西のコンサートプロモーター「清水音泉」主催の音楽イベント『OTODAMA’26』が、昨晩の暴風雨の影響により開催中止となったことが発表された。「泉大津フェニックス」で5月4",
+        "source_tier": "other",
+        "date_last_crawled": "2026-05-09T00:00:00Z"
+      },
+      {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "title": "JAPAN JAM 2025",
+        "url": "http://japanjam.jp/",
+        "domain": "japanjam.jp",
+        "site_name": "japanjam.jp",
+        "snippet": "2025年 4月29日(火・祝)/5月3日(土・祝)・4日(日・祝)・5日(月・祝)の4日間、千葉市蘇我スポーツ公園にて開催!!",
+        "source_tier": "other",
+        "date_last_crawled": "2025-02-24T00:30:43Z"
+      },
+      {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "title": "AnimeJapan 2025",
+        "url": "https://www.anime-japan.jp/",
+        "domain": "anime-japan.jp",
+        "site_name": "www.anime-japan.jp",
+        "snippet": "世界最大級のアニメイベント「AnimeJapan 2025」公式サイト 2025.03.22(sat)~25(tue) 東京ビッグサイトにて開催!",
+        "source_tier": "other",
+        "date_last_crawled": "2025-02-10T09:00:54Z"
+      },
+      {
+        "evidence_id": "S6",
+        "query_id": "Q2",
+        "title": "JAM Project結成25周年記念ライブ チケット先行受付開始! | アニメイトタイムズ",
+        "url": "https://www.animatetimes.com/news/details.php?id=1752053651",
+        "domain": "animatetimes.com",
+        "site_name": "アニメイトタイムズ",
+        "snippet": "2000年に結成したJAM\nProjectが結成25周年を記念して様々なプロジェクトを実施!\n11月には大阪・神奈川の2都市でライブ「JAM\nProject\n25th\nAnniversary\nLive",
+        "source_tier": "other",
+        "date_last_crawled": "2025-07-16T12:00:00Z"
+      }
+    ]
+  },
+  "text_verdict": {
+    "type": "C2_contextual_inconsistency",
+    "label": "Mixture",
+    "appraisalResults": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+    "explainInDetail": {
+      "fine_grained_checks": {
+        "T1_fabrication": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "external_search",
+          "analysis": "新闻文字所述事件真实发生，非虚构。",
+          "evidence": "新闻文字所述事件真实发生，非虚构。"
+        },
+        "T2_distortion": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "external_search",
+          "analysis": "对取消原因（强风）的描述准确无误。",
+          "evidence": "对取消原因（强风）的描述准确无误。"
+        },
+        "T3_misleading_context": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 2,
+          "evidence_basis": "visual_input",
+          "analysis": "将2025年的活动照片用于报道2026年的新闻，语境错误。",
+          "evidence": "将2025年的活动照片用于报道2026年的新闻，语境错误。"
+        },
+        "V1_synthetic_visual_content": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图片具有真实摄影特征，无AI生成迹象。",
+          "evidence": "图片具有真实摄影特征，无AI生成迹象。"
+        },
+        "V2_visual_editing": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "未见明显的后期篡改痕迹，主要是直接使用了旧图。",
+          "evidence": "未见明显的后期篡改痕迹，主要是直接使用了旧图。"
+        },
+        "C1_semantic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图文主题均为音乐节，语义上无明显冲突。",
+          "evidence": "图文主题均为音乐节，语义上无明显冲突。"
+        },
+        "C2_contextual_inconsistency": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "visual_input",
+          "analysis": "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。",
+          "evidence": "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。"
+        },
+        "C3_pragmatic_inconsistency": {
+          "assessment": "suspected",
+          "present": true,
+          "severity": 1,
+          "evidence_basis": "visual_input",
+          "analysis": "使用往年照片可能误导读者认为这是今年的现场画面。",
+          "evidence": "使用往年照片可能误导读者认为这是今年的现场画面。"
+        }
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+      "notes": [
+        "外部搜索证实了2026年5月4日的取消事件。",
+        "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+      ]
+    },
+    "limitations": [
+      "外部搜索证实了2026年5月4日的取消事件。",
+      "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+    ]
+  },
+  "image_verdict": null,
+  "crossmodal_verdict": {
+    "label": "Inconsistent",
+    "analysis": "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。",
+    "matched_elements": [],
+    "mismatched_elements": [
+      "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。"
+    ],
+    "missing_elements": [],
+    "reasoning": "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。",
+    "limitations": [
+      "外部搜索证实了2026年5月4日的取消事件。",
+      "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+    ],
+    "consistency_score": 0.0
+  },
+  "evidence": [
+    {
+      "type": "external_search_result",
+      "source": "スポーツ報知",
+      "title": "春の嵐...「JAPAN JAM」「OTODAMA」...音楽フェスが続々当日中止発表 昨夜から未明にかけての天候不良の影響 - スポーツ報知",
+      "url": "https://hochi.news/articles/20260504-OHT1T51046.html",
+      "snippet": "ゴールデンウィーク中の4日、各地で開催予定だった大型音楽フェスが相次いで中止となった。いずれも強風や暴風雨による安全リスクで、来場者や出演者の安全確保が困難と判断した。\n千葉市の蘇我スポーツ公園で開催",
+      "content": {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "domain": "hochi.news",
+        "date_last_crawled": "2026-05-04T09:52:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "日本通",
+      "title": "JAPAN JAM音乐节因强风取消演出 艺人紧急线上直播回馈观众 - 日本通",
+      "url": "https://www.517japan.com/viewnews-120132.html",
+      "snippet": "摘要:受恶劣天气影响,原定4日举行的日本大型户外音乐节JAPAN\nJAM\n2026被迫取消。M!LK、ME:I、ILLIT等参演艺人随即通过YouTube、Instagram等平台进行紧急直播,为无法",
+      "content": {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "domain": "517japan.com",
+        "date_last_crawled": "2026-05-05T10:30:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "デイリースポーツonline",
+      "title": "大阪の音楽イベント「OTODAMA」本日4日の中止を発表、暴風雨で施工物が損傷/関西/芸能/デイリースポーツ online",
+      "url": "https://www.daily.co.jp/leisure/kansai/2026/05/04/0020319681.shtml",
+      "snippet": "5月4日に開催予定だった、関西のコンサートプロモーター「清水音泉」主催の音楽イベント『OTODAMA’26』が、昨晩の暴風雨の影響により開催中止となったことが発表された。「泉大津フェニックス」で5月4",
+      "content": {
+        "evidence_id": "S3",
+        "query_id": "Q1",
+        "domain": "daily.co.jp",
+        "date_last_crawled": "2026-05-09T00:00:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "japanjam.jp",
+      "title": "JAPAN JAM 2025",
+      "url": "http://japanjam.jp/",
+      "snippet": "2025年 4月29日(火・祝)/5月3日(土・祝)・4日(日・祝)・5日(月・祝)の4日間、千葉市蘇我スポーツ公園にて開催!!",
+      "content": {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "domain": "japanjam.jp",
+        "date_last_crawled": "2025-02-24T00:30:43Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "www.anime-japan.jp",
+      "title": "AnimeJapan 2025",
+      "url": "https://www.anime-japan.jp/",
+      "snippet": "世界最大級のアニメイベント「AnimeJapan 2025」公式サイト 2025.03.22(sat)~25(tue) 東京ビッグサイトにて開催!",
+      "content": {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "domain": "anime-japan.jp",
+        "date_last_crawled": "2025-02-10T09:00:54Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "アニメイトタイムズ",
+      "title": "JAM Project結成25周年記念ライブ チケット先行受付開始! | アニメイトタイムズ",
+      "url": "https://www.animatetimes.com/news/details.php?id=1752053651",
+      "snippet": "2000年に結成したJAM\nProjectが結成25周年を記念して様々なプロジェクトを実施!\n11月には大阪・神奈川の2都市でライブ「JAM\nProject\n25th\nAnniversary\nLive",
+      "content": {
+        "evidence_id": "S6",
+        "query_id": "Q2",
+        "domain": "animatetimes.com",
+        "date_last_crawled": "2025-07-16T12:00:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "JAPAN JAM 2026于5月4日因强风取消在千叶市曾我体育公园的公演。",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "",
+        "search_query": "JAPAN JAM 2026 5月4日 千叶市曾我体育公园 公演取消 强风"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "配图展示的是JAPAN JAM 2026的活动现场。",
+      "content": {
+        "point_type": "crossmodal_claim",
+        "visual_observation": "Image 1显示大型户外音乐节舞台及观众；Image 2背景板清晰可见“JAPAN JAM 2025”字样。",
+        "search_query": "JAPAN JAM 2025 举办时间 地点"
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "T3_misleading_context",
+      "content": {
+        "severity": 2,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "将2025年的活动照片用于报道2026年的新闻，语境错误。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C2_contextual_inconsistency",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "图片中的年份标识（2025）与新闻文本的时间（2026）直接矛盾。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C3_pragmatic_inconsistency",
+      "content": {
+        "severity": 1,
+        "assessment": "suspected",
+        "evidence_basis": "visual_input",
+        "observation": "使用往年照片可能误导读者认为这是今年的现场画面。",
+        "regions": []
+      }
+    }
+  ],
+  "claims": [],
+  "report": {
+    "label": "Mixture",
+    "type": "C2_contextual_inconsistency",
+    "summary": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+    "confidence": 0.95,
+    "risk_level": "medium",
+    "decision_status": "confident",
+    "limitations": [
+      "外部搜索证实了2026年5月4日的取消事件。",
+      "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+    ],
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+      "notes": [
+        "外部搜索证实了2026年5月4日的取消事件。",
+        "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+      ]
+    },
+    "agent_trace": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    }
+  },
+  "user_answer": {
+    "judgment": "该内容整体判断为真伪混合。",
+    "analysis": "经核查，JAPAN JAM 2026确实于5月4日因强风取消了在千叶市苏我体育公园的演出，文字描述属实。然而，提供的图片（特别是Image 2）中背景板清晰显示“JAPAN JAM 2025”字样，表明这是去年的活动照片，被错误地用于配发今年的新闻，构成图文语境冲突。",
+    "notes": [
+      "外部搜索证实了2026年5月4日的取消事件。",
+      "图片视觉证据直接反驳了其为2026年现场照片的可能性。"
+    ]
+  },
+  "raw": {
+    "workflow": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    },
+    "mfc_diagnostics": {
+      "model_verdict": "Mixture",
+      "verdict_adjustments": [],
+      "evidence_coverage": 1.0,
+      "core_supported": 1,
+      "core_contradicted": 0,
+      "supporting_contradicted": 1
+    },
+    "mfc_tool_evidence": {
+      "enabled": true,
+      "ocr": {
+        "status": "not_run"
+      },
+      "search": {
+        "status": "success",
+        "queries": [
+          {
+            "query_id": "Q1",
+            "strategy": "model_selected",
+            "query": "JAPAN JAM 2026 5月4日 千叶市曾我体育公园 公演取消 强风",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          },
+          {
+            "query_id": "Q2",
+            "strategy": "model_selected",
+            "query": "JAPAN JAM 2025 举办时间 地点",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          }
+        ],
+        "results": [
+          {
+            "evidence_id": "S1",
+            "query_id": "Q1",
+            "title": "春の嵐...「JAPAN JAM」「OTODAMA」...音楽フェスが続々当日中止発表 昨夜から未明にかけての天候不良の影響 - スポーツ報知",
+            "url": "https://hochi.news/articles/20260504-OHT1T51046.html",
+            "domain": "hochi.news",
+            "site_name": "スポーツ報知",
+            "snippet": "ゴールデンウィーク中の4日、各地で開催予定だった大型音楽フェスが相次いで中止となった。いずれも強風や暴風雨による安全リスクで、来場者や出演者の安全確保が困難と判断した。\n千葉市の蘇我スポーツ公園で開催",
+            "source_tier": "other",
+            "date_last_crawled": "2026-05-04T09:52:00Z"
+          },
+          {
+            "evidence_id": "S2",
+            "query_id": "Q1",
+            "title": "JAPAN JAM音乐节因强风取消演出 艺人紧急线上直播回馈观众 - 日本通",
+            "url": "https://www.517japan.com/viewnews-120132.html",
+            "domain": "517japan.com",
+            "site_name": "日本通",
+            "snippet": "摘要:受恶劣天气影响,原定4日举行的日本大型户外音乐节JAPAN\nJAM\n2026被迫取消。M!LK、ME:I、ILLIT等参演艺人随即通过YouTube、Instagram等平台进行紧急直播,为无法",
+            "source_tier": "other",
+            "date_last_crawled": "2026-05-05T10:30:00Z"
+          },
+          {
+            "evidence_id": "S3",
+            "query_id": "Q1",
+            "title": "大阪の音楽イベント「OTODAMA」本日4日の中止を発表、暴風雨で施工物が損傷/関西/芸能/デイリースポーツ online",
+            "url": "https://www.daily.co.jp/leisure/kansai/2026/05/04/0020319681.shtml",
+            "domain": "daily.co.jp",
+            "site_name": "デイリースポーツonline",
+            "snippet": "5月4日に開催予定だった、関西のコンサートプロモーター「清水音泉」主催の音楽イベント『OTODAMA’26』が、昨晩の暴風雨の影響により開催中止となったことが発表された。「泉大津フェニックス」で5月4",
+            "source_tier": "other",
+            "date_last_crawled": "2026-05-09T00:00:00Z"
+          },
+          {
+            "evidence_id": "S4",
+            "query_id": "Q2",
+            "title": "JAPAN JAM 2025",
+            "url": "http://japanjam.jp/",
+            "domain": "japanjam.jp",
+            "site_name": "japanjam.jp",
+            "snippet": "2025年 4月29日(火・祝)/5月3日(土・祝)・4日(日・祝)・5日(月・祝)の4日間、千葉市蘇我スポーツ公園にて開催!!",
+            "source_tier": "other",
+            "date_last_crawled": "2025-02-24T00:30:43Z"
+          },
+          {
+            "evidence_id": "S5",
+            "query_id": "Q2",
+            "title": "AnimeJapan 2025",
+            "url": "https://www.anime-japan.jp/",
+            "domain": "anime-japan.jp",
+            "site_name": "www.anime-japan.jp",
+            "snippet": "世界最大級のアニメイベント「AnimeJapan 2025」公式サイト 2025.03.22(sat)~25(tue) 東京ビッグサイトにて開催!",
+            "source_tier": "other",
+            "date_last_crawled": "2025-02-10T09:00:54Z"
+          },
+          {
+            "evidence_id": "S6",
+            "query_id": "Q2",
+            "title": "JAM Project結成25周年記念ライブ チケット先行受付開始! | アニメイトタイムズ",
+            "url": "https://www.animatetimes.com/news/details.php?id=1752053651",
+            "domain": "animatetimes.com",
+            "site_name": "アニメイトタイムズ",
+            "snippet": "2000年に結成したJAM\nProjectが結成25周年を記念して様々なプロジェクトを実施!\n11月には大阪・神奈川の2都市でライブ「JAM\nProject\n25th\nAnniversary\nLive",
+            "source_tier": "other",
+            "date_last_crawled": "2025-07-16T12:00:00Z"
+          }
+        ],
+        "images": [
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://www.517japan.com/upload/img/20260504/a06e198eba769c58d1c0d26082310291.png",
+            "thumbnail_url": "https://www.517japan.com/upload/img/20260504/a06e198eba769c58d1c0d26082310291.png"
+          }
+        ],
+        "limitations": [
+          "搜索摘要是候选外部证据，仍需检查来源、发布时间和正文语境。"
+        ]
+      },
+      "errors": [],
+      "timings": {
+        "ocr_seconds": 0.0,
+        "search_seconds": 0.39,
+        "model_calls": 0
+      }
+    },
+    "timings": {
+      "agents": {
+        "MFC_Agent": 18.1265
+      },
+      "critical_path_seconds": 18.1265,
+      "parallel_groups": [
+        [
+          "BoChaSearchTool:Q1",
+          "BoChaSearchTool:Q2"
+        ]
+      ],
+      "model_calls": 2,
+      "image_preprocess_seconds": 0.0395,
+      "enrichment_seconds": 0.0,
+      "tool_seconds": 0.39,
+      "tool_rounds": 1,
+      "search_calls": 2,
+      "ocr_seconds": 0.0,
+      "search_seconds": 0.39,
+      "model_seconds": 17.6966,
+      "model_output_characters": 2797,
+      "input_image_count": 2,
+      "thinking_enabled": false,
+      "thinking_characters": 0,
+      "finish_reason": "end_turn",
+      "prompt_tokens": 5383,
+      "completion_tokens": 1243,
+      "reasoning_tokens": 0,
+      "invalid_output_retries": 0,
+      "total_model_output_characters": 3020,
+      "model_attempts": [
+        {
+          "attempt": 1,
+          "turn": 1,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 3755,
+          "completion_tokens": 86,
+          "reasoning_tokens": 0,
+          "output_characters": 223,
+          "kind": "tool_request",
+          "seconds": 2.4279
+        },
+        {
+          "attempt": 2,
+          "turn": 2,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 1628,
+          "completion_tokens": 1157,
+          "reasoning_tokens": 0,
+          "output_characters": 2797,
+          "kind": "final",
+          "seconds": 15.2687
+        }
+      ]
+    }
+  },
+  "question": "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+}

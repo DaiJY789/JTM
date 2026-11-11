@@ -12,27 +12,27 @@
         if (localStorage.getItem("jtm-theme") === "dark") document.documentElement.dataset.theme = "dark";
       } catch {}
     </script>
-    <link rel="stylesheet" href="/static/styles.css?v=20261110-image-selection" />
+    <link rel="stylesheet" href="/static/styles.css?v=20261111-interface-language" />
   </head>
   <body>
-    <a class="skip-link" href="#textInput">跳转到输入区</a>
+    <a data-i18n="skipToInput" class="skip-link" href="#textInput">跳转到输入区</a>
     <main class="app-shell">
-      <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="关闭侧边栏" tabindex="-1" hidden></button>
-      <aside class="conversation-list-panel" id="sidebarPanel" aria-label="侧边栏">
-        <button class="sidebar-close" id="sidebarCloseBtn" type="button" aria-label="关闭侧边栏"><span aria-hidden="true">×</span></button>
+      <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="关闭侧边栏" data-i18n-label="closeSidebar" tabindex="-1" hidden></button>
+      <aside class="conversation-list-panel" id="sidebarPanel" aria-label="侧边栏" data-i18n-label="sidebar">
+        <button class="sidebar-close" id="sidebarCloseBtn" type="button" aria-label="关闭侧边栏" data-i18n-label="closeSidebar"><span aria-hidden="true">×</span></button>
         <div class="sidebar-brand">
           <img src="/static/logo.png" alt="" />
           <div><strong>惊堂木</strong></div>
-          <p>判断有据，拍案有声</p>
+          <p data-i18n="slogan">判断有据，拍案有声</p>
         </div>
         <button class="secondary-action" id="newConversationBtn" type="button">新对话</button>
-        <section class="control-band" aria-label="参数设置">
+        <section class="control-band" aria-label="参数设置" data-i18n-label="settings">
           <div class="control-group">
             <span class="control-label">任务</span>
-            <div class="segmented task-selector" data-field="task" aria-label="任务">
-              <button class="segment active" type="button" data-value="multimodal_fact_checking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 4-5 5 5"/></svg>多模态事实核查</button>
-              <button class="segment" type="button" data-value="deepfake_detection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="12" height="14" rx="2"/><path d="m15 10 6-4v12l-6-4"/></svg>深度伪造检测</button>
-              <button class="segment" type="button" data-value="aigc_detection" disabled title="暂未开放"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5m-18 4 9 5 9-5"/></svg>大模型生成检测</button>
+            <div class="segmented task-selector" data-field="task" aria-label="任务" data-i18n-label="task">
+              <button class="segment active" type="button" data-value="multimodal_fact_checking"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m4 18 5-5 3 3 4-5 5 5"/></svg><span data-i18n="multimodalTask">多模态事实核查</span></button>
+              <button class="segment" type="button" data-value="deepfake_detection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="12" height="14" rx="2"/><path d="m15 10 6-4v12l-6-4"/></svg><span data-i18n="deepfakeTask">深度伪造检测</span></button>
+              <button class="segment" type="button" data-value="aigc_detection" disabled title="暂未开放" data-i18n-title="notAvailable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Zm-9 9 9 5 9-5m-18 4 9 5 9-5"/></svg><span data-i18n="aigcTask">大模型生成检测</span></button>
             </div>
           </div>
         </section>
@@ -59,14 +59,17 @@
               <button class="sidebar-toggle" id="sidebarToggleBtn" type="button" aria-controls="sidebarPanel" aria-expanded="true" aria-label="收起侧边栏" title="收起侧边栏"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M9 4v16M14 9l-3 3 3 3" /></svg></button>
               <span class="workspace-eyebrow" id="workspaceTaskName">多模态事实核查</span>
             </div>
-            <h1>工作台</h1>
+            <div class="workspace-heading">
+              <h1 data-i18n="workbench">工作台</h1>
+              <button class="help-button" id="usageGuideBtn" type="button" aria-label="查看使用说明" title="使用说明" data-i18n-label="viewUsage" data-i18n-title="usageGuide" aria-haspopup="dialog" aria-controls="usageGuide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 8.5a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4M12 16h.01"/></svg><span data-i18n="usageGuide">使用说明</span></button>
+            </div>
             <p id="workspaceTaskDescription">输入待核查的文本，可附上图片，查看事实判断与图文依据。</p>
           </div>
-          <div class="panel result-summary" aria-label="检测结果">
+          <div class="panel result-summary" aria-label="检测结果" data-i18n-label="detectionResults">
             <dl class="metric-list">
               <div><dt id="labelTitle">标签</dt><dd><span class="verdict-badge is-placeholder" id="resultLabel" data-tone="neutral">-</span></dd></div>
-              <div><dt id="aiTitle">伪造类型</dt><dd id="aiScore">-</dd></div>
-              <div><dt id="confidenceTitle">置信度</dt><dd id="resultConfidence">-</dd></div>
+              <div><dt id="aiTitle">伪造类型</dt><dd><span class="verdict-badge type-badge is-placeholder" id="aiScore">-</span></dd></div>
+              <div><dt id="confidenceTitle">置信度</dt><dd><span class="verdict-badge confidence-badge is-placeholder" id="resultConfidence">-</span></dd></div>
             </dl>
             <div class="result-meta">
               <span><span id="runtimeTitle">运行时间</span> <span class="status-pill runtime-pill" id="resultRuntime">-</span></span>
@@ -74,12 +77,12 @@
             </div>
           </div>
         </header>
-        <div class="workspace-switcher" role="group" aria-label="切换工作区">
-          <button type="button" data-mobile-view="dialogue" aria-controls="dialoguePanel" aria-pressed="false">对话</button>
-          <button type="button" data-mobile-view="content" aria-controls="contentPanel" aria-pressed="true">输入内容</button>
+        <div class="workspace-switcher" role="group" aria-label="切换工作区" data-i18n-label="switchWorkspace">
+          <button type="button" data-i18n="history" data-mobile-view="dialogue" aria-controls="dialoguePanel" aria-pressed="false">对话</button>
+          <button type="button" data-i18n="inputContent" data-mobile-view="content" aria-controls="contentPanel" aria-pressed="true">输入内容</button>
         </div>
         <div class="workbench-layout">
-          <section class="panel dialogue-column conversation-history" id="dialoguePanel" aria-label="对话">
+          <section class="panel dialogue-column conversation-history" id="dialoguePanel" aria-label="对话" data-i18n-label="history">
             <div class="result-header">
               <h2 id="historyTitle">对话</h2>
             </div>
@@ -98,28 +101,28 @@
             </div>
             <div class="prompt-panel dialogue-composer">
               <div class="prompt-row">
-                <input id="questionInput" type="text" aria-label="输入消息" placeholder="首次检测可留空，之后可继续追问" />
+                <input id="questionInput" type="text" aria-label="输入消息" placeholder="首次检测可留空，之后可继续追问" data-i18n-label="messageInput" data-i18n-placeholder="questionPlaceholder" />
                 <button class="primary-action" id="submitBtn" type="button">开始检测</button>
               </div>
             </div>
           </section>
 
-          <aside class="content-column" id="contentPanel" aria-label="输入内容">
-            <section class="panel input-panel" aria-label="输入区">
+          <aside class="content-column" id="contentPanel" aria-label="输入内容" data-i18n-label="inputContent">
+            <section class="panel input-panel" aria-label="输入区" data-i18n-label="inputContent">
               <div class="preview-sections">
                 <div class="text-preview-section">
                   <div class="panel-heading">
-                    <label class="panel-title" for="textInput">文本预览</label>
+                    <label class="panel-title" for="textInput" data-i18n="textPreview">文本预览</label>
                     <div class="text-preview-notices">
                       <p class="url-import-status" id="urlImportStatus" role="status" hidden></p>
                       <p class="url-import-status" id="textFileStatus" role="status" hidden></p>
                     </div>
-                    <button class="file-button" id="uploadTextBtn" type="button" aria-label="选择 TXT 文件" title="选择 TXT 文件" aria-describedby="textFileStatus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
+                    <button class="file-button" id="uploadTextBtn" type="button" aria-label="选择 TXT 文件" title="选择 TXT 文件" data-i18n-label="chooseText" data-i18n-title="chooseText" aria-describedby="textFileStatus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
                     <input id="textFileInput" type="file" accept=".txt,text/plain" hidden />
                   </div>
-                  <textarea id="textInput" rows="6" placeholder="输入新闻正文、事实陈述或配图对应的新闻文本"></textarea>
+                  <textarea id="textInput" rows="6" placeholder="输入新闻正文、事实陈述或配图对应的新闻文本" data-i18n-placeholder="textPlaceholder"></textarea>
                   <div class="confirmable-url-field text-link-field">
-                    <input id="urlInput" type="url" aria-label="网页或图片链接" placeholder="粘贴网页或图片链接" aria-describedby="urlImportStatus" />
+                    <input id="urlInput" type="url" aria-label="网页或图片链接" placeholder="粘贴网页或图片链接" data-i18n-label="linkInput" data-i18n-placeholder="linkPlaceholder" aria-describedby="urlImportStatus" />
                     <button class="url-confirm-button" id="importUrlBtn" type="button">导入</button>
                   </div>
                   <input id="webpageUrlInput" type="hidden" />
@@ -128,9 +131,9 @@
                 <div class="media-panel">
                   <div class="media-heading">
                     <div class="media-title-row">
-                      <label class="panel-title">图片预览</label>
+                      <label class="panel-title" data-i18n="imagePreview">图片预览</label>
                       <div class="file-picker-field">
-                        <button class="file-button" id="addImageBtn" type="button" aria-label="选择图片" title="选择图片"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
+                        <button class="file-button" id="addImageBtn" type="button" aria-label="选择图片" title="选择图片" data-i18n-label="chooseImages"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button>
                         <input id="imageInput" class="file-input" type="file" accept="image/*" multiple />
                       </div>
                     </div>
@@ -150,14 +153,37 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 20v-1.25a4.5 4.5 0 0 1 4.5-4.5h4a4.5 4.5 0 0 1 4.5 4.5V20"/></svg>
     </template>
 
-    <dialog class="image-viewer" id="imageViewer" aria-label="查看图片">
+    <dialog class="usage-guide" id="usageGuide" aria-labelledby="usageGuideTitle">
+      <div class="usage-guide-header">
+        <h2 id="usageGuideTitle" data-i18n="usageTitle">使用方法</h2>
+        <form method="dialog"><button class="usage-guide-close" type="submit" aria-label="关闭使用方法" data-i18n-label="closeUsage" autofocus>×</button></form>
+      </div>
+      <div class="usage-guide-body">
+        <ol class="usage-steps" data-ui-language="zh">
+          <li>选择<strong>“多模态事实核查”</strong>或<strong>“深度伪造检测”</strong>，点击<strong>“新对话”</strong>。</li>
+          <li>右侧准备输入：填写正文、上传文件，或粘贴链接并点击<strong>“导入”</strong>。多模态事实核查必须有文本，图片可选；深度伪造检测需上传一张图片。</li>
+          <li>检查正文和图片预览，移除不需要的配图。</li>
+          <li>点击<strong>“开始检测”</strong>，查看顶部结果和<strong>“核查结论与依据”</strong>。首次检测时，对话输入框可留空，也可填写希望重点核查的问题。</li>
+          <li>检测完成后，在对话框输入问题并发送，继续深入了解本次结果。</li>
+        </ol>
+        <ol class="usage-steps" data-ui-language="en" hidden>
+          <li>Select <strong>“Multimodal fact-checking”</strong> or <strong>“Deepfake detection”</strong>, then click <strong>“New Chat”</strong>.</li>
+          <li>Prepare your input on the right. Enter text, upload a file, or paste a link and click <strong>“Import”</strong>. Multimodal fact-checking requires text, with optional images. Deepfake detection requires one image.</li>
+          <li>Review the text and image previews, and remove any images you do not need.</li>
+          <li>Click <strong>“Detect”</strong> to view the top results and <strong>“Verdict and evidence”</strong>. For the initial check, leave the message field empty or enter a question to focus the analysis.</li>
+          <li>After detection, enter a question in the conversation and click <strong>“Send”</strong> to explore the result further.</li>
+        </ol>
+      </div>
+    </dialog>
+
+    <dialog class="image-viewer" id="imageViewer" aria-label="查看图片" data-i18n-label="viewImage">
       <div class="image-viewer-toolbar">
         <span id="imageViewerTitle">图片预览</span>
-        <button id="imageViewerCloseBtn" type="button" aria-label="关闭图片预览">×</button>
+        <button id="imageViewerCloseBtn" type="button" aria-label="关闭图片预览" data-i18n-label="closeImage">×</button>
       </div>
       <div class="image-viewer-canvas"><img id="imageViewerImage" alt="" /></div>
     </dialog>
 
-    <script src="/static/app.js?v=20261110-primary-forgery-type"></script>
+    <script src="/static/app.js?v=20261111-interface-language"></script>
   </body>
 </html>

@@ -1,0 +1,20 @@
+{
+  "model_provider": "anthropic",
+  "anthropic_model": "qwen3.8-flash",
+  "mfc_vision_model": "qwen3.7-flash",
+  "qwen_vision_model": "qwen3-vl-plus",
+  "mfc_enable_thinking": false,
+  "mfc_agent_timeout_seconds": 120,
+  "mfc_detection_timeout_seconds": 60,
+  "vision_verdict_timeout_seconds": 120,
+  "mfc_search_query_count": 3,
+  "vision_max_rounds": 3,
+  "prompt_sha256": {
+    "mfc": "d76f288a12f797522658de471bc17e0288984259408bf95ae3f5b2b51c534080",
+    "ifd": "3e5afe3d77074360362422b4d7d2add226cc8c2032a6b352d3960f3d974ec497"
+  },
+  "workers": 2,
+  "questions": "current orchestrator defaults",
+  "references_sent_to_model": false,
+  "entrypoint": "DetectionOrchestrator.detect (same production detector services, actual network/tool calls)"
+}

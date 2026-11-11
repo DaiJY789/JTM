@@ -1,0 +1,544 @@
+{
+  "mode": "multimodal",
+  "label": "True",
+  "type": "none",
+  "summary": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+  "confidence": 0.95,
+  "decision_status": "confident",
+  "mfc_detection": {
+    "status": "success",
+    "label": "True",
+    "type": "none",
+    "confidence": 0.95,
+    "atomic_points": [
+      {
+        "claim": "沃尔玛已完成对Vizio的收购，交易落定。",
+        "visual_observation": "Image 1展示了沃尔玛（Walmart）与Vizio的品牌Logo并列，暗示两者存在紧密关联或合并关系。",
+        "search_query": "沃尔玛完成收购Vizio SmartCast WatchFree+",
+        "point_type": "factual_claim"
+      },
+      {
+        "claim": "Vizio旗下的SmartCast平台和WatchFree+纳入沃尔玛体系。",
+        "visual_observation": "无直接视觉证据展示平台名称，但Image 2展示了Vizio电视产品及其品牌标识。",
+        "search_query": "Walmart Vizio acquisition completed date",
+        "point_type": "factual_claim"
+      },
+      {
+        "claim": "收购旨在强化零售媒体和联网电视广告布局，打通Walmart Connect业务。",
+        "visual_observation": "无直接视觉证据展示广告业务逻辑。",
+        "search_query": "",
+        "point_type": "factual_claim"
+      }
+    ],
+    "fine_grained_checks": {
+      "T1_fabrication": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "external_search",
+        "analysis": "核心事件“沃尔玛收购Vizio”真实发生，非虚构。"
+      },
+      "T2_distortion": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "external_search",
+        "analysis": "关于收购目的（广告布局）的描述符合公开报道及商业逻辑。"
+      },
+      "T3_misleading_context": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "external_search",
+        "analysis": "时间线正确，虽新闻未注明具体日期，但描述的是已完成的既定事实。"
+      },
+      "V1_synthetic_visual_content": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图片为标准的品牌Logo组合及产品宣传图，无AI生成痕迹。"
+      },
+      "V2_visual_editing": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "未见恶意篡改，Logo并列是常见的商业合作/并购配图方式。"
+      },
+      "C1_semantic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图文语义一致，文字讲收购，图片展示双方品牌及被收购方产品。"
+      },
+      "C2_contextual_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "图片语境与新闻背景相符。"
+      },
+      "C3_pragmatic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "visual_input",
+        "analysis": "无误导性暗示。"
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真实。",
+      "analysis": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+      "notes": [
+        "搜索结果确认了收购完成的时间点（2024年12月）。",
+        "图片均为常规商业素材，未见异常编辑。"
+      ]
+    },
+    "evidence": [
+      {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "title": "沃尔玛完成对电视品牌VIZIO的收购_腾讯新闻",
+        "url": "https://new.qq.com/rain/a/20241205A076G600",
+        "domain": "new.qq.com",
+        "site_name": "腾讯网",
+        "snippet": "12月3日,美国零售商沃尔玛(Walmart)宣布完成对智慧电视品牌VIZIO的收购。 沃尔玛表示,收购VIZIO及其SmartCast操作系统后,沃尔玛能够以新的方式为客户服务,改善他们的购物体验。",
+        "source_tier": "other",
+        "date_last_crawled": "2024-12-05T17:22:00Z"
+      },
+      {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "title": "沃尔玛宣布收购Vizio以完善广告业务_凤凰网",
+        "url": "https://finance.ifeng.com/c/8XMjz41lX6M",
+        "domain": "finance.ifeng.com",
+        "site_name": "凤凰网",
+        "snippet": "2月20日,美国零售业巨头沃尔玛(Walmart)宣布,以23亿美元(165.4137亿元人民币)收购全美市占率第三的智慧电视品牌Vizio,沃尔玛寄希望于“通过Vizio的SmartCast 智慧电",
+        "source_tier": "other",
+        "date_last_crawled": "2024-02-21T23:15:20Z"
+      },
+      {
+        "evidence_id": "S3",
+        "query_id": "Q2",
+        "title": "沃尔玛斥资23亿美元完成收购Vizio - 快讯 - 亿邦动力",
+        "url": "https://www.ebrun.com/ebrungo/zb/567257.shtml",
+        "domain": "ebrun.com",
+        "site_name": "亿邦动力",
+        "snippet": "沃尔玛公司以23亿美元完成收购智能电视制造商/流媒体平台提供商Vizio。随着交易的完成,Vizio已成为沃尔玛的全资子公司,Vizio的A类普通股将不再在纽约证券交易所上市交易。今后,Vizio的业",
+        "source_tier": "other",
+        "date_last_crawled": "2024-12-05T08:25:00Z"
+      },
+      {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "title": "沃尔玛以23亿美元全资收购Vizio：市场反应与未来展望",
+        "url": "https://m.sohu.com/a/833911992_121976703/?pvid=000115_3w_a",
+        "domain": "m.sohu.com",
+        "site_name": "手机搜狐网",
+        "snippet": "2024年12月4日,沃尔玛(Walmart)正式宣布以约23亿美元的价格全资收购智能电视品牌Vizio,这一交易标志着沃尔玛在消费电子领域的重要布局。Vizio成立于2002年,以高性价比的智能电视",
+        "source_tier": "other",
+        "date_last_crawled": "2024-12-07T01:36:00Z"
+      }
+    ]
+  },
+  "text_verdict": {
+    "type": "none",
+    "label": "True",
+    "appraisalResults": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+    "explainInDetail": {
+      "fine_grained_checks": {
+        "T1_fabrication": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "external_search",
+          "analysis": "核心事件“沃尔玛收购Vizio”真实发生，非虚构。",
+          "evidence": "核心事件“沃尔玛收购Vizio”真实发生，非虚构。"
+        },
+        "T2_distortion": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "external_search",
+          "analysis": "关于收购目的（广告布局）的描述符合公开报道及商业逻辑。",
+          "evidence": "关于收购目的（广告布局）的描述符合公开报道及商业逻辑。"
+        },
+        "T3_misleading_context": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "external_search",
+          "analysis": "时间线正确，虽新闻未注明具体日期，但描述的是已完成的既定事实。",
+          "evidence": "时间线正确，虽新闻未注明具体日期，但描述的是已完成的既定事实。"
+        },
+        "V1_synthetic_visual_content": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图片为标准的品牌Logo组合及产品宣传图，无AI生成痕迹。",
+          "evidence": "图片为标准的品牌Logo组合及产品宣传图，无AI生成痕迹。"
+        },
+        "V2_visual_editing": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "未见恶意篡改，Logo并列是常见的商业合作/并购配图方式。",
+          "evidence": "未见恶意篡改，Logo并列是常见的商业合作/并购配图方式。"
+        },
+        "C1_semantic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图文语义一致，文字讲收购，图片展示双方品牌及被收购方产品。",
+          "evidence": "图文语义一致，文字讲收购，图片展示双方品牌及被收购方产品。"
+        },
+        "C2_contextual_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "图片语境与新闻背景相符。",
+          "evidence": "图片语境与新闻背景相符。"
+        },
+        "C3_pragmatic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "visual_input",
+          "analysis": "无误导性暗示。",
+          "evidence": "无误导性暗示。"
+        }
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真实。",
+      "analysis": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+      "notes": [
+        "搜索结果确认了收购完成的时间点（2024年12月）。",
+        "图片均为常规商业素材，未见异常编辑。"
+      ]
+    },
+    "limitations": [
+      "搜索结果确认了收购完成的时间点（2024年12月）。",
+      "图片均为常规商业素材，未见异常编辑。"
+    ]
+  },
+  "image_verdict": null,
+  "crossmodal_verdict": {
+    "label": "Cannot_Determine",
+    "analysis": "当前单张配图没有足够可见信息确认核心图文关系。",
+    "matched_elements": [],
+    "mismatched_elements": [],
+    "missing_elements": [
+      "当前单张配图没有足够可见信息确认核心图文关系。"
+    ],
+    "reasoning": "当前单张配图没有足够可见信息确认核心图文关系。",
+    "limitations": [
+      "搜索结果确认了收购完成的时间点（2024年12月）。",
+      "图片均为常规商业素材，未见异常编辑。"
+    ],
+    "consistency_score": null
+  },
+  "evidence": [
+    {
+      "type": "external_search_result",
+      "source": "腾讯网",
+      "title": "沃尔玛完成对电视品牌VIZIO的收购_腾讯新闻",
+      "url": "https://new.qq.com/rain/a/20241205A076G600",
+      "snippet": "12月3日,美国零售商沃尔玛(Walmart)宣布完成对智慧电视品牌VIZIO的收购。 沃尔玛表示,收购VIZIO及其SmartCast操作系统后,沃尔玛能够以新的方式为客户服务,改善他们的购物体验。",
+      "content": {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "domain": "new.qq.com",
+        "date_last_crawled": "2024-12-05T17:22:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "凤凰网",
+      "title": "沃尔玛宣布收购Vizio以完善广告业务_凤凰网",
+      "url": "https://finance.ifeng.com/c/8XMjz41lX6M",
+      "snippet": "2月20日,美国零售业巨头沃尔玛(Walmart)宣布,以23亿美元(165.4137亿元人民币)收购全美市占率第三的智慧电视品牌Vizio,沃尔玛寄希望于“通过Vizio的SmartCast 智慧电",
+      "content": {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "domain": "finance.ifeng.com",
+        "date_last_crawled": "2024-02-21T23:15:20Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "亿邦动力",
+      "title": "沃尔玛斥资23亿美元完成收购Vizio - 快讯 - 亿邦动力",
+      "url": "https://www.ebrun.com/ebrungo/zb/567257.shtml",
+      "snippet": "沃尔玛公司以23亿美元完成收购智能电视制造商/流媒体平台提供商Vizio。随着交易的完成,Vizio已成为沃尔玛的全资子公司,Vizio的A类普通股将不再在纽约证券交易所上市交易。今后,Vizio的业",
+      "content": {
+        "evidence_id": "S3",
+        "query_id": "Q2",
+        "domain": "ebrun.com",
+        "date_last_crawled": "2024-12-05T08:25:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "手机搜狐网",
+      "title": "沃尔玛以23亿美元全资收购Vizio：市场反应与未来展望",
+      "url": "https://m.sohu.com/a/833911992_121976703/?pvid=000115_3w_a",
+      "snippet": "2024年12月4日,沃尔玛(Walmart)正式宣布以约23亿美元的价格全资收购智能电视品牌Vizio,这一交易标志着沃尔玛在消费电子领域的重要布局。Vizio成立于2002年,以高性价比的智能电视",
+      "content": {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "domain": "m.sohu.com",
+        "date_last_crawled": "2024-12-07T01:36:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "沃尔玛已完成对Vizio的收购，交易落定。",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "Image 1展示了沃尔玛（Walmart）与Vizio的品牌Logo并列，暗示两者存在紧密关联或合并关系。",
+        "search_query": "沃尔玛完成收购Vizio SmartCast WatchFree+"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "Vizio旗下的SmartCast平台和WatchFree+纳入沃尔玛体系。",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "无直接视觉证据展示平台名称，但Image 2展示了Vizio电视产品及其品牌标识。",
+        "search_query": "Walmart Vizio acquisition completed date"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "收购旨在强化零售媒体和联网电视广告布局，打通Walmart Connect业务。",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "无直接视觉证据展示广告业务逻辑。",
+        "search_query": ""
+      }
+    }
+  ],
+  "claims": [],
+  "report": {
+    "label": "True",
+    "type": "none",
+    "summary": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+    "confidence": 0.95,
+    "risk_level": "low",
+    "decision_status": "confident",
+    "limitations": [
+      "搜索结果确认了收购完成的时间点（2024年12月）。",
+      "图片均为常规商业素材，未见异常编辑。"
+    ],
+    "user_answer": {
+      "judgment": "该内容整体判断为真实。",
+      "analysis": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+      "notes": [
+        "搜索结果确认了收购完成的时间点（2024年12月）。",
+        "图片均为常规商业素材，未见异常编辑。"
+      ]
+    },
+    "agent_trace": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    }
+  },
+  "user_answer": {
+    "judgment": "该内容整体判断为真实。",
+    "analysis": "经搜索核实，沃尔玛确实已于2024年12月完成对Vizio的收购，且SmartCast等资产随之转移。Image 1通过并列Logo直观展示了这一商业结合，Image 2展示了Vizio的产品形象，均与新闻主题高度契合，未发现虚假或误导信息。",
+    "notes": [
+      "搜索结果确认了收购完成的时间点（2024年12月）。",
+      "图片均为常规商业素材，未见异常编辑。"
+    ]
+  },
+  "raw": {
+    "workflow": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    },
+    "mfc_diagnostics": {
+      "model_verdict": "True",
+      "verdict_adjustments": [],
+      "evidence_coverage": 1.0,
+      "core_supported": 1,
+      "core_contradicted": 0,
+      "supporting_contradicted": 0
+    },
+    "mfc_tool_evidence": {
+      "enabled": true,
+      "ocr": {
+        "status": "not_run"
+      },
+      "search": {
+        "status": "success",
+        "queries": [
+          {
+            "query_id": "Q1",
+            "strategy": "model_selected",
+            "query": "沃尔玛完成收购Vizio SmartCast WatchFree+",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          },
+          {
+            "query_id": "Q2",
+            "strategy": "model_selected",
+            "query": "Walmart Vizio acquisition completed date",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          }
+        ],
+        "results": [
+          {
+            "evidence_id": "S1",
+            "query_id": "Q1",
+            "title": "沃尔玛完成对电视品牌VIZIO的收购_腾讯新闻",
+            "url": "https://new.qq.com/rain/a/20241205A076G600",
+            "domain": "new.qq.com",
+            "site_name": "腾讯网",
+            "snippet": "12月3日,美国零售商沃尔玛(Walmart)宣布完成对智慧电视品牌VIZIO的收购。 沃尔玛表示,收购VIZIO及其SmartCast操作系统后,沃尔玛能够以新的方式为客户服务,改善他们的购物体验。",
+            "source_tier": "other",
+            "date_last_crawled": "2024-12-05T17:22:00Z"
+          },
+          {
+            "evidence_id": "S2",
+            "query_id": "Q1",
+            "title": "沃尔玛宣布收购Vizio以完善广告业务_凤凰网",
+            "url": "https://finance.ifeng.com/c/8XMjz41lX6M",
+            "domain": "finance.ifeng.com",
+            "site_name": "凤凰网",
+            "snippet": "2月20日,美国零售业巨头沃尔玛(Walmart)宣布,以23亿美元(165.4137亿元人民币)收购全美市占率第三的智慧电视品牌Vizio,沃尔玛寄希望于“通过Vizio的SmartCast 智慧电",
+            "source_tier": "other",
+            "date_last_crawled": "2024-02-21T23:15:20Z"
+          },
+          {
+            "evidence_id": "S3",
+            "query_id": "Q2",
+            "title": "沃尔玛斥资23亿美元完成收购Vizio - 快讯 - 亿邦动力",
+            "url": "https://www.ebrun.com/ebrungo/zb/567257.shtml",
+            "domain": "ebrun.com",
+            "site_name": "亿邦动力",
+            "snippet": "沃尔玛公司以23亿美元完成收购智能电视制造商/流媒体平台提供商Vizio。随着交易的完成,Vizio已成为沃尔玛的全资子公司,Vizio的A类普通股将不再在纽约证券交易所上市交易。今后,Vizio的业",
+            "source_tier": "other",
+            "date_last_crawled": "2024-12-05T08:25:00Z"
+          },
+          {
+            "evidence_id": "S4",
+            "query_id": "Q2",
+            "title": "沃尔玛以23亿美元全资收购Vizio：市场反应与未来展望",
+            "url": "https://m.sohu.com/a/833911992_121976703/?pvid=000115_3w_a",
+            "domain": "m.sohu.com",
+            "site_name": "手机搜狐网",
+            "snippet": "2024年12月4日,沃尔玛(Walmart)正式宣布以约23亿美元的价格全资收购智能电视品牌Vizio,这一交易标志着沃尔玛在消费电子领域的重要布局。Vizio成立于2002年,以高性价比的智能电视",
+            "source_tier": "other",
+            "date_last_crawled": "2024-12-07T01:36:00Z"
+          }
+        ],
+        "images": [
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://inews.gtimg.com/om_bt/OLOkzQbtyjm5O0HcOAOITZd4nAJ197314LvVjQiMznQLEAA/641",
+            "thumbnail_url": "https://inews.gtimg.com/om_bt/OLOkzQbtyjm5O0HcOAOITZd4nAJ197314LvVjQiMznQLEAA/641"
+          },
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://x0.ifengimg.com/res/2024/53EBCEACB2BCB217777CB693A32C52F8DAC6EBDF_size77_w720_h512.jpg",
+            "thumbnail_url": "https://x0.ifengimg.com/res/2024/53EBCEACB2BCB217777CB693A32C52F8DAC6EBDF_size77_w720_h512.jpg"
+          }
+        ],
+        "limitations": [
+          "搜索摘要是候选外部证据，仍需检查来源、发布时间和正文语境。"
+        ]
+      },
+      "errors": [],
+      "timings": {
+        "ocr_seconds": 0.0,
+        "search_seconds": 1.0935,
+        "model_calls": 0
+      }
+    },
+    "timings": {
+      "agents": {
+        "MFC_Agent": 22.8215
+      },
+      "critical_path_seconds": 22.8215,
+      "parallel_groups": [
+        [
+          "BoChaSearchTool:Q1",
+          "BoChaSearchTool:Q2"
+        ]
+      ],
+      "model_calls": 2,
+      "image_preprocess_seconds": 0.1466,
+      "enrichment_seconds": 0.0,
+      "tool_seconds": 1.0935,
+      "tool_rounds": 1,
+      "search_calls": 2,
+      "ocr_seconds": 0.0,
+      "search_seconds": 1.0935,
+      "model_seconds": 21.5807,
+      "model_output_characters": 3164,
+      "input_image_count": 2,
+      "thinking_enabled": false,
+      "thinking_characters": 0,
+      "finish_reason": "end_turn",
+      "prompt_tokens": 4678,
+      "completion_tokens": 1253,
+      "reasoning_tokens": 0,
+      "invalid_output_retries": 0,
+      "total_model_output_characters": 3401,
+      "model_attempts": [
+        {
+          "attempt": 1,
+          "turn": 1,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 3619,
+          "completion_tokens": 61,
+          "reasoning_tokens": 0,
+          "output_characters": 237,
+          "kind": "tool_request",
+          "seconds": 3.3532
+        },
+        {
+          "attempt": 2,
+          "turn": 2,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 1059,
+          "completion_tokens": 1192,
+          "reasoning_tokens": 0,
+          "output_characters": 3164,
+          "kind": "final",
+          "seconds": 18.2276
+        }
+      ]
+    }
+  },
+  "question": "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+}

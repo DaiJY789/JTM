@@ -10,6 +10,7 @@ from typing import Any
 from PIL import ExifTags, Image, ImageDraw
 
 from app.agents.models import ModelFactory
+from app.agents.output_validation import read_model_confidence
 from app.core.config import Settings, settings
 from app.core.language import is_zh, normalize_language
 from app.agents.prompts.ifd import IFD_PROMPT_EN, IFD_PROMPT_ZH
@@ -182,8 +183,10 @@ class IFDDetectionAgent:
                 if not parsed:
                     raise ValueError("IFD model output must be a non-empty JSON object")
                 final = parsed.get("final_result") if isinstance(parsed.get("final_result"), dict) else parsed
-                if (force_final or parsed.get("action") == "final" or parsed.get("label") or parsed.get("verdict")) and not (final.get("label") or final.get("verdict")):
-                    raise ValueError("IFD final output must contain a label or verdict")
+                if force_final or parsed.get("action") == "final" or parsed.get("label") or parsed.get("verdict"):
+                    if not (final.get("label") or final.get("verdict")):
+                        raise ValueError("IFD final output must contain a label or verdict")
+                    self._normalize_label(final.get("label") or final.get("verdict"), language=language)
                 if not force_final and not (
                     final.get("label") or final.get("verdict")
                     or parsed.get("action") in {"call_tool", "call_tools"}
@@ -238,45 +241,26 @@ class IFDDetectionAgent:
             action_instruction = (
                 "现在必须按照上方 JSON 格式输出最终 JSON，不要继续调用工具。"
                 if force_final
-                else (
-                    "如果证据已经足够，按照上方 JSON 格式输出最终 JSON；否则输出工具调用 JSON。"
-                    "单工具格式：{\"action\":\"call_tool\",\"tool\":\"Noise_Analyzer\",\"parameters\":{},\"why\":\"...\"}。"
-                    "多工具并行格式：{\"action\":\"call_tools\",\"tools\":[{\"tool\":\"Noise_Analyzer\",\"parameters\":{},\"why\":\"...\"},{\"tool\":\"Spectrum_Grid_Analyzer\",\"parameters\":{},\"why\":\"...\"}]}。"
-                )
+                else "证据足够时输出最终 JSON，否则按工具请求格式验证当前假设。"
             )
-            label_instruction = "当前接口标签约束：最终 label 只能输出中文三分类：真实图像、伪造图像、合成图像。不要输出 uncertain、旧标签或英文标签。"
             tool_context = (
                 f"language={language}\n用户问题={question or ''}\n已调用工具={used_tools}\n"
                 f"当前可直接调用工具={remaining_tools}\n每轮可并行调用多个互不依赖工具，但总调用数不能超过上限。\n工具门控上下文={json.dumps(self._prompt_image_context(image_context), ensure_ascii=False)}\n"
-                "视觉判断优先：即使已有工具结果，也必须重新直接观察图像，并把工具无法覆盖的语义、几何、物理和常识异常写入 visual_analysis。\n"
-                "文字真实性规则：绶带、衣服、标牌、海报等载体上的文字属于图像语义事实；必须先转写关键文字并检查字体、透视、弯曲、遮挡和材质褶皱贴合，不能说“内容意图问题不影响真实性”。\n"
-                "条件工具规则：PatchDense_Scanner 仅在疑似复制移动/克隆区域时调用；"
-                "CFA_Validator 仅在图像来源可确认为真实相机链路时调用。\n"
             )
             round_context = f"工具调用上限={self.max_rounds}，当前已调用={len(tool_calls)}。\n"
         else:
             action_instruction = (
                 "You must output the final JSON using the schema above now. Do not call more tools."
                 if force_final
-                else (
-                    "If evidence is sufficient, output the final JSON using the schema above; otherwise output tool-call JSON. "
-                    "Single-tool format: {\"action\":\"call_tool\",\"tool\":\"Noise_Analyzer\",\"parameters\":{},\"why\":\"...\"}. "
-                    "Parallel multi-tool format: {\"action\":\"call_tools\",\"tools\":[{\"tool\":\"Noise_Analyzer\",\"parameters\":{},\"why\":\"...\"},{\"tool\":\"Spectrum_Grid_Analyzer\",\"parameters\":{},\"why\":\"...\"}]}."
-                )
+                else "Return final JSON if evidence is sufficient; otherwise request tools to test the current hypothesis."
             )
-            label_instruction = "Interface label constraint: final label must be one of Real_Image, Forged_Image, Synthetic_Image. Do not output Chinese labels, old labels, or uncertain."
             tool_context = (
                 f"language={language}\nuser_question={question or ''}\ncalled_tools={used_tools}\n"
                 f"currently_callable_tools={remaining_tools}\nMultiple independent tools may be called in parallel each round, but total calls must stay under the limit.\ntool_gate_context={json.dumps(self._prompt_image_context(image_context), ensure_ascii=False)}\n"
-                "Visual judgment first: even when tool evidence exists, inspect the image directly again and include semantic, geometric, physical, and commonsense anomalies not covered by tools in visual_analysis.\n"
-                "Text authenticity rule: text on sashes, clothing, signs, posters, and similar carriers is part of the image's semantic facts; transcribe key text and inspect font, perspective, curvature, occlusion, and material-fold alignment. Do not say content intent is unrelated to authenticity.\n"
-                "Conditional tool rules: call PatchDense_Scanner only when copy-move/cloned regions are suspected; "
-                "call CFA_Validator only when the image source is confirmed as a real camera pipeline.\n"
             )
             round_context = f"tool_call_limit={self.max_rounds}; already_called={len(tool_calls)}.\n"
         return (
             f"{base_prompt}\n\n"
-            f"{label_instruction}\n"
             f"{tool_context}"
             f"{round_context}"
             f"{action_instruction}\n"
@@ -379,10 +363,10 @@ class IFDDetectionAgent:
         if not isinstance(payload, dict):
             payload = self._fallback_final_payload(tool_calls, language, image_context)
 
-        label = self._normalize_label(payload.get("label") or payload.get("verdict"), payload.get("probability"), language)
+        label = self._normalize_label(payload.get("label") or payload.get("verdict"), language=language)
         raw_probability = self._bounded_float(payload.get("probability"), self._fallback_probability(tool_calls, image_context))
-        raw_confidence = self._bounded_float(payload.get("confidence"), 0.55 if self._is_real_label(label) else 0.65)
-        tool_evidence = self._payload_tool_evidence(payload, tool_calls)
+        confidence = read_model_confidence(payload.get("confidence"))
+        evidence = self._payload_evidence(payload, tool_calls)
         payload_user_answer = payload.get("user_answer") if isinstance(payload.get("user_answer"), dict) else {}
         suspicious_regions = self._normalize_regions(payload.get("suspicious_regions"))[:1]
         if self._is_local_tampering_label(label) and not suspicious_regions:
@@ -390,13 +374,12 @@ class IFDDetectionAgent:
         if self._is_local_tampering_label(label) and not suspicious_regions:
             suspicious_regions = self._fallback_visual_region(image_context, language)
 
-        forgery_type = self._normalize_forgery_type(payload.get("forgery_type"), label, payload.get("forgery_types"))
-        forgery_types = [self._canonical_forgery_type(forgery_type, language)]
+        primary_type = self._normalize_type(payload.get("type") or payload.get("forgery_type"), label, payload.get("forgery_types"))
+        forgery_types = [self._canonical_type(primary_type, language)]
         if self._is_real_label(label):
             suspicious_regions = []
 
         probability = self._calibrate_probability(label, raw_probability, tool_calls, suspicious_regions, image_context)
-        confidence = self._calibrate_confidence(label, raw_confidence, tool_calls, suspicious_regions)
         tamper_score = self._tamper_score(tool_calls, image_context)
         ai_generated_score = self._ai_score(tool_calls)
         visual_analysis = str(payload.get("visual_analysis") or payload.get("visual_observation") or "").strip()
@@ -417,7 +400,7 @@ class IFDDetectionAgent:
         user_answer = self._normalize_user_answer(
             payload_user_answer,
             final_summary,
-            tool_evidence,
+            evidence,
             limitations,
             language,
             visual_analysis,
@@ -429,9 +412,9 @@ class IFDDetectionAgent:
             "tamper_score": tamper_score,
             "ai_generated_score": ai_generated_score,
             "visual_analysis": visual_analysis,
-            "forgery_type": forgery_type,
+            "type": primary_type,
             "forgery_types": forgery_types,
-            "tool_evidence": tool_evidence,
+            "evidence": evidence,
             "suspicious_regions": suspicious_regions,
             "limitations": limitations,
             "final_summary": final_summary,
@@ -452,21 +435,21 @@ class IFDDetectionAgent:
         tamper_score = self._tamper_score(tool_calls, image_context)
         regions = self._candidate_regions_from_tools(tool_calls)
         if tamper_score >= 0.55:
-            label = "伪造图像" if is_zh(language) else "Forged_Image"
+            label = "Forged_Image"
             probability = tamper_score
         elif ai_score >= 0.58:
-            label = "合成图像" if is_zh(language) else "Synthetic_Image"
+            label = "Synthetic_Image"
             probability = ai_score
         else:
-            label = "真实图像" if is_zh(language) else "Real_Image"
+            label = "Real_Image"
             probability = max(ai_score, tamper_score)
         return {
             "action": "final",
             "label": label,
             "probability": probability,
             "confidence": 0.62 if self._is_real_label(label) else 0.68,
-            "forgery_type": "none" if self._is_real_label(label) else "unknown",
-            "tool_evidence": self._build_evidence_chain(tool_calls),
+            "type": "none" if self._is_real_label(label) else "unknown",
+            "evidence": self._build_evidence_chain(tool_calls),
             "suspicious_regions": (regions[:1] or self._fallback_visual_region(image_context, language)) if self._is_local_tampering_label(label) else regions[:1],
             "limitations": (
                 ["当前结论基于本地取证工具输出与模型综合判断，工具证据不等同于人工鉴定。"]
@@ -950,30 +933,12 @@ class IFDDetectionAgent:
             calibrated = min(calibrated, 0.6)
         return self._bounded_float(calibrated, evidence_probability)
 
-    def _calibrate_confidence(
-        self,
-        label: str,
-        model_confidence: float,
-        tool_calls: list[dict[str, Any]],
-        suspicious_regions: list[dict[str, Any]],
-    ) -> float:
-        successful_tools = sum(1 for item in tool_calls if item.get("summary", {}).get("success") is True)
-        failed_tools = sum(1 for item in tool_calls if item.get("summary", {}).get("status") == "error")
-        calibrated = model_confidence
-        if successful_tools == 0 and tool_calls:
-            calibrated = min(calibrated, 0.8)
-        if failed_tools:
-            calibrated = min(calibrated, 0.82)
-        if self._is_local_tampering_label(label) and not suspicious_regions:
-            calibrated = min(calibrated, 0.55)
-        return self._bounded_float(calibrated, 0.55 if self._is_real_label(label) else 0.65)
-
-    def _normalize_forgery_type(self, value: Any, label: str, legacy_types: Any = None) -> str:
+    def _normalize_type(self, value: Any, label: str, legacy_types: Any = None) -> str:
         if self._is_real_label(label):
             return "none"
         if value is None and isinstance(legacy_types, list) and legacy_types:
             value = legacy_types[0]
-        selected = self._canonical_forgery_type(value, "en")
+        selected = self._canonical_type(value, "en")
         if self._is_ai_label(label):
             allowed = {"ai_generated", "cgi_rendering", "other_synthetic"}
         else:
@@ -983,7 +948,7 @@ class IFDDetectionAgent:
             }
         return selected if selected in allowed else "unknown"
 
-    def _canonical_forgery_type(self, value: Any, language: str) -> str:
+    def _canonical_type(self, value: Any, language: str) -> str:
         first = str(value or "").strip()
         key = first.lower().replace("-", "_").replace(" ", "_")
         zh_aliases = {
@@ -1057,7 +1022,9 @@ class IFDDetectionAgent:
         }
         return zh_to_en.get(zh_value, "unknown")
 
-    def _payload_tool_evidence(self, payload: dict[str, Any], tool_calls: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def _payload_evidence(self, payload: dict[str, Any], tool_calls: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if isinstance(payload.get("evidence"), list):
+            return payload["evidence"]
         if isinstance(payload.get("tool_evidence"), list):
             return payload["tool_evidence"]
         if isinstance(payload.get("evidence_chain"), list):
@@ -1078,9 +1045,10 @@ class IFDDetectionAgent:
                 merged.extend(f"{prefix}{item}" for item in conflicts if item)
         return merged
 
-    def _normalize_label(self, label: Any, probability: Any = None, language: str = "zh") -> str:
+    @classmethod
+    def _normalize_label(cls, label: Any, language: str = "zh") -> str:
         text = str(label or "").strip()
-        labels = self.LABELS_ZH if is_zh(language) else self.LABELS_EN
+        labels = cls.LABELS_EN
         if text in labels:
             return text
         lowered = text.lower()
@@ -1091,6 +1059,8 @@ class IFDDetectionAgent:
             "completely real": "Real_Image",
             "authentic": "Real_Image",
             "real": "Real_Image",
+            "likely_real": "Real_Image",
+            "deepfake_suspected": "Synthetic_Image",
             "forged_image": "Forged_Image",
             "forged image": "Forged_Image",
             "local_tampering": "Forged_Image",
@@ -1122,25 +1092,13 @@ class IFDDetectionAgent:
             "AI生成": "合成图像",
             "完全AI生成": "合成图像",
         }
-        if is_zh(language):
-            if text in zh_aliases:
-                return zh_aliases[text]
-            if lowered in self.VERDICT_TO_LABEL_ZH:
-                return self.VERDICT_TO_LABEL_ZH[lowered]
-            if lowered in label_aliases:
-                return self._english_label_to_zh(label_aliases[lowered])
-        else:
-            if lowered in self.VERDICT_TO_LABEL_EN:
-                return self.VERDICT_TO_LABEL_EN[lowered]
-            if lowered in label_aliases:
-                return label_aliases[lowered]
-            if text in zh_aliases:
-                return self._zh_label_to_english(text)
-        if lowered == "uncertain":
-            if self._bounded_float(probability, 0.0) >= 0.6:
-                return "合成图像" if is_zh(language) else "Synthetic_Image"
-            return "真实图像" if is_zh(language) else "Real_Image"
-        return "真实图像" if is_zh(language) else "Real_Image"
+        if text in zh_aliases:
+            return cls._zh_label_to_english(zh_aliases[text])
+        if lowered in label_aliases:
+            return label_aliases[lowered]
+        if lowered in cls.VERDICT_TO_LABEL_EN:
+            return cls.VERDICT_TO_LABEL_EN[lowered]
+        raise ValueError(f"IFD label is missing or cannot be mapped: {text!r}")
 
     def _label_to_verdict(self, label: str) -> str:
         return {
@@ -1187,7 +1145,8 @@ class IFDDetectionAgent:
             "Completely_AI_Generated": "合成图像",
         }.get(label, "真实图像")
 
-    def _zh_label_to_english(self, label: str) -> str:
+    @staticmethod
+    def _zh_label_to_english(label: str) -> str:
         return {
             "真实图像": "Real_Image",
             "伪造图像": "Forged_Image",

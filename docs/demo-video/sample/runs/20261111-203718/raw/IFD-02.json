@@ -1,0 +1,696 @@
+{
+  "mode": "image_only",
+  "label": "Real_Image",
+  "summary": "图像判定为Real_Image，被操纵概率约为 0.00。",
+  "confidence": 0.95,
+  "type": "none",
+  "image_verdict": {
+    "label": "Real_Image",
+    "analysis": "图像判定为Real_Image，被操纵概率约为 0.00。",
+    "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+    "deepfake_risk": "low",
+    "manipulation_risk": "low",
+    "probability": 0.0,
+    "confidence": 0.95,
+    "tamper_score": 0.0,
+    "ai_generated_score": 0.0,
+    "visual_analysis": "图像展示了一只驼鹿在雪地背景中行走的场景。视觉特征高度符合真实摄影：1. 物理结构合理，驼鹿的解剖比例、四肢着地姿态及与地面的接触阴影自然；2. 纹理细节丰富且一致，背景的针叶林、枯枝以及前景的雪堆均呈现出自然的随机性和复杂的细节，没有AI生成常见的涂抹感或重复纹理；3. 光影逻辑正确，漫射光环境下的物体明暗过渡平滑；4. 画面存在典型的数码变焦噪点（颗粒感），这是长焦拍摄野生动物时的常见现象，而非合成伪影。未发现明显的拼接痕迹或语义错误。",
+    "visual_description": "基于本地图像取证工具生成的综合判定。",
+    "evidence": [
+      {
+        "step": 1,
+        "tool": "Spectrum_Grid_Analyzer",
+        "why": "检查是否存在AI生成图像特有的频域网格伪影。",
+        "key_findings": [
+          "未检测到显著的周期性网格峰值，频谱分析结果倾向于自然图像特征。"
+        ],
+        "artifacts": []
+      },
+      {
+        "step": 2,
+        "tool": "SRM_Filter",
+        "why": "检查高阶残差噪声分布是否均匀，以识别局部篡改或合成痕迹。",
+        "key_findings": [
+          "残差统计显示全图噪声分布较为一致，无异常局部区域，支持真实拍摄判断。"
+        ],
+        "artifacts": []
+      }
+    ],
+    "reasoning": "图像判定为Real_Image，被操纵概率约为 0.00。",
+    "type": "none",
+    "forgery_types": [
+      "无"
+    ],
+    "suspicious_regions": [],
+    "limitations": [],
+    "artifacts": {},
+    "user_answer": {
+      "judgment": "这是一张真实的摄影照片。",
+      "notes": [
+        "图像分辨率较低且存在压缩噪点，可能影响极细微特征的观察，但不影响整体真实性判定。"
+      ],
+      "analysis": "图像中的主体（驼鹿）与环境（雪地森林）在光影、纹理和物理结构上高度融合，符合现实世界的视觉规律。虽然画质带有数码变焦产生的噪点，但这恰恰是真实抓拍的特征。取证工具（频谱分析和残差噪声分析）均未发现AI生成的频域伪影或局部编辑留下的统计异常。"
+    }
+  },
+  "evidence": [
+    {
+      "type": "visual_tool_evidence",
+      "source": "Spectrum_Grid_Analyzer",
+      "content": [
+        "未检测到显著的周期性网格峰值，频谱分析结果倾向于自然图像特征。"
+      ]
+    },
+    {
+      "type": "visual_tool_evidence",
+      "source": "SRM_Filter",
+      "content": [
+        "残差统计显示全图噪声分布较为一致，无异常局部区域，支持真实拍摄判断。"
+      ]
+    }
+  ],
+  "claims": [],
+  "raw": {
+    "image_forensics": {
+      "label": "Real_Image",
+      "probability": 0.0,
+      "confidence": 0.95,
+      "tamper_score": 0.0,
+      "ai_generated_score": 0.0,
+      "visual_analysis": "图像展示了一只驼鹿在雪地背景中行走的场景。视觉特征高度符合真实摄影：1. 物理结构合理，驼鹿的解剖比例、四肢着地姿态及与地面的接触阴影自然；2. 纹理细节丰富且一致，背景的针叶林、枯枝以及前景的雪堆均呈现出自然的随机性和复杂的细节，没有AI生成常见的涂抹感或重复纹理；3. 光影逻辑正确，漫射光环境下的物体明暗过渡平滑；4. 画面存在典型的数码变焦噪点（颗粒感），这是长焦拍摄野生动物时的常见现象，而非合成伪影。未发现明显的拼接痕迹或语义错误。",
+      "type": "none",
+      "forgery_types": [
+        "无"
+      ],
+      "evidence": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "检查是否存在AI生成图像特有的频域网格伪影。",
+          "key_findings": [
+            "未检测到显著的周期性网格峰值，频谱分析结果倾向于自然图像特征。"
+          ],
+          "artifacts": []
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "检查高阶残差噪声分布是否均匀，以识别局部篡改或合成痕迹。",
+          "key_findings": [
+            "残差统计显示全图噪声分布较为一致，无异常局部区域，支持真实拍摄判断。"
+          ],
+          "artifacts": []
+        }
+      ],
+      "suspicious_regions": [],
+      "limitations": [],
+      "final_summary": "图像判定为Real_Image，被操纵概率约为 0.00。",
+      "artifacts": {},
+      "tool_calls": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+                "summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.811364,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+                "coordinate_space": "frequency"
+              },
+              "regions": [],
+              "spectrum_statistics": {
+                "peak_count": 56,
+                "raw_peak_count": 56,
+                "paired_peak_count": 56,
+                "conjugate_pair_ratio": 1.0,
+                "lattice_peak_count": 20,
+                "lattice_ratio": 0.454545,
+                "candidate_for_followup": false,
+                "peak_ratio": 0.00010835,
+                "peak_threshold": 10.74534455,
+                "energy_hole_count": 3,
+                "energy_hole_indices": [
+                  56,
+                  70,
+                  134
+                ],
+                "processed_size": {
+                  "width": 768,
+                  "height": 673
+                },
+                "original_size": {
+                  "width": 1170,
+                  "height": 1025
+                }
+              },
+              "evidence_scores": {
+                "peak_sparsity_score": 0.507519,
+                "peak_density_score": 1.0,
+                "energy_hole_score": 0.75,
+                "conjugate_pair_score": 1.0,
+                "lattice_ratio_score": 0.454545,
+                "spectral_artifact_score": 0.811364
+              },
+              "top_grid_peaks": [
+                {
+                  "x": 469,
+                  "y": 327,
+                  "dx_from_center": 85,
+                  "dy_from_center": -9,
+                  "strength": 10.987503,
+                  "radius": 85.4751
+                },
+                {
+                  "x": 299,
+                  "y": 345,
+                  "dx_from_center": -85,
+                  "dy_from_center": 9,
+                  "strength": 10.987503,
+                  "radius": 85.4751
+                },
+                {
+                  "x": 330,
+                  "y": 331,
+                  "dx_from_center": -54,
+                  "dy_from_center": -5,
+                  "strength": 10.949254,
+                  "radius": 54.231
+                },
+                {
+                  "x": 438,
+                  "y": 341,
+                  "dx_from_center": 54,
+                  "dy_from_center": 5,
+                  "strength": 10.949254,
+                  "radius": 54.231
+                },
+                {
+                  "x": 446,
+                  "y": 332,
+                  "dx_from_center": 62,
+                  "dy_from_center": -4,
+                  "strength": 10.922234,
+                  "radius": 62.1289
+                },
+                {
+                  "x": 322,
+                  "y": 340,
+                  "dx_from_center": -62,
+                  "dy_from_center": 4,
+                  "strength": 10.922234,
+                  "radius": 62.1289
+                },
+                {
+                  "x": 391,
+                  "y": 280,
+                  "dx_from_center": 7,
+                  "dy_from_center": -56,
+                  "strength": 10.903641,
+                  "radius": 56.4358
+                },
+                {
+                  "x": 377,
+                  "y": 392,
+                  "dx_from_center": -7,
+                  "dy_from_center": 56,
+                  "strength": 10.903641,
+                  "radius": 56.4358
+                },
+                {
+                  "x": 328,
+                  "y": 320,
+                  "dx_from_center": -56,
+                  "dy_from_center": -16,
+                  "strength": 10.892244,
+                  "radius": 58.2409
+                },
+                {
+                  "x": 440,
+                  "y": 352,
+                  "dx_from_center": 56,
+                  "dy_from_center": 16,
+                  "strength": 10.892244,
+                  "radius": 58.2409
+                },
+                {
+                  "x": 441,
+                  "y": 330,
+                  "dx_from_center": 57,
+                  "dy_from_center": -6,
+                  "strength": 10.850662,
+                  "radius": 57.3149
+                },
+                {
+                  "x": 327,
+                  "y": 342,
+                  "dx_from_center": -57,
+                  "dy_from_center": 6,
+                  "strength": 10.850662,
+                  "radius": 57.3149
+                },
+                {
+                  "x": 391,
+                  "y": 274,
+                  "dx_from_center": 7,
+                  "dy_from_center": -62,
+                  "strength": 10.821392,
+                  "radius": 62.3939
+                },
+                {
+                  "x": 377,
+                  "y": 398,
+                  "dx_from_center": -7,
+                  "dy_from_center": 62,
+                  "strength": 10.821392,
+                  "radius": 62.3939
+                },
+                {
+                  "x": 353,
+                  "y": 272,
+                  "dx_from_center": -31,
+                  "dy_from_center": -64,
+                  "strength": 10.813051,
+                  "radius": 71.1126
+                },
+                {
+                  "x": 415,
+                  "y": 400,
+                  "dx_from_center": 31,
+                  "dy_from_center": 64,
+                  "strength": 10.813051,
+                  "radius": 71.1126
+                },
+                {
+                  "x": 298,
+                  "y": 331,
+                  "dx_from_center": -86,
+                  "dy_from_center": -5,
+                  "strength": 10.790201,
+                  "radius": 86.1452
+                },
+                {
+                  "x": 470,
+                  "y": 341,
+                  "dx_from_center": 86,
+                  "dy_from_center": 5,
+                  "strength": 10.790201,
+                  "radius": 86.1452
+                },
+                {
+                  "x": 447,
+                  "y": 322,
+                  "dx_from_center": 63,
+                  "dy_from_center": -14,
+                  "strength": 10.764087,
+                  "radius": 64.5368
+                },
+                {
+                  "x": 321,
+                  "y": 350,
+                  "dx_from_center": -63,
+                  "dy_from_center": 14,
+                  "strength": 10.764087,
+                  "radius": 64.5368
+                }
+              ],
+              "artifacts": {
+                "spectrum_logmag_path": "",
+                "grid_peak_mask_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "Spectrum_Grid_Analyzer",
+              "execution_time_ms": 61
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "error_message": null,
+            "tool_name": "Spectrum_Grid_Analyzer",
+            "execution_time_ms": 61,
+            "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+            "report_summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "peak_sparsity_score": 0.507519,
+              "peak_density_score": 1.0,
+              "energy_hole_score": 0.75,
+              "conjugate_pair_score": 1.0,
+              "lattice_ratio_score": 0.454545,
+              "spectral_artifact_score": 0.811364
+            },
+            "evidence_scores": {
+              "peak_sparsity_score": 0.507519,
+              "peak_density_score": 1.0,
+              "energy_hole_score": 0.75,
+              "conjugate_pair_score": 1.0,
+              "lattice_ratio_score": 0.454545,
+              "spectral_artifact_score": 0.811364
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.811364,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+              "coordinate_space": "frequency"
+            },
+            "regions": [],
+            "artifacts": {
+              "spectrum_logmag_path": "",
+              "grid_peak_mask_path": ""
+            },
+            "spectrum_statistics": {
+              "peak_count": 56,
+              "raw_peak_count": 56,
+              "paired_peak_count": 56,
+              "conjugate_pair_ratio": 1.0,
+              "lattice_peak_count": 20,
+              "lattice_ratio": 0.454545,
+              "candidate_for_followup": false,
+              "peak_ratio": 0.00010835,
+              "peak_threshold": 10.74534455,
+              "energy_hole_count": 3,
+              "energy_hole_indices": [
+                56,
+                70,
+                134
+              ],
+              "processed_size": {
+                "width": 768,
+                "height": 673
+              },
+              "original_size": {
+                "width": 1170,
+                "height": 1025
+              }
+            }
+          }
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Spatial Rich Model residual filter bank",
+                "filter_count": 16,
+                "truncate_threshold": 3.0,
+                "top_suspicious_regions": [],
+                "summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.278977,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_residual_tail_heuristic",
+                "coordinate_space": "original"
+              },
+              "regions": [],
+              "residual_statistics": [
+                {
+                  "filter": "fo_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.008253,
+                  "std": 2.312309,
+                  "kurtosis": -1.468374
+                },
+                {
+                  "filter": "fo_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.183682,
+                  "std": 2.428686,
+                  "kurtosis": -1.596239
+                },
+                {
+                  "filter": "fo_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.391554,
+                  "std": 2.581287,
+                  "kurtosis": -1.726762
+                },
+                {
+                  "filter": "fo_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.37253,
+                  "std": 2.566684,
+                  "kurtosis": -1.7129
+                },
+                {
+                  "filter": "so_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.23566,
+                  "std": 1.619866,
+                  "kurtosis": -0.396425
+                },
+                {
+                  "filter": "so_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.413668,
+                  "std": 1.778647,
+                  "kurtosis": -0.743753
+                },
+                {
+                  "filter": "so_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.842906,
+                  "std": 2.144147,
+                  "kurtosis": -1.31312
+                },
+                {
+                  "filter": "so_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.81669,
+                  "std": 2.122756,
+                  "kurtosis": -1.286688
+                },
+                {
+                  "filter": "to_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 0.890136,
+                  "std": 1.235836,
+                  "kurtosis": 0.709496
+                },
+                {
+                  "filter": "to_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.015198,
+                  "std": 1.367848,
+                  "kurtosis": 0.231206
+                },
+                {
+                  "filter": "fo4_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 0.940825,
+                  "std": 1.294948,
+                  "kurtosis": 0.552519
+                },
+                {
+                  "filter": "fo4_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.04534,
+                  "std": 1.40058,
+                  "kurtosis": 0.156507
+                },
+                {
+                  "filter": "nl_mix1",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.985496,
+                  "std": 1.324323,
+                  "kurtosis": 0.285082
+                },
+                {
+                  "filter": "nl_mix2",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.056716,
+                  "std": 1.411853,
+                  "kurtosis": 0.078362
+                },
+                {
+                  "filter": "nl_mix3",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 0.553908,
+                  "std": 0.807706,
+                  "kurtosis": 3.32665
+                },
+                {
+                  "filter": "nl_mix4",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.476205,
+                  "std": 0.67216,
+                  "kurtosis": 3.994206
+                }
+              ],
+              "evidence_scores": {
+                "avg_abs_kurtosis": 0.05689,
+                "residual_tail_score": 0.278977
+              },
+              "artifacts": {
+                "srm_heatmap_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "SRM_Filter",
+              "execution_time_ms": 342
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "error_message": null,
+            "tool_name": "SRM_Filter",
+            "execution_time_ms": 342,
+            "method": "Spatial Rich Model residual filter bank",
+            "report_summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "avg_abs_kurtosis": 0.05689,
+              "residual_tail_score": 0.278977
+            },
+            "evidence_scores": {
+              "avg_abs_kurtosis": 0.05689,
+              "residual_tail_score": 0.278977
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.278977,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_residual_tail_heuristic",
+              "coordinate_space": "original"
+            },
+            "regions": [],
+            "artifacts": {
+              "srm_heatmap_path": ""
+            }
+          }
+        }
+      ],
+      "user_answer": {
+        "judgment": "这是一张真实的摄影照片。",
+        "notes": [
+          "图像分辨率较低且存在压缩噪点，可能影响极细微特征的观察，但不影响整体真实性判定。"
+        ],
+        "analysis": "图像中的主体（驼鹿）与环境（雪地森林）在光影、纹理和物理结构上高度融合，符合现实世界的视觉规律。虽然画质带有数码变焦产生的噪点，但这恰恰是真实抓拍的特征。取证工具（频谱分析和残差噪声分析）均未发现AI生成的频域伪影或局部编辑留下的统计异常。"
+      }
+    },
+    "workflow": {
+      "name": "deepfake_detection",
+      "routing": "single_agent",
+      "steps": [
+        "IFD_Agent"
+      ],
+      "dependencies": []
+    }
+  },
+  "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+  "user_answer": {
+    "judgment": "这是一张真实的摄影照片。",
+    "notes": [
+      "图像分辨率较低且存在压缩噪点，可能影响极细微特征的观察，但不影响整体真实性判定。"
+    ],
+    "analysis": "图像中的主体（驼鹿）与环境（雪地森林）在光影、纹理和物理结构上高度融合，符合现实世界的视觉规律。虽然画质带有数码变焦产生的噪点，但这恰恰是真实抓拍的特征。取证工具（频谱分析和残差噪声分析）均未发现AI生成的频域伪影或局部编辑留下的统计异常。"
+  }
+}

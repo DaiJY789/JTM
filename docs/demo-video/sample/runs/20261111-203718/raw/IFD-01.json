@@ -1,0 +1,850 @@
+{
+  "mode": "image_only",
+  "label": "Real_Image",
+  "summary": "图像判定为Real_Image，被操纵概率约为 0.00。",
+  "confidence": 0.95,
+  "type": "none",
+  "image_verdict": {
+    "label": "Real_Image",
+    "analysis": "图像判定为Real_Image，被操纵概率约为 0.00。",
+    "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+    "deepfake_risk": "low",
+    "manipulation_risk": "low",
+    "probability": 0.0,
+    "confidence": 0.95,
+    "tamper_score": 0.0,
+    "ai_generated_score": 0.0,
+    "visual_analysis": "图像展示了一碗意式饺子汤（Tortellini in Brodo），具有极高的真实感。视觉细节包括：1. 物理光影合理，汤汁表面的高光反射与液面曲率一致，碗沿有自然的投影；2. 纹理丰富且自然，帕玛森芝士碎呈现真实的纤维状结构，菠菜叶的褶皱和颜色深浅变化符合植物特征，饺子皮的边缘捏合处形态各异但符合手工食品逻辑；3. 背景木纹清晰，无AI生成常见的涂抹感或结构扭曲。未发现语义错误、物体融合异常或不合理的几何结构。",
+    "visual_description": "基于本地图像取证工具生成的综合判定。",
+    "evidence": [
+      {
+        "step": 1,
+        "tool": "Spectrum_Grid_Analyzer",
+        "why": "检查是否存在AI生成图像特有的频域网格伪影或能量分布异常。",
+        "key_findings": [
+          "虽然 spectral_artifact_score 较高 (0.94)，但 top_suspicious_regions 为空，且 decision 为 inconclusive。这通常表明高频信号可能源于复杂的自然纹理（如芝士碎）而非合成伪影。"
+        ],
+        "artifacts": []
+      },
+      {
+        "step": 2,
+        "tool": "SRM_Filter",
+        "why": "检查高阶残差噪声中的局部统计异常，以识别潜在的篡改痕迹。",
+        "key_findings": [
+          "residual_tail_score 较低 (0.30)，decision 为 negative，未发现明显的篡改或拼接导致的统计不一致。"
+        ],
+        "artifacts": []
+      },
+      {
+        "step": 3,
+        "tool": "Noise_Analyzer",
+        "why": "验证空间域噪声分布的一致性，区分真实相机噪点与AI生成的平滑/纹理不一致。",
+        "key_findings": [
+          "noise_inconsistency_score 较低 (0.30)，decision 为 negative。全局及局部噪声方差表现一致，符合真实拍摄特征。"
+        ],
+        "artifacts": []
+      }
+    ],
+    "reasoning": "图像判定为Real_Image，被操纵概率约为 0.00。",
+    "type": "none",
+    "forgery_types": [
+      "无"
+    ],
+    "suspicious_regions": [],
+    "limitations": [],
+    "artifacts": {},
+    "user_answer": {
+      "judgment": "这是一张真实拍摄的食物照片。",
+      "notes": [
+        "Spectrum_Grid_Analyzer 的高分主要受图像中大量细小高对比度纹理（芝士碎）影响，属于正常摄影特征，非合成伪影。"
+      ],
+      "analysis": "视觉上，图像的纹理细节（如芝士丝、蔬菜叶片、汤汁反光）极其丰富且符合物理规律，没有AI生成常见的结构错误或过度平滑现象。取证工具方面，尽管频谱分析提示了高频成分（可能是由于细碎的芝士纹理导致），但噪声分析和残差分析均显示图像具有高度一致的统计特性，未发现任何伪造或合成的证据。综合判断为真实图像。"
+    }
+  },
+  "evidence": [
+    {
+      "type": "visual_tool_evidence",
+      "source": "Spectrum_Grid_Analyzer",
+      "content": [
+        "虽然 spectral_artifact_score 较高 (0.94)，但 top_suspicious_regions 为空，且 decision 为 inconclusive。这通常表明高频信号可能源于复杂的自然纹理（如芝士碎）而非合成伪影。"
+      ]
+    },
+    {
+      "type": "visual_tool_evidence",
+      "source": "SRM_Filter",
+      "content": [
+        "residual_tail_score 较低 (0.30)，decision 为 negative，未发现明显的篡改或拼接导致的统计不一致。"
+      ]
+    },
+    {
+      "type": "visual_tool_evidence",
+      "source": "Noise_Analyzer",
+      "content": [
+        "noise_inconsistency_score 较低 (0.30)，decision 为 negative。全局及局部噪声方差表现一致，符合真实拍摄特征。"
+      ]
+    }
+  ],
+  "claims": [],
+  "raw": {
+    "image_forensics": {
+      "label": "Real_Image",
+      "probability": 0.0,
+      "confidence": 0.95,
+      "tamper_score": 0.0,
+      "ai_generated_score": 0.0,
+      "visual_analysis": "图像展示了一碗意式饺子汤（Tortellini in Brodo），具有极高的真实感。视觉细节包括：1. 物理光影合理，汤汁表面的高光反射与液面曲率一致，碗沿有自然的投影；2. 纹理丰富且自然，帕玛森芝士碎呈现真实的纤维状结构，菠菜叶的褶皱和颜色深浅变化符合植物特征，饺子皮的边缘捏合处形态各异但符合手工食品逻辑；3. 背景木纹清晰，无AI生成常见的涂抹感或结构扭曲。未发现语义错误、物体融合异常或不合理的几何结构。",
+      "type": "none",
+      "forgery_types": [
+        "无"
+      ],
+      "evidence": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "检查是否存在AI生成图像特有的频域网格伪影或能量分布异常。",
+          "key_findings": [
+            "虽然 spectral_artifact_score 较高 (0.94)，但 top_suspicious_regions 为空，且 decision 为 inconclusive。这通常表明高频信号可能源于复杂的自然纹理（如芝士碎）而非合成伪影。"
+          ],
+          "artifacts": []
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "检查高阶残差噪声中的局部统计异常，以识别潜在的篡改痕迹。",
+          "key_findings": [
+            "residual_tail_score 较低 (0.30)，decision 为 negative，未发现明显的篡改或拼接导致的统计不一致。"
+          ],
+          "artifacts": []
+        },
+        {
+          "step": 3,
+          "tool": "Noise_Analyzer",
+          "why": "验证空间域噪声分布的一致性，区分真实相机噪点与AI生成的平滑/纹理不一致。",
+          "key_findings": [
+            "noise_inconsistency_score 较低 (0.30)，decision 为 negative。全局及局部噪声方差表现一致，符合真实拍摄特征。"
+          ],
+          "artifacts": []
+        }
+      ],
+      "suspicious_regions": [],
+      "limitations": [],
+      "final_summary": "图像判定为Real_Image，被操纵概率约为 0.00。",
+      "artifacts": {},
+      "tool_calls": [
+        {
+          "step": 1,
+          "tool": "Spectrum_Grid_Analyzer",
+          "why": "阶段A快速粗检：先检查 AI 频域网格、能量异常或人像生成线索。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+                "summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "inconclusive",
+                "score": 0.941667,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+                "coordinate_space": "frequency"
+              },
+              "regions": [],
+              "spectrum_statistics": {
+                "peak_count": 80,
+                "raw_peak_count": 132,
+                "paired_peak_count": 80,
+                "conjugate_pair_ratio": 0.606061,
+                "lattice_peak_count": 58,
+                "lattice_ratio": 0.805556,
+                "candidate_for_followup": true,
+                "peak_ratio": 0.00029839,
+                "peak_threshold": 10.36756793,
+                "energy_hole_count": 7,
+                "energy_hole_indices": [
+                  48,
+                  64,
+                  79,
+                  88,
+                  93,
+                  114,
+                  206
+                ],
+                "processed_size": {
+                  "width": 768,
+                  "height": 576
+                },
+                "original_size": {
+                  "width": 4032,
+                  "height": 3024
+                }
+              },
+              "evidence_scores": {
+                "peak_sparsity_score": 0.0,
+                "peak_density_score": 1.0,
+                "energy_hole_score": 1.0,
+                "conjugate_pair_score": 0.606061,
+                "lattice_ratio_score": 0.805556,
+                "spectral_artifact_score": 0.941667
+              },
+              "top_grid_peaks": [
+                {
+                  "x": 337,
+                  "y": 285,
+                  "dx_from_center": -47,
+                  "dy_from_center": -3,
+                  "strength": 10.873731,
+                  "radius": 47.0956
+                },
+                {
+                  "x": 431,
+                  "y": 291,
+                  "dx_from_center": 47,
+                  "dy_from_center": 3,
+                  "strength": 10.873731,
+                  "radius": 47.0956
+                },
+                {
+                  "x": 339,
+                  "y": 273,
+                  "dx_from_center": -45,
+                  "dy_from_center": -15,
+                  "strength": 10.819244,
+                  "radius": 47.4342
+                },
+                {
+                  "x": 429,
+                  "y": 303,
+                  "dx_from_center": 45,
+                  "dy_from_center": 15,
+                  "strength": 10.819244,
+                  "radius": 47.4342
+                },
+                {
+                  "x": 338,
+                  "y": 262,
+                  "dx_from_center": -46,
+                  "dy_from_center": -26,
+                  "strength": 10.811149,
+                  "radius": 52.8394
+                },
+                {
+                  "x": 430,
+                  "y": 314,
+                  "dx_from_center": 46,
+                  "dy_from_center": 26,
+                  "strength": 10.811149,
+                  "radius": 52.8394
+                },
+                {
+                  "x": 335,
+                  "y": 273,
+                  "dx_from_center": -49,
+                  "dy_from_center": -15,
+                  "strength": 10.784372,
+                  "radius": 51.2445
+                },
+                {
+                  "x": 433,
+                  "y": 303,
+                  "dx_from_center": 49,
+                  "dy_from_center": 15,
+                  "strength": 10.784372,
+                  "radius": 51.2445
+                },
+                {
+                  "x": 426,
+                  "y": 268,
+                  "dx_from_center": 42,
+                  "dy_from_center": -20,
+                  "strength": 10.77644,
+                  "radius": 46.5188
+                },
+                {
+                  "x": 342,
+                  "y": 308,
+                  "dx_from_center": -42,
+                  "dy_from_center": 20,
+                  "strength": 10.77644,
+                  "radius": 46.5188
+                },
+                {
+                  "x": 325,
+                  "y": 277,
+                  "dx_from_center": -59,
+                  "dy_from_center": -11,
+                  "strength": 10.76108,
+                  "radius": 60.0167
+                },
+                {
+                  "x": 443,
+                  "y": 299,
+                  "dx_from_center": 59,
+                  "dy_from_center": 11,
+                  "strength": 10.76108,
+                  "radius": 60.0167
+                },
+                {
+                  "x": 337,
+                  "y": 268,
+                  "dx_from_center": -47,
+                  "dy_from_center": -20,
+                  "strength": 10.736529,
+                  "radius": 51.0784
+                },
+                {
+                  "x": 431,
+                  "y": 308,
+                  "dx_from_center": 47,
+                  "dy_from_center": 20,
+                  "strength": 10.736529,
+                  "radius": 51.0784
+                },
+                {
+                  "x": 436,
+                  "y": 271,
+                  "dx_from_center": 52,
+                  "dy_from_center": -17,
+                  "strength": 10.71812,
+                  "radius": 54.7083
+                },
+                {
+                  "x": 332,
+                  "y": 305,
+                  "dx_from_center": -52,
+                  "dy_from_center": 17,
+                  "strength": 10.71812,
+                  "radius": 54.7083
+                },
+                {
+                  "x": 430,
+                  "y": 279,
+                  "dx_from_center": 46,
+                  "dy_from_center": -9,
+                  "strength": 10.715721,
+                  "radius": 46.8722
+                },
+                {
+                  "x": 338,
+                  "y": 297,
+                  "dx_from_center": -46,
+                  "dy_from_center": 9,
+                  "strength": 10.715721,
+                  "radius": 46.8722
+                },
+                {
+                  "x": 331,
+                  "y": 274,
+                  "dx_from_center": -53,
+                  "dy_from_center": -14,
+                  "strength": 10.67963,
+                  "radius": 54.8179
+                },
+                {
+                  "x": 437,
+                  "y": 302,
+                  "dx_from_center": 53,
+                  "dy_from_center": 14,
+                  "strength": 10.67963,
+                  "radius": 54.8179
+                }
+              ],
+              "artifacts": {
+                "spectrum_logmag_path": "",
+                "grid_peak_mask_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "Spectrum_Grid_Analyzer",
+              "execution_time_ms": 216
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "Spectrum grid analysis completed.",
+            "error_message": null,
+            "tool_name": "Spectrum_Grid_Analyzer",
+            "execution_time_ms": 216,
+            "method": "Windowed 2D DFT + Conjugate Peak Pairs + Radial Energy Depressions",
+            "report_summary": "已输出经窗函数抑制边界后的频域共轭峰与径向能量凹陷线索；频率证据不用于空间定位。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "peak_sparsity_score": 0.0,
+              "peak_density_score": 1.0,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 0.606061,
+              "lattice_ratio_score": 0.805556,
+              "spectral_artifact_score": 0.941667
+            },
+            "evidence_scores": {
+              "peak_sparsity_score": 0.0,
+              "peak_density_score": 1.0,
+              "energy_hole_score": 1.0,
+              "conjugate_pair_score": 0.606061,
+              "lattice_ratio_score": 0.805556,
+              "spectral_artifact_score": 0.941667
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "inconclusive",
+              "score": 0.941667,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_spectral_lattice_heuristic",
+              "coordinate_space": "frequency"
+            },
+            "regions": [],
+            "artifacts": {
+              "spectrum_logmag_path": "",
+              "grid_peak_mask_path": ""
+            },
+            "spectrum_statistics": {
+              "peak_count": 80,
+              "raw_peak_count": 132,
+              "paired_peak_count": 80,
+              "conjugate_pair_ratio": 0.606061,
+              "lattice_peak_count": 58,
+              "lattice_ratio": 0.805556,
+              "candidate_for_followup": true,
+              "peak_ratio": 0.00029839,
+              "peak_threshold": 10.36756793,
+              "energy_hole_count": 7,
+              "energy_hole_indices": [
+                48,
+                64,
+                79,
+                88,
+                93,
+                114,
+                206
+              ],
+              "processed_size": {
+                "width": 768,
+                "height": 576
+              },
+              "original_size": {
+                "width": 4032,
+                "height": 3024
+              }
+            }
+          }
+        },
+        {
+          "step": 2,
+          "tool": "SRM_Filter",
+          "why": "阶段A通用粗检：先检查高阶残差噪声中的局部统计异常。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Spatial Rich Model residual filter bank",
+                "filter_count": 16,
+                "truncate_threshold": 3.0,
+                "top_suspicious_regions": [],
+                "summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.304543,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.72,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_residual_tail_heuristic",
+                "coordinate_space": "original"
+              },
+              "regions": [],
+              "residual_statistics": [
+                {
+                  "filter": "fo_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.965562,
+                  "std": 2.243749,
+                  "kurtosis": -1.438882
+                },
+                {
+                  "filter": "fo_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.999533,
+                  "std": 2.271449,
+                  "kurtosis": -1.466515
+                },
+                {
+                  "filter": "fo_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.208685,
+                  "std": 2.434549,
+                  "kurtosis": -1.617766
+                },
+                {
+                  "filter": "fo_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 2.237581,
+                  "std": 2.457103,
+                  "kurtosis": -1.636534
+                },
+                {
+                  "filter": "so_h",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.344032,
+                  "std": 1.692387,
+                  "kurtosis": -0.652297
+                },
+                {
+                  "filter": "so_v",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.393382,
+                  "std": 1.735485,
+                  "kurtosis": -0.740773
+                },
+                {
+                  "filter": "so_d1",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.866083,
+                  "std": 2.144828,
+                  "kurtosis": -1.349772
+                },
+                {
+                  "filter": "so_d2",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 1.899687,
+                  "std": 2.173691,
+                  "kurtosis": -1.380008
+                },
+                {
+                  "filter": "to_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 1.027867,
+                  "std": 1.377029,
+                  "kurtosis": 0.173709
+                },
+                {
+                  "filter": "to_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.062306,
+                  "std": 1.408251,
+                  "kurtosis": 0.056062
+                },
+                {
+                  "filter": "fo4_h",
+                  "kernel_shape": [
+                    3,
+                    5
+                  ],
+                  "mean_abs": 1.078599,
+                  "std": 1.42499,
+                  "kurtosis": 0.042203
+                },
+                {
+                  "filter": "fo4_v",
+                  "kernel_shape": [
+                    5,
+                    3
+                  ],
+                  "mean_abs": 1.110619,
+                  "std": 1.45369,
+                  "kurtosis": -0.06683
+                },
+                {
+                  "filter": "nl_mix1",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.967404,
+                  "std": 1.283896,
+                  "kurtosis": 0.300442
+                },
+                {
+                  "filter": "nl_mix2",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 1.33822,
+                  "std": 1.654929,
+                  "kurtosis": -0.675707
+                },
+                {
+                  "filter": "nl_mix3",
+                  "kernel_shape": [
+                    3,
+                    3
+                  ],
+                  "mean_abs": 0.775968,
+                  "std": 1.097308,
+                  "kurtosis": 1.411306
+                },
+                {
+                  "filter": "nl_mix4",
+                  "kernel_shape": [
+                    5,
+                    5
+                  ],
+                  "mean_abs": 0.590817,
+                  "std": 0.821161,
+                  "kurtosis": 2.558826
+                }
+              ],
+              "evidence_scores": {
+                "avg_abs_kurtosis": 0.405158,
+                "residual_tail_score": 0.304543
+              },
+              "artifacts": {
+                "srm_heatmap_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "SRM_Filter",
+              "execution_time_ms": 4339
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "SRM filter analysis completed.",
+            "error_message": null,
+            "tool_name": "SRM_Filter",
+            "execution_time_ms": 4339,
+            "method": "Spatial Rich Model residual filter bank",
+            "report_summary": "已输出 SRM 风格残差统计；区域仅在超过启发式门槛时返回，不包含最终判定结论。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "avg_abs_kurtosis": 0.405158,
+              "residual_tail_score": 0.304543
+            },
+            "evidence_scores": {
+              "avg_abs_kurtosis": 0.405158,
+              "residual_tail_score": 0.304543
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.304543,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.72,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_residual_tail_heuristic",
+              "coordinate_space": "original"
+            },
+            "regions": [],
+            "artifacts": {
+              "srm_heatmap_path": ""
+            }
+          }
+        },
+        {
+          "step": 3,
+          "tool": "Noise_Analyzer",
+          "why": "Spectrum_Grid_Analyzer 提示存在高频伪影（spectral_artifact_score=0.94），需结合 Noise_Analyzer 检查空间域噪声分布，以区分这是 AI 生成图像特有的纹理不一致，还是普通 JPEG 压缩导致的频谱异常。",
+          "output": {
+            "success": true,
+            "status": "success",
+            "description": "Noise variance inconsistency analysis completed.",
+            "result": {
+              "forensics_report": {
+                "output_mode": "evidence_only",
+                "method": "Wavelet HH-band + Local Noise Variance Inconsistency",
+                "levels": 2,
+                "window_size": 9,
+                "top_suspicious_regions": [],
+                "summary": "已输出噪声方差不一致统计与局部区域证据；不包含最终判定结论。"
+              },
+              "evidence_contract": {
+                "role": "detector",
+                "provides_forensic_evidence": true,
+                "applicable": true,
+                "applicability_reason": null,
+                "decision": "negative",
+                "score": 0.304959,
+                "score_range": [
+                  0.0,
+                  1.0
+                ],
+                "threshold": 0.68,
+                "calibrated": false,
+                "score_semantics": "uncalibrated_wavelet_noise_inconsistency",
+                "coordinate_space": "original"
+              },
+              "regions": [],
+              "evidence_scores": {
+                "noise_inconsistency_score": 0.304959
+              },
+              "noise_statistics": {
+                "global_var_mean": 26.546963,
+                "global_var_std": 41.228378,
+                "strong_ratio": 0.040928,
+                "extreme_ratio": 0.023271,
+                "level_stats": [
+                  {
+                    "level": 1,
+                    "hh_var_mean": 2.136968,
+                    "hh_var_std": 4.287951
+                  },
+                  {
+                    "level": 2,
+                    "hh_var_mean": 50.956932,
+                    "hh_var_std": 79.012184
+                  }
+                ]
+              },
+              "artifacts": {
+                "noise_variance_heatmap_path": ""
+              }
+            },
+            "error_message": null,
+            "metadata": {
+              "tool_name": "Noise_Analyzer",
+              "execution_time_ms": 357
+            }
+          },
+          "summary": {
+            "success": true,
+            "status": "success",
+            "description": "Noise variance inconsistency analysis completed.",
+            "error_message": null,
+            "tool_name": "Noise_Analyzer",
+            "execution_time_ms": 357,
+            "method": "Wavelet HH-band + Local Noise Variance Inconsistency",
+            "report_summary": "已输出噪声方差不一致统计与局部区域证据；不包含最终判定结论。",
+            "top_suspicious_regions": [],
+            "heuristic_scores": {
+              "noise_inconsistency_score": 0.304959
+            },
+            "evidence_scores": {
+              "noise_inconsistency_score": 0.304959
+            },
+            "evidence_contract": {
+              "role": "detector",
+              "provides_forensic_evidence": true,
+              "applicable": true,
+              "applicability_reason": null,
+              "decision": "negative",
+              "score": 0.304959,
+              "score_range": [
+                0.0,
+                1.0
+              ],
+              "threshold": 0.68,
+              "calibrated": false,
+              "score_semantics": "uncalibrated_wavelet_noise_inconsistency",
+              "coordinate_space": "original"
+            },
+            "regions": [],
+            "artifacts": {
+              "noise_variance_heatmap_path": ""
+            },
+            "noise_statistics": {
+              "global_var_mean": 26.546963,
+              "global_var_std": 41.228378,
+              "strong_ratio": 0.040928,
+              "extreme_ratio": 0.023271,
+              "level_stats": [
+                {
+                  "level": 1,
+                  "hh_var_mean": 2.136968,
+                  "hh_var_std": 4.287951
+                },
+                {
+                  "level": 2,
+                  "hh_var_mean": 50.956932,
+                  "hh_var_std": 79.012184
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "user_answer": {
+        "judgment": "这是一张真实拍摄的食物照片。",
+        "notes": [
+          "Spectrum_Grid_Analyzer 的高分主要受图像中大量细小高对比度纹理（芝士碎）影响，属于正常摄影特征，非合成伪影。"
+        ],
+        "analysis": "视觉上，图像的纹理细节（如芝士丝、蔬菜叶片、汤汁反光）极其丰富且符合物理规律，没有AI生成常见的结构错误或过度平滑现象。取证工具方面，尽管频谱分析提示了高频成分（可能是由于细碎的芝士纹理导致），但噪声分析和残差分析均显示图像具有高度一致的统计特性，未发现任何伪造或合成的证据。综合判断为真实图像。"
+      }
+    },
+    "workflow": {
+      "name": "deepfake_detection",
+      "routing": "single_agent",
+      "steps": [
+        "IFD_Agent"
+      ],
+      "dependencies": []
+    }
+  },
+  "question": "请判断这张图片是真实图像、伪造图像还是合成图像。",
+  "user_answer": {
+    "judgment": "这是一张真实拍摄的食物照片。",
+    "notes": [
+      "Spectrum_Grid_Analyzer 的高分主要受图像中大量细小高对比度纹理（芝士碎）影响，属于正常摄影特征，非合成伪影。"
+    ],
+    "analysis": "视觉上，图像的纹理细节（如芝士丝、蔬菜叶片、汤汁反光）极其丰富且符合物理规律，没有AI生成常见的结构错误或过度平滑现象。取证工具方面，尽管频谱分析提示了高频成分（可能是由于细碎的芝士纹理导致），但噪声分析和残差分析均显示图像具有高度一致的统计特性，未发现任何伪造或合成的证据。综合判断为真实图像。"
+  }
+}

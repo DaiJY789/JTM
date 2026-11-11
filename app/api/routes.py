@@ -337,13 +337,14 @@ async def detect(
     )
 
 
+@detect_router.post("/detect/mmd", response_model=DetectionResponse, include_in_schema=False)
 @detect_router.post(
-    "/detect/mmd",
+    "/detect/mfc",
     response_model=DetectionResponse,
     summary="Detect multimodal misinformation",
     description="Fact-check news text with optional images (up to four) or a webpage. Without images, the endpoint performs text-only fact checking.",
 )
-async def detect_mmd(
+async def detect_mfc(
     text: Optional[str] = Form(None, description="News text, claim, title, or article body."),
     image: Optional[UploadFile] = File(None, description="Single-image compatibility field."),
     images: Optional[list[UploadFile]] = File(None, description="Ordered images; up to four total."),
@@ -358,7 +359,7 @@ async def detect_mmd(
     orchestrator: DetectionOrchestrator = Depends(get_detection_orchestrator),
 ):
     return await _run_detection_request(
-        endpoint="/detect/mmd", task=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
+        endpoint="/detect/mfc", task=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
         text=text, image=image, images=images, image_url=image_url,
         image_urls=image_urls, webpage_url=webpage_url, question=question,
         webpage_image_urls=webpage_image_urls,

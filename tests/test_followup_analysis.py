@@ -33,11 +33,11 @@ class StubModelFactory:
         return self.client
 
 
-def test_followup_uses_current_mmd_model_and_plain_text_mode():
+def test_followup_uses_current_mfc_model_and_plain_text_mode():
     config = Settings(
         qwen_text_model="legacy-text-model",
-        mmd_vision_model="qwen3.7-flash",
-        mmd_enable_thinking=False,
+        mfc_vision_model="qwen3.7-flash",
+        mfc_enable_thinking=False,
         text_verdict_timeout_seconds=42,
     )
     factory = StubModelFactory()

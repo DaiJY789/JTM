@@ -130,11 +130,11 @@ def test_input_builder_reads_detection_bytes_from_persisted_copy(tmp_path):
     assert task.image_contents[0] != original
 
 
-def test_input_builder_preserves_order_and_limits_multiple_mmd_images(tmp_path):
+def test_input_builder_preserves_order_and_limits_multiple_mfc_images(tmp_path):
     builder = DetectionInputBuilder(
         StubWebpageExtractor(),
         ArtifactStore(tmp_path),
-        max_mmd_images=2,
+        max_mfc_images=2,
     )
     contents = [valid_png_bytes(), valid_png_bytes(), valid_png_bytes()]
 
@@ -170,7 +170,7 @@ def test_input_builder_exposes_all_selected_remote_image_urls(tmp_path):
     builder = DetectionInputBuilder(
         StubWebpageExtractor(),
         ArtifactStore(tmp_path),
-        max_mmd_images=4,
+        max_mfc_images=4,
         remote_image_downloader=StubRemoteImageDownloader(),
     )
 

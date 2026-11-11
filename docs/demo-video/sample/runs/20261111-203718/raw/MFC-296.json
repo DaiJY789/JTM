@@ -1,0 +1,606 @@
+{
+  "mode": "multimodal",
+  "label": "Mixture",
+  "type": "C1_semantic_inconsistency",
+  "summary": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+  "confidence": 0.95,
+  "decision_status": "confident",
+  "mfc_detection": {
+    "status": "success",
+    "label": "Mixture",
+    "type": "C1_semantic_inconsistency",
+    "confidence": 0.95,
+    "atomic_points": [
+      {
+        "claim": "苹果发布新款MacBook Air，搭载M5芯片，支持Wi-Fi 7，3月开售。",
+        "visual_observation": "",
+        "search_query": "MacBook Air M5 release date specs Wi-Fi 7",
+        "point_type": "factual_claim"
+      },
+      {
+        "claim": "配图展示的是新款MacBook Air产品。",
+        "visual_observation": "Image 1明确标注产品名称为“MacBook Neo”，起售价$599；Image 2和Image 3展示了该系列产品的界面与外观。",
+        "search_query": "Apple MacBook Neo March 11 launch $599",
+        "point_type": "crossmodal_claim"
+      }
+    ],
+    "fine_grained_checks": {
+      "T1_fabrication": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "文本关于MacBook Air的硬件参数描述符合事实。"
+      },
+      "T2_distortion": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "未发现对核心事实的夸大或歪曲。"
+      },
+      "T3_misleading_context": {
+        "assessment": "confirmed",
+        "severity": 2,
+        "evidence_basis": "external_search",
+        "analysis": "将另一款入门级产品Neo的宣传图用于Air的报道中，造成语境错位。"
+      },
+      "V1_synthetic_visual_content": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "图片看起来是真实的官方宣传物料，无AI生成痕迹。"
+      },
+      "V2_visual_editing": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "图片本身未见篡改，问题在于选图错误。"
+      },
+      "C1_semantic_inconsistency": {
+        "assessment": "confirmed",
+        "severity": 3,
+        "evidence_basis": "visual_input",
+        "analysis": "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。"
+      },
+      "C2_contextual_inconsistency": {
+        "assessment": "suspected",
+        "severity": 2,
+        "evidence_basis": "external_search",
+        "analysis": "虽然都是3月发布的苹果电脑，但属于不同产品线，存在移花接木嫌疑。"
+      },
+      "C3_pragmatic_inconsistency": {
+        "assessment": "absent",
+        "severity": 0,
+        "evidence_basis": "none",
+        "analysis": "无明显语用误导意图，更多是编辑失误。"
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+      "notes": [
+        "文本事实由外部搜索证实（S3, S4）。",
+        "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+      ]
+    },
+    "evidence": [
+      {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "title": "苹果推出MacBook Neo|Apple|笔记本电脑|macbook|苹果中国官网|苹果中国_新浪新闻",
+        "url": "https://k.sina.com.cn/article_7857201856_1d45362c001902v0u6.html",
+        "domain": "k.sina.com.cn",
+        "site_name": "新浪网",
+        "snippet": "苹果宣布推出MacBook\nNeo笔记本电脑,起售价为599美元。苹果中国官网目前已上线MacBook\nNeo,3月6日上午9点接受预购,3月11日发售,售价为人民币4599元起。(本文来自第一财经)",
+        "source_tier": "other",
+        "date_last_crawled": "2026-03-04T23:45:57Z"
+      },
+      {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "title": "3999元!苹果发布MacBook Neo:3月11日,新机开售!|neo|苹果公司|长焦镜头|笔记本电脑|iphone|macbook_网易订阅",
+        "url": "https://www.163.com/dy/article/KN7DLA950512ER4R.html",
+        "domain": "163.com",
+        "site_name": "网易",
+        "snippet": "春节刚结束,苹果就迫不及待放大招了!2026年3月4日,苹果在上海、纽约、伦敦同时举行媒体特别活动,也就是这一天,推出全新入门机笔记本电脑——MacBook\nNeo。\n作为最“年轻”的MacBook系",
+        "source_tier": "other",
+        "date_last_crawled": "2026-03-05T00:00:40Z"
+      },
+      {
+        "evidence_id": "S3",
+        "query_id": "Q2",
+        "title": "苹果发布M5芯片MacBook Air笔记本 支持Wi-Fi 7和灵活定制 起售价8499元_热点播报_太平洋科技资讯中心",
+        "url": "https://news.pconline.com.cn/2108/21086912.html",
+        "domain": "news.pconline.com.cn",
+        "site_name": "太平洋科技资讯中心",
+        "snippet": "苹果发布M5芯片MacBook\nAir笔记本\n支持Wi-Fi\n7和灵活定制\n起售价8499元\n2026-03-03\n23:31\n整合编辑:科仔播报\n苹果于3月3日发布搭载M5芯片的新款MacBook",
+        "source_tier": "other",
+        "date_last_crawled": "2026-03-03T23:31:00Z"
+      },
+      {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "title": "M5 芯片新款 MacBook Air 发布:起售价 8499 元|Apple|笔记本电脑|macbook air|创意|空间_新浪新闻",
+        "url": "https://k.sina.com.cn/article_7857201856_1d45362c001902tqfk.html",
+        "domain": "k.sina.com.cn",
+        "site_name": "新浪网",
+        "snippet": "苹果今日宣布推出搭载\nM5\n芯片的新款\nMacBook\nAir\n,为畅销全球的笔记本电脑带来卓越性能与扩展\nAI\n功能。M5\n配备速度更快的中央处理器和每颗核心均配有神经网络的新一代图形处理器,赋能",
+        "source_tier": "other",
+        "date_last_crawled": "2026-03-03T23:16:54Z"
+      },
+      {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "title": "M5 MacBook Air:发布日期、功能与性能预测 - 今日头条",
+        "url": "https://www.toutiao.com/article/7557010628720722473/",
+        "domain": "toutiao.com",
+        "site_name": "今日头条",
+        "snippet": "编辑文章M5\nMacBook\nAir:发布日期、功能与性能预测·\n文章Ctrl+K0\n/\n100保存M5\nMacBook\nAir:发布日期、功能与性能预测MacBook\nAir\n作为苹果笔电家族中的明",
+        "source_tier": "other",
+        "date_last_crawled": "2025-10-03T23:01:00Z"
+      }
+    ]
+  },
+  "text_verdict": {
+    "type": "C1_semantic_inconsistency",
+    "label": "Mixture",
+    "appraisalResults": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+    "explainInDetail": {
+      "fine_grained_checks": {
+        "T1_fabrication": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "文本关于MacBook Air的硬件参数描述符合事实。",
+          "evidence": "文本关于MacBook Air的硬件参数描述符合事实。"
+        },
+        "T2_distortion": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "未发现对核心事实的夸大或歪曲。",
+          "evidence": "未发现对核心事实的夸大或歪曲。"
+        },
+        "T3_misleading_context": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 2,
+          "evidence_basis": "external_search",
+          "analysis": "将另一款入门级产品Neo的宣传图用于Air的报道中，造成语境错位。",
+          "evidence": "将另一款入门级产品Neo的宣传图用于Air的报道中，造成语境错位。"
+        },
+        "V1_synthetic_visual_content": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "图片看起来是真实的官方宣传物料，无AI生成痕迹。",
+          "evidence": "图片看起来是真实的官方宣传物料，无AI生成痕迹。"
+        },
+        "V2_visual_editing": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "图片本身未见篡改，问题在于选图错误。",
+          "evidence": "图片本身未见篡改，问题在于选图错误。"
+        },
+        "C1_semantic_inconsistency": {
+          "assessment": "confirmed",
+          "present": true,
+          "severity": 3,
+          "evidence_basis": "visual_input",
+          "analysis": "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。",
+          "evidence": "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。"
+        },
+        "C2_contextual_inconsistency": {
+          "assessment": "suspected",
+          "present": true,
+          "severity": 2,
+          "evidence_basis": "external_search",
+          "analysis": "虽然都是3月发布的苹果电脑，但属于不同产品线，存在移花接木嫌疑。",
+          "evidence": "虽然都是3月发布的苹果电脑，但属于不同产品线，存在移花接木嫌疑。"
+        },
+        "C3_pragmatic_inconsistency": {
+          "assessment": "absent",
+          "present": false,
+          "severity": 0,
+          "evidence_basis": "none",
+          "analysis": "无明显语用误导意图，更多是编辑失误。",
+          "evidence": "无明显语用误导意图，更多是编辑失误。"
+        }
+      }
+    },
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+      "notes": [
+        "文本事实由外部搜索证实（S3, S4）。",
+        "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+      ]
+    },
+    "limitations": [
+      "文本事实由外部搜索证实（S3, S4）。",
+      "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+    ]
+  },
+  "image_verdict": null,
+  "crossmodal_verdict": {
+    "label": "Inconsistent",
+    "analysis": "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。",
+    "matched_elements": [],
+    "mismatched_elements": [
+      "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。"
+    ],
+    "missing_elements": [],
+    "reasoning": "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。",
+    "limitations": [
+      "文本事实由外部搜索证实（S3, S4）。",
+      "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+    ],
+    "consistency_score": 0.0
+  },
+  "evidence": [
+    {
+      "type": "external_search_result",
+      "source": "新浪网",
+      "title": "苹果推出MacBook Neo|Apple|笔记本电脑|macbook|苹果中国官网|苹果中国_新浪新闻",
+      "url": "https://k.sina.com.cn/article_7857201856_1d45362c001902v0u6.html",
+      "snippet": "苹果宣布推出MacBook\nNeo笔记本电脑,起售价为599美元。苹果中国官网目前已上线MacBook\nNeo,3月6日上午9点接受预购,3月11日发售,售价为人民币4599元起。(本文来自第一财经)",
+      "content": {
+        "evidence_id": "S1",
+        "query_id": "Q1",
+        "domain": "k.sina.com.cn",
+        "date_last_crawled": "2026-03-04T23:45:57Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "网易",
+      "title": "3999元!苹果发布MacBook Neo:3月11日,新机开售!|neo|苹果公司|长焦镜头|笔记本电脑|iphone|macbook_网易订阅",
+      "url": "https://www.163.com/dy/article/KN7DLA950512ER4R.html",
+      "snippet": "春节刚结束,苹果就迫不及待放大招了!2026年3月4日,苹果在上海、纽约、伦敦同时举行媒体特别活动,也就是这一天,推出全新入门机笔记本电脑——MacBook\nNeo。\n作为最“年轻”的MacBook系",
+      "content": {
+        "evidence_id": "S2",
+        "query_id": "Q1",
+        "domain": "163.com",
+        "date_last_crawled": "2026-03-05T00:00:40Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "太平洋科技资讯中心",
+      "title": "苹果发布M5芯片MacBook Air笔记本 支持Wi-Fi 7和灵活定制 起售价8499元_热点播报_太平洋科技资讯中心",
+      "url": "https://news.pconline.com.cn/2108/21086912.html",
+      "snippet": "苹果发布M5芯片MacBook\nAir笔记本\n支持Wi-Fi\n7和灵活定制\n起售价8499元\n2026-03-03\n23:31\n整合编辑:科仔播报\n苹果于3月3日发布搭载M5芯片的新款MacBook",
+      "content": {
+        "evidence_id": "S3",
+        "query_id": "Q2",
+        "domain": "news.pconline.com.cn",
+        "date_last_crawled": "2026-03-03T23:31:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "新浪网",
+      "title": "M5 芯片新款 MacBook Air 发布:起售价 8499 元|Apple|笔记本电脑|macbook air|创意|空间_新浪新闻",
+      "url": "https://k.sina.com.cn/article_7857201856_1d45362c001902tqfk.html",
+      "snippet": "苹果今日宣布推出搭载\nM5\n芯片的新款\nMacBook\nAir\n,为畅销全球的笔记本电脑带来卓越性能与扩展\nAI\n功能。M5\n配备速度更快的中央处理器和每颗核心均配有神经网络的新一代图形处理器,赋能",
+      "content": {
+        "evidence_id": "S4",
+        "query_id": "Q2",
+        "domain": "k.sina.com.cn",
+        "date_last_crawled": "2026-03-03T23:16:54Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "external_search_result",
+      "source": "今日头条",
+      "title": "M5 MacBook Air:发布日期、功能与性能预测 - 今日头条",
+      "url": "https://www.toutiao.com/article/7557010628720722473/",
+      "snippet": "编辑文章M5\nMacBook\nAir:发布日期、功能与性能预测·\n文章Ctrl+K0\n/\n100保存M5\nMacBook\nAir:发布日期、功能与性能预测MacBook\nAir\n作为苹果笔电家族中的明",
+      "content": {
+        "evidence_id": "S5",
+        "query_id": "Q2",
+        "domain": "toutiao.com",
+        "date_last_crawled": "2025-10-03T23:01:00Z",
+        "date_note": "date_last_crawled is crawl time, not publication time"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "苹果发布新款MacBook Air，搭载M5芯片，支持Wi-Fi 7，3月开售。",
+      "content": {
+        "point_type": "factual_claim",
+        "visual_observation": "",
+        "search_query": "MacBook Air M5 release date specs Wi-Fi 7"
+      }
+    },
+    {
+      "type": "mfc_atomic_point",
+      "source": "MFC_Agent",
+      "title": "配图展示的是新款MacBook Air产品。",
+      "content": {
+        "point_type": "crossmodal_claim",
+        "visual_observation": "Image 1明确标注产品名称为“MacBook Neo”，起售价$599；Image 2和Image 3展示了该系列产品的界面与外观。",
+        "search_query": "Apple MacBook Neo March 11 launch $599"
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "T3_misleading_context",
+      "content": {
+        "severity": 2,
+        "assessment": "confirmed",
+        "evidence_basis": "external_search",
+        "observation": "将另一款入门级产品Neo的宣传图用于Air的报道中，造成语境错位。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C1_semantic_inconsistency",
+      "content": {
+        "severity": 3,
+        "assessment": "confirmed",
+        "evidence_basis": "visual_input",
+        "observation": "文本讲MacBook Air，图片却明确写着MacBook Neo，图文主体直接冲突。",
+        "regions": []
+      }
+    },
+    {
+      "type": "mfc_fine_grained_check",
+      "source": "MFC_Agent",
+      "title": "C2_contextual_inconsistency",
+      "content": {
+        "severity": 2,
+        "assessment": "suspected",
+        "evidence_basis": "external_search",
+        "observation": "虽然都是3月发布的苹果电脑，但属于不同产品线，存在移花接木嫌疑。",
+        "regions": []
+      }
+    }
+  ],
+  "claims": [],
+  "report": {
+    "label": "Mixture",
+    "type": "C1_semantic_inconsistency",
+    "summary": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+    "confidence": 0.95,
+    "risk_level": "medium",
+    "decision_status": "confident",
+    "limitations": [
+      "文本事实由外部搜索证实（S3, S4）。",
+      "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+    ],
+    "user_answer": {
+      "judgment": "该内容整体判断为真伪混合。",
+      "analysis": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+      "notes": [
+        "文本事实由外部搜索证实（S3, S4）。",
+        "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+      ]
+    },
+    "agent_trace": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    }
+  },
+  "user_answer": {
+    "judgment": "该内容整体判断为真伪混合。",
+    "analysis": "文本准确描述了2026年3月发布的MacBook Air（M5芯片、Wi-Fi 7等）。然而，提供的三张图片均指向另一款产品“MacBook Neo”：Image 1明确标注了名称及599美元起售价，这与MacBook Air的定位和价格（约8499元人民币/1199美元起）完全矛盾。这种张冠李戴属于典型的图文语义冲突。",
+    "notes": [
+      "文本事实由外部搜索证实（S3, S4）。",
+      "图片内容与文本描述的产品型号不一致（Image 1可见文字证据）。"
+    ]
+  },
+  "raw": {
+    "workflow": {
+      "name": "multimodal_fact_checking",
+      "routing": "single_agent",
+      "steps": [
+        "MFC_Agent"
+      ],
+      "dependencies": [
+        "BoChaSearchTool"
+      ]
+    },
+    "mfc_diagnostics": {
+      "model_verdict": "Mixture",
+      "verdict_adjustments": [],
+      "evidence_coverage": 1.0,
+      "core_supported": 1,
+      "core_contradicted": 1,
+      "supporting_contradicted": 0
+    },
+    "mfc_tool_evidence": {
+      "enabled": true,
+      "ocr": {
+        "status": "not_run"
+      },
+      "search": {
+        "status": "success",
+        "queries": [
+          {
+            "query_id": "Q1",
+            "strategy": "model_selected",
+            "query": "Apple MacBook Neo March 11 launch $599",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          },
+          {
+            "query_id": "Q2",
+            "strategy": "model_selected",
+            "query": "MacBook Air M5 release date specs Wi-Fi 7",
+            "round": 1,
+            "count": 3,
+            "status": "success"
+          }
+        ],
+        "results": [
+          {
+            "evidence_id": "S1",
+            "query_id": "Q1",
+            "title": "苹果推出MacBook Neo|Apple|笔记本电脑|macbook|苹果中国官网|苹果中国_新浪新闻",
+            "url": "https://k.sina.com.cn/article_7857201856_1d45362c001902v0u6.html",
+            "domain": "k.sina.com.cn",
+            "site_name": "新浪网",
+            "snippet": "苹果宣布推出MacBook\nNeo笔记本电脑,起售价为599美元。苹果中国官网目前已上线MacBook\nNeo,3月6日上午9点接受预购,3月11日发售,售价为人民币4599元起。(本文来自第一财经)",
+            "source_tier": "other",
+            "date_last_crawled": "2026-03-04T23:45:57Z"
+          },
+          {
+            "evidence_id": "S2",
+            "query_id": "Q1",
+            "title": "3999元!苹果发布MacBook Neo:3月11日,新机开售!|neo|苹果公司|长焦镜头|笔记本电脑|iphone|macbook_网易订阅",
+            "url": "https://www.163.com/dy/article/KN7DLA950512ER4R.html",
+            "domain": "163.com",
+            "site_name": "网易",
+            "snippet": "春节刚结束,苹果就迫不及待放大招了!2026年3月4日,苹果在上海、纽约、伦敦同时举行媒体特别活动,也就是这一天,推出全新入门机笔记本电脑——MacBook\nNeo。\n作为最“年轻”的MacBook系",
+            "source_tier": "other",
+            "date_last_crawled": "2026-03-05T00:00:40Z"
+          },
+          {
+            "evidence_id": "S3",
+            "query_id": "Q2",
+            "title": "苹果发布M5芯片MacBook Air笔记本 支持Wi-Fi 7和灵活定制 起售价8499元_热点播报_太平洋科技资讯中心",
+            "url": "https://news.pconline.com.cn/2108/21086912.html",
+            "domain": "news.pconline.com.cn",
+            "site_name": "太平洋科技资讯中心",
+            "snippet": "苹果发布M5芯片MacBook\nAir笔记本\n支持Wi-Fi\n7和灵活定制\n起售价8499元\n2026-03-03\n23:31\n整合编辑:科仔播报\n苹果于3月3日发布搭载M5芯片的新款MacBook",
+            "source_tier": "other",
+            "date_last_crawled": "2026-03-03T23:31:00Z"
+          },
+          {
+            "evidence_id": "S4",
+            "query_id": "Q2",
+            "title": "M5 芯片新款 MacBook Air 发布:起售价 8499 元|Apple|笔记本电脑|macbook air|创意|空间_新浪新闻",
+            "url": "https://k.sina.com.cn/article_7857201856_1d45362c001902tqfk.html",
+            "domain": "k.sina.com.cn",
+            "site_name": "新浪网",
+            "snippet": "苹果今日宣布推出搭载\nM5\n芯片的新款\nMacBook\nAir\n,为畅销全球的笔记本电脑带来卓越性能与扩展\nAI\n功能。M5\n配备速度更快的中央处理器和每颗核心均配有神经网络的新一代图形处理器,赋能",
+            "source_tier": "other",
+            "date_last_crawled": "2026-03-03T23:16:54Z"
+          },
+          {
+            "evidence_id": "S5",
+            "query_id": "Q2",
+            "title": "M5 MacBook Air:发布日期、功能与性能预测 - 今日头条",
+            "url": "https://www.toutiao.com/article/7557010628720722473/",
+            "domain": "toutiao.com",
+            "site_name": "今日头条",
+            "snippet": "编辑文章M5\nMacBook\nAir:发布日期、功能与性能预测·\n文章Ctrl+K0\n/\n100保存M5\nMacBook\nAir:发布日期、功能与性能预测MacBook\nAir\n作为苹果笔电家族中的明",
+            "source_tier": "other",
+            "date_last_crawled": "2025-10-03T23:01:00Z"
+          }
+        ],
+        "images": [
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://nimg.ws.126.net/?url=http%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0305%2F5747da11j00tbdtt20013d200u000kjg00u000kj.jpg&thumbnail=660x2147483647&quality=80&type=jpg",
+            "thumbnail_url": "https://nimg.ws.126.net/?url=http%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0305%2F5747da11j00tbdtt20013d200u000kjg00u000kj.jpg&thumbnail=660x2147483647&quality=80&type=jpg"
+          },
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://nimg.ws.126.net/?url=http%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0305%2F348c58b8j00tbdtt2000zd200u000d9g00zk00fp.jpg&thumbnail=660x2147483647&quality=80&type=jpg",
+            "thumbnail_url": "https://nimg.ws.126.net/?url=http%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0305%2F348c58b8j00tbdtt2000zd200u000d9g00zk00fp.jpg&thumbnail=660x2147483647&quality=80&type=jpg"
+          },
+          {
+            "query_id": "Q1",
+            "name": "",
+            "url": "https://nimg.ws.126.net/?url=http%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0305%2Fae6b91a1j00tbdtt30011d200u000f3g00u000f3.jpg&thumbnail=660x2147483647&quality=80&type=jpg",
+            "thumbnail_url": "https://nimg.ws.126.net/?url=http%3A%2F%2Fdingyue.ws.126.net%2F2026%2F0305%2Fae6b91a1j00tbdtt30011d200u000f3g00u000f3.jpg&thumbnail=660x2147483647&quality=80&type=jpg"
+          }
+        ],
+        "limitations": [
+          "搜索摘要是候选外部证据，仍需检查来源、发布时间和正文语境。"
+        ]
+      },
+      "errors": [],
+      "timings": {
+        "ocr_seconds": 0.0,
+        "search_seconds": 0.2733,
+        "model_calls": 0
+      }
+    },
+    "timings": {
+      "agents": {
+        "MFC_Agent": 20.5478
+      },
+      "critical_path_seconds": 20.5478,
+      "parallel_groups": [
+        [
+          "BoChaSearchTool:Q1",
+          "BoChaSearchTool:Q2"
+        ]
+      ],
+      "model_calls": 2,
+      "image_preprocess_seconds": 0.1054,
+      "enrichment_seconds": 0.0,
+      "tool_seconds": 0.2733,
+      "tool_rounds": 1,
+      "search_calls": 2,
+      "ocr_seconds": 0.0,
+      "search_seconds": 0.2733,
+      "model_seconds": 20.1687,
+      "model_output_characters": 2885,
+      "input_image_count": 3,
+      "thinking_enabled": false,
+      "thinking_characters": 0,
+      "finish_reason": "end_turn",
+      "prompt_tokens": 5618,
+      "completion_tokens": 1253,
+      "reasoning_tokens": 0,
+      "invalid_output_retries": 0,
+      "total_model_output_characters": 3246,
+      "model_attempts": [
+        {
+          "attempt": 1,
+          "turn": 1,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 4319,
+          "completion_tokens": 127,
+          "reasoning_tokens": 0,
+          "output_characters": 361,
+          "kind": "tool_request",
+          "seconds": 3.6224
+        },
+        {
+          "attempt": 2,
+          "turn": 2,
+          "retry": false,
+          "thinking_enabled": false,
+          "thinking_characters": 0,
+          "finish_reason": "end_turn",
+          "prompt_tokens": 1299,
+          "completion_tokens": 1126,
+          "reasoning_tokens": 0,
+          "output_characters": 2885,
+          "kind": "final",
+          "seconds": 16.5463
+        }
+      ]
+    }
+  },
+  "question": "请判断这段文字和所提供图片是否真实可信，并分析图文是否一致。"
+}

@@ -1,0 +1,42 @@
+{
+  "case_id": "MFC-469",
+  "task": "MFC",
+  "label": "Mostly True",
+  "title": "月全食与红月画面",
+  "focus": "基本事实与视觉强化并存",
+  "folder": "MFC/Mostly True/MFC-469",
+  "text_file": "MFC-469.txt",
+  "question_file": "question.txt",
+  "images": [
+    {
+      "file": "469_01_img_1.jpg",
+      "source": "data/mmd/train/Mostly True/469_01_img_1.jpg",
+      "sha256": "379f53a56d76b29da1addad4569473ab155809e5208856bf27c070be2bb7a533"
+    },
+    {
+      "file": "469_02_img_2.jpg",
+      "source": "data/mmd/train/Mostly True/469_02_img_2.jpg",
+      "sha256": "b7fe25d193a64b65752c38bcf7b47553e1f6c0956909cad045fe17783a16b77e"
+    }
+  ],
+  "label_basis": "source_dataset_verdict",
+  "source_metadata": "data/mmd/dataset_metadata.json",
+  "source_sample_id": "469",
+  "source_split": "train",
+  "taxonomy": [
+    "T2 Distortion",
+    "V2 Visual Editing",
+    "C3 Pragmatic Inconsistency"
+  ],
+  "reference_rationale": "虽然对月食发生时间及其机制的描述大体符合事实，但文字后半部分给人的印象稍显宽泛、易于观察、泛红。另外，发布的照片​​经过编辑，强调了红色，增强了比正文更生动的外观，所以总体来说是真实的。",
+  "detection_run": true,
+  "latest_detection": {
+    "run_id": "20261111-203718",
+    "predicted_label": "Mostly False",
+    "confidence": 0.95,
+    "matches_reference": false,
+    "seconds": 24.726,
+    "tool_calls": 2,
+    "raw_result_from_sample_root": "runs/20261111-203718/raw/MFC-469.json"
+  }
+}

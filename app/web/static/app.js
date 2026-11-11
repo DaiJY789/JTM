@@ -10,7 +10,7 @@ const state = {
   conversationHistory: [],
   conversations: [],
   lastInputSignature: "",
-  followupFailure: null,
+  requestFailure: null,
   primaryInputLocked: false,
   imageSelectionNotice: "",
   confirmedImageUrl: "",
@@ -30,14 +30,15 @@ const CONVERSATION_ID_KEY = "mid_demo_conversation_id";
 const CONVERSATION_LIST_KEY = "mid_demo_conversations";
 const MAX_CONVERSATION_LIST_ITEMS = 30;
 const CONVERSATION_TITLE_LENGTH = 18;
-const MAX_MMD_IMAGES = 4;
+const MAX_MFC_IMAGES = 4;
 const pendingDetections = new Map();
 const draftFileCache = new Map();
 let draftFileDatabase;
 let runtimeTimer;
+const localizedNotices = new Map();
 
 function imageInputLimit() {
-  return state.task === "deepfake_detection" ? 1 : MAX_MMD_IMAGES;
+  return state.task === "deepfake_detection" ? 1 : MAX_MFC_IMAGES;
 }
 
 function updateTaskHeading() {
@@ -104,7 +105,8 @@ function updateUrlImportButton() {
   if (!input || !button) return;
   const url = input.value.trim();
   const imported = Boolean(url && [state.confirmedImageUrl, state.confirmedWebpageUrl].includes(url));
-  button.textContent = state.urlImportPending ? "解析中" : imported ? "已导入" : "导入";
+  const copy = uiText[state.language];
+  button.textContent = state.urlImportPending ? copy.importing : imported ? copy.imported : copy.importLink;
   button.classList.toggle("confirmed", imported && !state.urlImportPending);
   button.disabled = state.primaryInputLocked || state.urlImportPending || state.textFileReading || state.draftImagesRestoring || !url || imported;
   input.readOnly = state.primaryInputLocked || state.urlImportPending;
@@ -113,11 +115,65 @@ function updateUrlImportButton() {
 }
 
 function setUrlImportStatus(message, status = "") {
-  const notice = $("#urlImportStatus");
-  notice.textContent = message;
-  notice.title = message;
+  setLocalizedNotice("#urlImportStatus", message, status);
+}
+
+function localizedText(message) {
+  return typeof message === "string" ? message : message[state.language];
+}
+
+function localizeUiError(message, language) {
+  if (language !== "en") return message;
+  const translations = {
+    "不允许访问本地或私有网络图片。": "Images on local or private networks cannot be accessed.",
+    "远程图片读取失败。": "Could not read the remote image.",
+    "远程图片重定向地址无效。": "The image redirect URL is invalid.",
+    "远程图片重定向次数过多。": "The image has too many redirects.",
+    "远程图片超过大小限制。": "The remote image exceeds the size limit.",
+    "远程图片内容为空。": "The remote image is empty.",
+    "远程资源不是有效图片。": "The remote resource is not a valid image.",
+    "远程图片格式不受支持。": "The remote image format is not supported.",
+    "远程图片 URL 无效。": "The remote image URL is invalid.",
+    "远程图片 URL 不允许包含凭据。": "Image URLs cannot contain credentials.",
+    "网页图片链接必须是有效的 http(s) URL。": "Webpage image links must use valid http(s) URLs.",
+    "网页图片清单必须是 JSON 链接数组。": "The webpage image selection must be a JSON array of URLs.",
+    "网页 URL 未返回 HTML 或文本内容。": "The webpage URL did not return HTML or text.",
+    "网页 URL 不能为空。": "Enter a webpage URL.",
+    "网页 URL 必须是 http 或 https 地址。": "The webpage URL must use http or https.",
+    "上传文件不是可解析的有效图片。": "The uploaded file is not a readable image.",
+    "image_url 中的 data URL 不是有效图片。": "The image data URL does not contain a valid image.",
+    "image_url 必须是有效的 http(s) 图片 URL 或 data:image URL。": "Enter a valid http(s) image URL or data:image URL.",
+    "data:image URL 的图片格式不受支持。": "The image data URL uses an unsupported format.",
+    "task=aigc_detection 暂未实现。": "AI-generated content detection is not yet available.",
+    "task=deepfake_detection 当前只支持一张图片。": "Deepfake detection accepts one image.",
+    "task=deepfake_detection 需要提供 image、image_url 或包含图片的 webpage_url。": "Deepfake detection requires an uploaded image, an image link, or a webpage with an image.",
+    "task=multimodal_fact_checking 需要提供待核查的 text 或 webpage_url 文本。": "Multimodal fact-checking requires text or a webpage containing text.",
+    "text、question、image、image_url 或 webpage_url 至少需要提供一个。": "Provide text, a question, an image, or a webpage URL.",
+    "当前对话还没有可追问的检测结果。": "Run a detection before asking follow-up questions.",
+    "无法读取网页：": "Could not read the webpage: ",
+    "服务器繁忙，检测暂时失败，请稍后重试。": "The server is busy and detection failed. Please try again later.",
+  };
+  let output = String(message || "")
+    .replace(/第\s*(\d+)\s*张远程图片下载失败[:：]\s*/g, "Could not download remote image $1: ")
+    .replace(/无法读取第\s*(\d+)\s*张会话图片。/g, "Could not read conversation image $1.")
+    .replace(/无法保存第\s*(\d+)\s*张远程图片。/g, "Could not save remote image $1.")
+    .replace(/最多可添加\s*(\d+)\s*张图片，请先减少已选择的本地图片。/g, "Up to $1 images are allowed. Remove a local image first.");
+  Object.entries(translations).forEach(([source, translation]) => { output = output.replaceAll(source, translation); });
+  return output;
+}
+
+function setLocalizedNotice(selector, message, status) {
+  localizedNotices.set(selector, { message, status });
+  renderLocalizedNotice(selector, message, status);
+}
+
+function renderLocalizedNotice(selector, message, status) {
+  const notice = $(selector);
+  const text = localizedText(message);
+  notice.textContent = text;
+  notice.title = text;
   notice.dataset.status = status;
-  notice.hidden = !message;
+  notice.hidden = !text;
 }
 
 function resetUrlImport() {
@@ -164,7 +220,10 @@ function limitSelectedFiles() {
   const files = Array.from(input?.files || []);
   const limit = imageInputLimit();
   if (!input || files.length <= limit) return;
-  state.imageSelectionNotice = `已忽略超出上限的 ${files.length - limit} 张本地图片。`;
+  state.imageSelectionNotice = {
+    zh: `已忽略超出上限的 ${files.length - limit} 张本地图片。`,
+    en: `${files.length - limit} extra local image(s) were excluded.`,
+  };
   if (typeof DataTransfer === "undefined") return;
   const transfer = new DataTransfer();
   files.slice(0, limit).forEach((file) => transfer.items.add(file));
@@ -178,7 +237,10 @@ function normalizeImageUrls() {
   const urls = parsedImageUrls();
   const remaining = Math.max(0, imageInputLimit() - files.length);
   if (urls.length > remaining) {
-    state.imageSelectionNotice = `已忽略超出上限的 ${urls.length - remaining} 个图片 URL。`;
+    state.imageSelectionNotice = {
+      zh: `已忽略超出上限的 ${urls.length - remaining} 个图片 URL。`,
+      en: `${urls.length - remaining} extra image URL(s) were excluded.`,
+    };
     input.value = urls.slice(0, remaining).join("\n");
   }
 }
@@ -188,9 +250,10 @@ function updateImageSelectionMeta() {
   if (!meta) return;
   const count = selectedImageCount();
   const limit = imageInputLimit();
-  meta.textContent = state.imageSelectionNotice;
+  meta.textContent = localizedText(state.imageSelectionNotice);
   meta.hidden = !state.imageSelectionNotice;
-  $("#addImageBtn").title = `选择图片（已选 ${count}/${limit} 张）`;
+  $("#addImageBtn").title = state.language === "en"
+    ? `Choose images (${count}/${limit} selected)` : `选择图片（已选 ${count}/${limit} 张）`;
 }
 
 function syncImageInputMode() {
@@ -204,7 +267,7 @@ function syncImageInputMode() {
   if (!input.multiple && selectedImageFiles().length && parsedImageUrls().length) {
     $("#imageUrlInput").value = "";
     state.confirmedImageUrl = "";
-    state.imageSelectionNotice = "深度伪造检测只保留第一张本地图片。";
+    state.imageSelectionNotice = { zh: "深度伪造检测只保留第一张本地图片。", en: "Deepfake detection uses only the first local image." };
   }
   normalizeImageUrls();
   renderSelectedImagePreviews();
@@ -355,6 +418,44 @@ const uiText = {
     untitledConversation: "新对话",
     send: "发送",
     detecting: "开始检测",
+    skipToInput: "跳转到输入区",
+    slogan: "判断有据，拍案有声",
+    sidebar: "侧边栏",
+    closeSidebar: "关闭侧边栏",
+    settings: "参数设置",
+    task: "任务",
+    multimodalTask: "多模态事实核查",
+    deepfakeTask: "深度伪造检测",
+    aigcTask: "大模型生成检测",
+    notAvailable: "暂未开放",
+    workbench: "工作台",
+    usageGuide: "使用说明",
+    usageTitle: "使用方法",
+    viewUsage: "查看使用说明",
+    closeUsage: "关闭使用方法",
+    detectionResults: "检测结果",
+    switchWorkspace: "切换工作区",
+    inputContent: "输入内容",
+    textPreview: "文本预览",
+    imagePreview: "图片预览",
+    messageInput: "输入消息",
+    questionPlaceholder: "首次检测可留空，之后可继续追问",
+    textPlaceholder: "输入新闻正文、事实陈述或配图对应的新闻文本",
+    linkInput: "网页或图片链接",
+    linkPlaceholder: "粘贴网页或图片链接",
+    chooseText: "选择 TXT 文件",
+    chooseImages: "选择图片",
+    viewImage: "查看图片",
+    closeImage: "关闭图片预览",
+    zoomImage: "点击查看大图",
+    zoomImageLabel: "放大查看",
+    imageUnavailable: "图片暂时无法加载",
+    emptyImageTitle: "添加图片，补充核查线索",
+    emptyImageHint: "点击右上角 + 添加图片，或通过上方链接导入\n图片将以原始比例显示",
+    importLink: "导入",
+    importing: "解析中",
+    imported: "已导入",
+    invalidUrl: "请输入有效的 http 或 https 链接",
   },
   en: {
     label: "Label",
@@ -391,8 +492,76 @@ const uiText = {
     untitledConversation: "New Chat",
     send: "Send",
     detecting: "Detect",
+    skipToInput: "Skip to input",
+    slogan: "Evidence for every judgment. A voice for every verdict.",
+    sidebar: "Sidebar",
+    closeSidebar: "Close sidebar",
+    settings: "Settings",
+    task: "Task",
+    multimodalTask: "Multimodal fact-checking",
+    deepfakeTask: "Deepfake detection",
+    aigcTask: "AI-generated content detection",
+    notAvailable: "Not yet available",
+    workbench: "Workbench",
+    usageGuide: "How to use",
+    usageTitle: "How to use",
+    viewUsage: "View instructions",
+    closeUsage: "Close instructions",
+    detectionResults: "Detection results",
+    switchWorkspace: "Switch workspace",
+    inputContent: "Input content",
+    textPreview: "Text preview",
+    imagePreview: "Image preview",
+    messageInput: "Message",
+    questionPlaceholder: "Optional for the initial check. Ask follow-up questions here.",
+    textPlaceholder: "Enter a news article, factual claim, or text accompanying an image",
+    linkInput: "Webpage or image link",
+    linkPlaceholder: "Paste a webpage or image link",
+    chooseText: "Choose a TXT file",
+    chooseImages: "Choose images",
+    viewImage: "View image",
+    closeImage: "Close image preview",
+    zoomImage: "Click to enlarge",
+    zoomImageLabel: "Enlarge image",
+    imageUnavailable: "Image could not be loaded",
+    emptyImageTitle: "Add images as supporting material",
+    emptyImageHint: "Click + above or import a link\nImages retain their original proportions",
+    importLink: "Import",
+    importing: "Importing…",
+    imported: "Imported",
+    invalidUrl: "Enter a valid http or https link",
   },
 };
+
+function updateInterfaceLanguage() {
+  const copy = uiText[state.language];
+  document.documentElement.lang = state.language === "en" ? "en" : "zh-CN";
+  document.title = state.language === "en" ? "Jingtangmu" : "惊堂木";
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = copy[node.dataset.i18n];
+  });
+  ["label", "title", "placeholder"].forEach((attribute) => {
+    document.querySelectorAll(`[data-i18n-${attribute}]`).forEach((node) => {
+      const name = node.getAttribute(`data-i18n-${attribute}`);
+      node.setAttribute(attribute === "label" ? "aria-label" : attribute, copy[name]);
+    });
+  });
+  document.querySelectorAll("[data-ui-language]").forEach((node) => {
+    node.hidden = node.dataset.uiLanguage !== state.language;
+  });
+  $(".control-group > .control-label").textContent = copy.task;
+  localizedNotices.forEach(({ message, status }, selector) => renderLocalizedNotice(selector, message, status));
+  if ($("#urlInput").validity.customError) $("#urlInput").setCustomValidity(copy.invalidUrl);
+  updateUrlImportButton();
+  updateImageSelectionMeta();
+  document.querySelectorAll("#imagePreview img[role='button']").forEach(enableImageViewer);
+  document.querySelectorAll(".image-remove").forEach((button) => {
+    const label = imageRemoveLabel(button.dataset.imageName);
+    button.setAttribute("aria-label", label);
+    button.title = label;
+  });
+  document.querySelectorAll(".preview-item-error").forEach((node) => { node.textContent = copy.imageUnavailable; });
+}
 
 function createConversationId() {
   if (window.crypto?.randomUUID) return window.crypto.randomUUID();
@@ -746,7 +915,7 @@ async function syncConversation(conversationId) {
 
 function activateConversation(conversationId) {
   state.conversationId = conversationId;
-  state.followupFailure = null;
+  state.requestFailure = null;
   localStorage.setItem(CONVERSATION_ID_KEY, conversationId);
   const conversation = findConversation(conversationId);
   state.conversationHistory = conversation?.conversation_history || [];
@@ -760,7 +929,7 @@ function activateConversation(conversationId) {
   }, { persist: false });
   restoreInputPreview(conversation?.latest_input || {}, conversation?.draft_input);
   const pending = pendingDetections.get(conversationId);
-  if (pending && !pending.question) {
+  if (pending && !pending.isFollowup) {
     setPrimaryInputsLocked(true);
     setStatus("running", "running");
     setRunningResultView();
@@ -802,7 +971,7 @@ function renderConversation() {
   textUpload.setAttribute("aria-label", textUpload.title);
   renderConversationList(language);
   renderConversationHistory(language);
-  renderFollowupFeedback(language);
+  renderRequestFeedback(language);
 }
 
 function renderConversationList(language) {
@@ -827,7 +996,7 @@ function renderConversationList(language) {
     openButton.setAttribute("aria-current", conversation.conversation_id === state.conversationId ? "true" : "false");
 
     const title = document.createElement("strong");
-    title.textContent = conversation.title || copy.untitledConversation;
+    title.textContent = !conversation.title || isDefaultConversationTitle(conversation.title) ? copy.untitledConversation : conversation.title;
     openButton.title = title.textContent;
     const label = formatLabel(conversation.last_label, language);
     openButton.appendChild(title);
@@ -1003,7 +1172,7 @@ function startEmptyConversation() {
   state.conversationHistory = [];
   state.lastResult = {};
   state.lastInputSignature = "";
-  state.followupFailure = null;
+  state.requestFailure = null;
   setPrimaryInputsLocked(false);
   localStorage.setItem(CONVERSATION_ID_KEY, state.conversationId);
   $("#textInput").value = "";
@@ -1115,25 +1284,33 @@ function createHistoryMessage(item, language) {
   return node;
 }
 
-let renderedFollowup;
-let renderedFollowupLanguage;
-function renderFollowupFeedback(language) {
+let renderedRequest;
+let renderedRequestLanguage;
+function renderRequestFeedback(language) {
   const pending = pendingDetections.get(state.conversationId);
-  const followup = pending?.question ? pending : state.followupFailure;
-  if (followup === renderedFollowup && language === renderedFollowupLanguage) return;
-  renderedFollowup = followup;
-  renderedFollowupLanguage = language;
+  const request = pending || state.requestFailure;
   const container = $("#followupFeedback");
+  if (request && !request.isFollowup) {
+    $("#conversationConclusion").before(container);
+  } else {
+    $("#conversationHistory").append(container);
+  }
+  if (request === renderedRequest && language === renderedRequestLanguage) return;
+  renderedRequest = request;
+  renderedRequestLanguage = language;
   container.replaceChildren();
-  if (!followup) return;
+  if (!request) return;
 
-  const copy = uiText[language];
-  const status = document.createElement("p");
-  const failed = followup.error !== undefined;
-  status.className = failed ? "followup-status is-error" : "followup-status";
-  status.setAttribute("role", "status");
-  status.textContent = failed ? [copy.followupFailed, followup.error].filter(Boolean).join(" ") : copy.followupPending;
-  container.append(createHistoryMessage({ role: "user", meta: { question: followup.question } }, language), status);
+  container.append(createHistoryMessage({ role: "user", meta: { question: request.question } }, language));
+  if (request.isFollowup) {
+    const copy = uiText[language];
+    const status = document.createElement("p");
+    const failed = request.error !== undefined;
+    status.className = failed ? "followup-status is-error" : "followup-status";
+    status.setAttribute("role", "status");
+    status.textContent = failed ? [copy.followupFailed, localizeUiError(request.error, language)].filter(Boolean).join(" ") : copy.followupPending;
+    container.append(status);
+  }
   const history = $("#conversationHistory");
   history.scrollTop = history.scrollHeight;
 }
@@ -1242,7 +1419,7 @@ async function importUrl() {
     const parsed = new URL(url);
     if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("unsupported protocol");
   } catch {
-    input.setCustomValidity("请输入有效的 http 或 https 链接");
+    input.setCustomValidity(uiText[state.language].invalidUrl);
     input.reportValidity();
     return;
   }
@@ -1254,7 +1431,7 @@ async function importUrl() {
   state.urlImportPending = true;
   updateUrlImportButton();
   updateSubmitButtonLabel();
-  setUrlImportStatus("正在识别链接内容…");
+  setUrlImportStatus({ zh: "正在识别链接内容…", en: "Identifying link content…" });
   try {
     const isImage = await probeImageUrl(url);
     if (!isCurrent()) return;
@@ -1268,9 +1445,9 @@ async function importUrl() {
       state.imageSelectionNotice = "";
       renderSelectedImagePreviews();
       updateImageSelectionMeta();
-      setUrlImportStatus("已识别为图片，已添加到图片预览。", "success");
+      setUrlImportStatus({ zh: "已识别为图片，已添加到图片预览。", en: "Image identified and added to the preview." }, "success");
     } else {
-      setUrlImportStatus("正在提取网页正文与图片…");
+      setUrlImportStatus({ zh: "正在提取网页正文与图片…", en: "Extracting webpage text and images…" });
       const formData = new FormData();
       formData.append("webpage_url", url);
       const response = await fetch("/webpages/extract", { method: "POST", body: formData });
@@ -1282,12 +1459,19 @@ async function importUrl() {
       renderWebpageExtraction(payload, url);
       const count = selectedWebpageImages().length;
       const extracted = state.webpageExtraction.text ? "已提取正文" : "未找到正文";
-      setUrlImportStatus(`已识别为网页，${extracted}，已选 ${count} 张图片。`, "success");
+      const englishText = state.webpageExtraction.text ? "text extracted" : "no text found";
+      setUrlImportStatus({
+        zh: `已识别为网页，${extracted}，已选 ${count} 张图片。`,
+        en: `Webpage identified, ${englishText}, ${count} image(s) selected.`,
+      }, "success");
     }
     persistCurrentConversationDraft();
     renderConversation();
   } catch (error) {
-    if (isCurrent()) setUrlImportStatus(`导入失败：${String(error.message || error)}`, "error");
+    if (isCurrent()) {
+      const message = String(error.message || error);
+      setUrlImportStatus({ zh: `导入失败：${message}`, en: `Import failed: ${localizeUiError(message, "en")}` }, "error");
+    }
   } finally {
     if (token === state.urlImportToken) {
       state.urlImportPending = false;
@@ -1426,7 +1610,8 @@ function removeSelectedImage(indexOrUrl) {
     }
     if (state.webpageExtraction?.images.includes(indexOrUrl)) {
       state.webpageExtraction.images = state.webpageExtraction.images.filter((url) => url !== indexOrUrl);
-      setUrlImportStatus(`网页已导入，已选 ${selectedWebpageImages().length} 张图片。`, "success");
+      const count = selectedWebpageImages().length;
+      setUrlImportStatus({ zh: `网页已导入，已选 ${count} 张图片。`, en: `Webpage imported, ${count} image(s) selected.` }, "success");
     }
   }
   state.imageSelectionNotice = "";
@@ -1445,10 +1630,22 @@ function clearImageObjectUrl() {
 }
 
 function enableImageViewer(image) {
+  const copy = uiText[state.language];
   image.tabIndex = 0;
   image.setAttribute("role", "button");
-  image.setAttribute("aria-label", `放大查看：${image.alt || "图片"}`);
-  image.title = "点击查看大图";
+  image.setAttribute("aria-label", `${copy.zoomImageLabel}: ${image.alt || copy.imagePreview}`);
+  image.title = copy.zoomImage;
+}
+
+function bindUsageGuide() {
+  const dialog = $("#usageGuide");
+  $("#usageGuideBtn").addEventListener("click", () => dialog.showModal());
+  dialog.addEventListener("click", (event) => {
+    if (event.target !== dialog) return;
+    const bounds = dialog.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right ||
+        event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close();
+  });
 }
 
 function bindImageViewer() {
@@ -1462,7 +1659,7 @@ function bindImageViewer() {
     fullImage.referrerPolicy = image.referrerPolicy || "no-referrer";
     fullImage.src = image.currentSrc || image.src;
     fullImage.alt = image.alt;
-    $("#imageViewerTitle").textContent = image.alt || "图片预览";
+    $("#imageViewerTitle").textContent = image.alt || uiText[state.language].imagePreview;
     dialog.showModal();
   };
   preview.addEventListener("click", (event) => open(event.target.closest("img")));
@@ -1495,30 +1692,36 @@ function renderEmptyPreview() {
   const preview = $("#imagePreview");
   preview.classList.remove("has-image");
   preview.classList.remove("multi-image");
+  const copy = uiText[state.language];
   preview.innerHTML = `<div class="preview-empty">
     <div class="upload-illustration" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="24" height="22" rx="4"/><circle cx="11" cy="12" r="2.5"/><path d="m5 23 7-7 5 5 5-8 6 9"/></svg></div>
-    <strong>添加图片，补充核查线索</strong>
-    <p>点击右上角 + 添加图片，或通过上方链接导入<br>图片将以原始比例显示</p>
+    <strong data-i18n="emptyImageTitle">${copy.emptyImageTitle}</strong>
+    <p data-i18n="emptyImageHint">${copy.emptyImageHint}</p>
   </div>`;
 }
 
 function imageRemoveButton(name, remove) {
   const button = document.createElement("button");
-  const label = state.language === "en" ? `Remove image: ${name}` : `移除图片：${name}`;
+  const label = imageRemoveLabel(name);
   button.type = "button";
   button.className = "image-remove";
   button.textContent = "×";
   button.title = label;
+  button.dataset.imageName = name;
   button.setAttribute("aria-label", label);
   button.hidden = state.primaryInputLocked;
   button.addEventListener("click", remove);
   return button;
 }
 
+function imageRemoveLabel(name) {
+  return state.language === "en" ? `Remove image: ${name}` : `移除图片：${name}`;
+}
+
 function renderUnavailableImage(image) {
   const notice = document.createElement("span");
   notice.className = "preview-item-error";
-  notice.textContent = "图片暂时无法加载";
+  notice.textContent = uiText[state.language].imageUnavailable;
   image.replaceWith(notice);
 }
 
@@ -1636,8 +1839,8 @@ function renderConclusion(result, language) {
     return;
   }
 
-  function appendSection(title, entries, kind) {
-    if (!entries.length) return;
+  function appendSection(title, entries, kind, allowEmpty = false) {
+    if (!entries.length && !allowEmpty) return;
     const section = document.createElement("section");
     section.className = `conclusion-section conclusion-${kind}`;
     const heading = document.createElement("h3");
@@ -1647,7 +1850,7 @@ function renderConclusion(result, language) {
       const paragraph = document.createElement("p");
       paragraph.textContent = entries[0];
       section.append(paragraph);
-    } else {
+    } else if (entries.length) {
       const list = document.createElement(kind === "reasons" ? "ol" : "ul");
       for (const entry of entries) {
         const li = document.createElement("li");
@@ -1657,11 +1860,167 @@ function renderConclusion(result, language) {
       section.append(list);
     }
     container.append(section);
+    return section;
   }
 
   appendSection(copy.finalJudgment, [answer.conclusion], "judgment");
   appendSection(language === "en" ? "Key evidence" : "主要依据", answer.reasons, "reasons");
-  appendSection(language === "en" ? "Notes and limitations" : "说明与局限", answer.notes, "notes");
+  const searchEvidence = collectSearchEvidence(result);
+  const forensicEvidence = collectForensicEvidence(result);
+  const notesSection = appendSection(language === "en" ? "Notes and limitations" : "说明与局限", answer.notes, "notes", searchEvidence.length + forensicEvidence.length > 0);
+  if (searchEvidence.length) renderSearchEvidence(notesSection, searchEvidence, language);
+  if (forensicEvidence.length) renderForensicEvidence(notesSection, forensicEvidence, language);
+}
+
+function collectForensicEvidence(result) {
+  const image = result?.image_verdict || {};
+  const raw = result?.raw?.image_forensics || {};
+  const arrays = [image.evidence, raw.evidence, image.tool_evidence, raw.tool_evidence, raw.evidence_chain];
+  const candidates = arrays.flatMap((items) => Array.isArray(items) ? items : []);
+  for (const item of Array.isArray(result?.evidence) ? result.evidence : []) {
+    if (item?.type === "visual_tool_evidence") {
+      candidates.push({ tool: item.source, key_findings: item.content });
+    }
+  }
+  const seen = new Set();
+  return candidates.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const tool = cleanText(item.tool);
+    if (!tool || seen.has(tool)) return [];
+    seen.add(tool);
+    return [{ tool, step: item.step, why: cleanText(item.why), findings: cleanList(item.key_findings) }];
+  });
+}
+
+function renderForensicEvidence(container, evidence, language) {
+  const toolNames = {
+    SRM_Filter: ["残差噪声分析", "Residual noise analysis"],
+    Noise_Analyzer: ["局部噪声分析", "Local noise analysis"],
+    PatchDense_Scanner: ["复制移动核查", "Copy-move check"],
+    CFA_Validator: ["相机成像一致性核查", "Camera-pattern check"],
+    Spectrum_Grid_Analyzer: ["频域伪影分析", "Frequency artifact analysis"],
+    ROI_Extractor: ["局部区域检查", "Region inspection"],
+    Image_Resizer: ["图像缩放", "Image resizing"],
+    Visual_Enhancer: ["图像细节增强", "Image enhancement"],
+  };
+  const block = document.createElement("div");
+  block.className = "search-evidence forensic-evidence";
+  const heading = document.createElement("h4");
+  heading.textContent = language === "en" ? `Image-check evidence (${evidence.length})` : `图像核查证据（${evidence.length}）`;
+  const description = document.createElement("p");
+  description.className = "search-evidence-description";
+  description.textContent = language === "en" ? "Auxiliary findings should be read together with the visual analysis." : "以下为辅助检测发现，请结合画面分析理解。";
+  const list = document.createElement("ul");
+  list.className = "search-evidence-list";
+  for (const item of evidence) {
+    const card = document.createElement("li");
+    card.className = "search-evidence-card";
+    const title = document.createElement("p");
+    title.className = "forensic-evidence-title";
+    title.textContent = toolNames[item.tool]?.[language === "en" ? 1 : 0] || item.tool;
+    card.append(title);
+    if (item.why) {
+      const why = document.createElement("p");
+      why.className = "search-evidence-source";
+      why.textContent = `${language === "en" ? "Purpose: " : "核查目的："}${item.why}`;
+      card.append(why);
+    }
+    if (item.findings.length) {
+      const findings = document.createElement("ul");
+      for (const finding of item.findings) {
+        const entry = document.createElement("li");
+        entry.textContent = finding;
+        findings.append(entry);
+      }
+      card.append(findings);
+    }
+    list.append(card);
+  }
+  block.append(heading, description, list);
+  container.append(block);
+}
+
+function getMfcDetection(result) {
+  return result?.mfc_detection || result?.raw?.mfc_detection
+    || result?.mmd_detection || result?.raw?.mmd_detection || null;
+}
+
+function collectSearchEvidence(result) {
+  const detection = getMfcDetection(result) || {};
+  const candidates = [
+    ...(Array.isArray(detection.evidence) ? detection.evidence : []),
+    ...(Array.isArray(result?.evidence) ? result.evidence.filter((item) => item?.type === "external_search_result") : []),
+  ];
+  const seen = new Set();
+  const evidence = [];
+  for (const item of candidates) {
+    if (!item || typeof item !== "object") continue;
+    let url;
+    try {
+      url = new URL(cleanText(item.url));
+      if (!["http:", "https:"].includes(url.protocol)) continue;
+    } catch {
+      continue;
+    }
+    const key = `${url.origin}${url.pathname}${url.search}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const evidenceId = cleanText(item.evidence_id || item.content?.evidence_id);
+    evidence.push({
+      evidenceId: /^S\d+$/i.test(evidenceId) ? evidenceId : "",
+      title: cleanText(item.title) || url.hostname,
+      url: url.href,
+      source: firstCleanText(item.site_name, item.source, item.domain, url.hostname),
+      domain: url.hostname,
+      snippet: cleanText(item.snippet),
+    });
+  }
+  return evidence;
+}
+
+function renderSearchEvidence(container, evidence, language) {
+  const block = document.createElement("div");
+  block.className = "search-evidence";
+  const heading = document.createElement("h4");
+  heading.textContent = language === "en" ? `Retrieved evidence (${evidence.length})` : `检索证据（${evidence.length}）`;
+  const description = document.createElement("p");
+  description.className = "search-evidence-description";
+  description.textContent = language === "en"
+    ? "These search results are candidate sources for checking the claims."
+    : "以下为本次检索获得的候选材料，可点击标题核对原始来源。";
+  const list = document.createElement("ul");
+  list.className = "search-evidence-list";
+  for (const item of evidence) {
+    const card = document.createElement("li");
+    card.className = "search-evidence-card";
+    const title = document.createElement("div");
+    title.className = "search-evidence-title";
+    if (item.evidenceId) {
+      const badge = document.createElement("span");
+      badge.className = "search-evidence-id";
+      badge.textContent = item.evidenceId;
+      title.append(badge);
+    }
+    const link = document.createElement("a");
+    link.href = item.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = item.title;
+    title.append(link);
+    const source = document.createElement("p");
+    source.className = "search-evidence-source";
+    source.textContent = item.source === item.domain ? item.domain : `${item.source} · ${item.domain}`;
+    card.append(title, source);
+    if (item.snippet) {
+      const snippet = document.createElement("p");
+      snippet.className = "search-evidence-snippet";
+      snippet.textContent = item.snippet;
+      card.append(snippet);
+    }
+    list.append(card);
+  }
+  block.append(heading, description, list);
+  container.append(block);
 }
 
 function setRunningResultView() {
@@ -1676,12 +2035,13 @@ function setRunningResultView() {
   updateRunningTime();
   if (runtimeTimer === undefined) runtimeTimer = setInterval(updateRunningTime, 100);
   $("#summaryBox").textContent = copy.running;
+  renderRequestFeedback(language);
   history.scrollTop = history.scrollHeight;
 }
 
 function updateRunningTime() {
   const pending = pendingDetections.get(state.conversationId);
-  if (pending && !pending.question) {
+  if (pending && !pending.isFollowup) {
     const seconds = Math.max(0, Date.now() - pending.startedAt) / 1000;
     $("#resultRuntime").textContent = formatRuntime(seconds, state.language);
   }
@@ -1723,6 +2083,10 @@ function renderResultMetrics(result, language) {
   renderVerdictBadge($("#resultLabel"), completed ? result.label : "", language);
   $("#resultConfidence").textContent = completed ? formatConfidence(result.confidence, language) : "-";
   $("#aiScore").textContent = completed ? formatResultType(result, language) : "-";
+  [$("#aiScore"), $("#resultConfidence")].forEach((badge) => {
+    badge.classList.toggle("is-placeholder", badge.textContent === "-");
+    badge.title = badge.textContent;
+  });
   $("#resultRuntime").textContent = formatRuntime(result?.runtime_seconds, language);
 }
 
@@ -1758,11 +2122,15 @@ function renderExtractedWebpageInput(result) {
 
 function formatResultType(result, language) {
   const verdict = result?.image_verdict || result?.raw?.image_forensics || {};
-  const detection = result?.mmd_detection || result?.raw?.mmd_detection || {};
-  const primaryType = result?.forgery_type ?? detection.forgery_type ?? verdict.forgery_type;
+  const detection = getMfcDetection(result) || {};
+  if (getMfcDetection(result) || result?.type === "multimodal_misinformation") {
+    const primaryType = detection.type ?? detection.forgery_type ?? result?.forgery_type
+      ?? (result?.type === "multimodal_misinformation" ? null : result?.type);
+    return primaryType ? formatForgeryTypes([primaryType], language) : "-";
+  }
+  const currentType = ["deepfake_detection", "multimodal_misinformation"].includes(result?.type) ? null : result?.type;
+  const primaryType = verdict.type ?? currentType ?? result?.forgery_type ?? verdict.forgery_type;
   if (primaryType) return formatForgeryTypes([primaryType], language);
-  // Older image results used a single-item array; older MMD results have no issue type.
-  if (result?.mmd_detection || result?.raw?.mmd_detection || result?.type === "multimodal_misinformation") return "-";
   return formatForgeryTypes(result.forgery_types || verdict.forgery_types, language);
 }
 
@@ -1866,6 +2234,21 @@ function formatForgeryTypes(types, language) {
     计算机渲染: "Computer graphics rendering",
     其他合成: "Other synthesis",
     未知: "Unknown",
+    事实虚构: "Factual fabrication",
+    "夸大、删减或歪曲": "Exaggeration, omission, or distortion",
+    错误语境: "Misleading context",
+    生成式画面: "Synthetic visual content",
+    语义性编辑篡改: "Semantic visual editing",
+    图文语义冲突: "Image-text semantic conflict",
+    图文语境冲突: "Image-text contextual conflict",
+    图文语用误导: "Image-text pragmatic misleadingness",
+    局部修复: "Content removal",
+    内容删除: "Content removal",
+    修饰改动: "Global editing",
+    AI辅助编辑: "Local repainting",
+    AI局部编辑: "Local repainting",
+    换脸: "Face tampering",
+    重绘: "Local repainting",
   };
   const map = language === "en" ? en : zh;
   const first = cleaned[0];
@@ -1881,7 +2264,8 @@ function formatScore(value) {
 
 function formatLabel(label, language) {
   if (!label) return "-";
-  return labelText[language][label] || label;
+  const canonical = Object.keys(labelText.zh).find((key) => labelText.zh[key] === label);
+  return labelText[language][label] || labelText[language][canonical] || label;
 }
 
 function verdictTone(label) {
@@ -1924,10 +2308,10 @@ function formatConfidence(value, language) {
 function formatUserAnswer(result, language) {
   const copy = uiText[language];
   if (!result || Object.keys(result).length === 0) return { message: copy.noSummary };
-  if (result.decision_status === "technical_error") return { message: cleanText(result.summary || busyDetectionMessage(language)) };
-  if (result.label === "Error") return { message: cleanText(result.summary || result.error || copy.noSummary) };
-  if (result.mmd_detection || result.raw?.mmd_detection) {
-    return formatMmdAnswer(result, language);
+  if (result.decision_status === "technical_error") return { message: localizeUiError(cleanText(result.summary || busyDetectionMessage(language)), language) };
+  if (result.label === "Error") return { message: localizeUiError(cleanText(result.summary || result.error || copy.noSummary), language) };
+  if (getMfcDetection(result)) {
+    return formatMfcAnswer(result, language);
   }
   if (result.mode === "multimodal" || result.crossmodal_verdict) {
     return formatMultimodalAnswer(result, language);
@@ -1946,7 +2330,7 @@ function busyDetectionMessage(language) {
 
 // New results share one answer contract; aliases only support saved older results.
 function readUserAnswer(result) {
-  const detection = result?.mmd_detection || result?.raw?.mmd_detection || {};
+  const detection = getMfcDetection(result) || {};
   const answers = [
     detection.user_answer,
     result?.user_answer,
@@ -1969,9 +2353,9 @@ function readUserAnswer(result) {
   };
 }
 
-function formatMmdAnswer(result, language) {
+function formatMfcAnswer(result, language) {
   const copy = uiText[language];
-  const detection = result?.mmd_detection || result?.raw?.mmd_detection || {};
+  const detection = getMfcDetection(result) || {};
   const answer = readUserAnswer(result);
   const conclusion = answer.judgment || fallbackConclusion(result?.label || detection.label, language);
   const reasons = [];
@@ -2288,10 +2672,9 @@ function fallbackConclusion(label, language) {
   return (language === "en" ? en : zh)[label] || formatLabel(label, language);
 }
 
-function buildFormData() {
+function buildFormData(question = resolvedQuestionForSubmit()) {
   const formData = new FormData();
   const text = $("#textInput").value.trim();
-  const question = resolvedQuestionForSubmit();
   const webpageUrl = selectedWebpageUrl();
   const imageFiles = selectedImageFiles();
   const imageUrls = selectedImageUrls();
@@ -2373,8 +2756,8 @@ function defaultQuestionForCurrentInput() {
 function questionForInput({ task, hasImage, hasText, hasWebpage }, language) {
   if (task === "deepfake_detection" || (hasImage && !hasText && !hasWebpage)) {
     return language === "en"
-      ? "Please determine whether this image contains signs of deepfake manipulation."
-      : "请判断这张图片是否存在深度伪造痕迹。";
+      ? "Please determine whether this image is real, forged, or synthetic."
+      : "请判断这张图片是真实图像、伪造图像还是合成图像。";
   }
   if (hasWebpage) {
     return language === "en"
@@ -2551,22 +2934,22 @@ async function submitDetection() {
     submitBtn.disabled = true;
     ensureImagePreviewBeforeSubmit(isFollowup);
     persistCurrentConversationDraft({ submitted: true });
-    pendingDetections.set(requestConversationId, { startedAt: Date.now(), question: isFollowup ? question : "" });
-    state.followupFailure = null;
+    pendingDetections.set(requestConversationId, { startedAt: Date.now(), question, isFollowup });
+    state.requestFailure = null;
     if (isFollowup) {
       $("#questionInput").value = "";
-      renderConversation();
     } else {
       setPrimaryInputsLocked(true);
       setStatus("running", "running");
       setRunningResultView();
     }
+    renderConversation();
 
-    const detectionEndpoint = state.task === "deepfake_detection" ? "/detect/deepfake" : "/detect/mmd";
+    const detectionEndpoint = state.task === "deepfake_detection" ? "/detect/deepfake" : "/detect/mfc";
     const followupEndpoint = `/conversations/${encodeURIComponent(state.conversationId)}/followup`;
     const response = await fetch(isFollowup ? followupEndpoint : detectionEndpoint, {
       method: "POST",
-      body: isFollowup ? buildFollowupFormData(question) : buildFormData(),
+      body: isFollowup ? buildFollowupFormData(question) : buildFormData(question),
     });
 
     const payload = await response.json();
@@ -2598,6 +2981,7 @@ async function submitDetection() {
     }
 
     if (failed) {
+      state.requestFailure = { question, isFollowup, error: payload.summary || payload.error || "" };
       setResult(payload, { persist: false });
       if (!previousResult?.label) {
         setPrimaryInputsLocked(false);
@@ -2615,8 +2999,8 @@ async function submitDetection() {
     setResult(payload);
   } catch (error) {
     if (state.conversationId !== requestConversationId) return;
+    state.requestFailure = { question, isFollowup, error: String(error.message || "") };
     if (isFollowup) {
-      state.followupFailure = { question, error: String(error.message || "") };
       const input = $("#questionInput");
       if (!input.value.trim()) input.value = question;
       return;
@@ -2734,11 +3118,7 @@ function bindResponsiveControls() {
 }
 
 function setTextFileStatus(message, status = "") {
-  const notice = $("#textFileStatus");
-  notice.textContent = message;
-  notice.title = message;
-  notice.dataset.status = status;
-  notice.hidden = !message;
+  setLocalizedNotice("#textFileStatus", message, status);
 }
 
 function resetTextFileImport() {
@@ -2762,9 +3142,8 @@ function decodeTextFile(buffer) {
 
 async function importTextFile(file) {
   if (!file || state.primaryInputLocked || state.urlImportPending || state.textFileReading) return;
-  const english = state.language === "en";
   if (!/\.txt$/i.test(file.name)) {
-    setTextFileStatus(english ? "Choose a .txt file." : "请选择 .txt 文件。", "error");
+    setTextFileStatus({ zh: "请选择 .txt 文件。", en: "Choose a .txt file." }, "error");
     return;
   }
   const token = ++state.textFileReadToken;
@@ -2773,24 +3152,24 @@ async function importTextFile(file) {
   state.textFileReading = true;
   updateUrlImportButton();
   updateSubmitButtonLabel();
-  setTextFileStatus(english ? "Reading TXT…" : "正在读取 TXT…");
+  setTextFileStatus({ zh: "正在读取 TXT…", en: "Reading TXT…" });
   try {
     const text = decodeTextFile(await file.arrayBuffer());
     if (token !== state.textFileReadToken || state.primaryInputLocked) return;
     if (!text.trim() || text.includes("\0")) {
-      setTextFileStatus(english ? "The file contains no readable text." : "文件为空或没有可读取的文本。", "error");
+      setTextFileStatus({ zh: "文件为空或没有可读取的文本。", en: "The file contains no readable text." }, "error");
       return;
     }
     if (textarea.value !== originalText) {
-      setTextFileStatus(english ? "The text was edited while reading. Choose the file again to import it." : "读取时正文已被编辑，请重新选择文件以导入。", "error");
+      setTextFileStatus({ zh: "读取时正文已被编辑，请重新选择文件以导入。", en: "The text was edited while reading. Choose the file again to import it." }, "error");
       return;
     }
     textarea.value = text;
     textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    setTextFileStatus(english ? `Imported: ${file.name}` : `已读取：${file.name}`, "success");
+    setTextFileStatus({ zh: `已读取：${file.name}`, en: `Imported: ${file.name}` }, "success");
   } catch {
     if (token === state.textFileReadToken) {
-      setTextFileStatus(english ? "Could not read the file. Try saving it as UTF-8." : "读取失败，请将文件另存为 UTF-8 后重试。", "error");
+      setTextFileStatus({ zh: "读取失败，请将文件另存为 UTF-8 后重试。", en: "Could not read the file. Try saving it as UTF-8." }, "error");
     }
   } finally {
     if (token === state.textFileReadToken) {
@@ -2834,6 +3213,8 @@ bindImagePreview();
 bindUrlImport();
 bindTextFileImport();
 bindImageViewer();
+bindUsageGuide();
+updateInterfaceLanguage();
 updateWebpageUrlConfirmButton();
 bindConversationDraftTitle();
 loadConversation();
@@ -2851,6 +3232,7 @@ $("#toggleHistoryDeleteBtn").addEventListener("click", () => {
 });
 $("#languageToggleBtn").addEventListener("click", () => {
   state.language = state.language === "zh" ? "en" : "zh";
+  updateInterfaceLanguage();
   updateTaskHeading();
   const pill = $("#statusPill");
   const status = pill.classList.item(1);

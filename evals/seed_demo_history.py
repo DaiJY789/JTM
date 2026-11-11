@@ -22,21 +22,21 @@ from app.services.webpage_extraction import WebpageExtractionService
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_CONVERSATION_ROOT = ROOT_DIR / "conversations"
 DEFAULT_OUTPUT_DIR = ROOT_DIR / "outputs" / "demo_history"
-DEFAULT_MMD_IDS = ("001", "010", "297")
+DEFAULT_MFC_IDS = ("001", "010", "297")
 DEFAULT_IFD_IDS = ("52", "18", "61")
-MMD_METADATA = ROOT_DIR / "data" / "mmd" / "dataset_metadata.json"
+MFC_METADATA = (ROOT_DIR / "data" / "mfc" if (ROOT_DIR / "data" / "mfc").exists() else ROOT_DIR / "data" / "mmd") / "dataset_metadata.json"
 IFD_METADATA = ROOT_DIR / "data" / "ifd" / "openfake_sample_100" / "metadata.jsonl"
-MMD_RESULT_DIR = ROOT_DIR / "outputs" / "test" / "qwen3_7_flash_validation_100_v2"
+MFC_RESULT_DIR = ROOT_DIR / "outputs" / "test" / "qwen3_7_flash_validation_100_v2"
 IFD_RESULT_DIR = ROOT_DIR / "outputs" / "ifd_validation"
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run representative MMD/IFD samples and store them as frontend histories."
+        description="Run representative MFC/IFD samples and store them as frontend histories."
     )
     parser.add_argument("--conversation-root", type=Path, default=DEFAULT_CONVERSATION_ROOT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--mmd-ids", nargs="*", default=list(DEFAULT_MMD_IDS))
+    parser.add_argument("--mfc-ids", nargs="*", default=list(DEFAULT_MFC_IDS))
     parser.add_argument("--ifd-ids", nargs="*", default=list(DEFAULT_IFD_IDS))
     parser.add_argument(
         "--reuse-existing-results",
@@ -51,18 +51,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def load_mmd_samples(sample_ids: list[str]) -> list[dict[str, Any]]:
-    records = json.loads(MMD_METADATA.read_text(encoding="utf-8"))
+def load_mfc_samples(sample_ids: list[str]) -> list[dict[str, Any]]:
+    records = json.loads(MFC_METADATA.read_text(encoding="utf-8"))
     by_id = {str(item.get("sample_id") or ""): item for item in records}
     samples = []
     for sample_id in sample_ids:
         item = by_id.get(str(sample_id))
         if not item:
-            raise ValueError(f"MMD sample not found: {sample_id}")
-        paths = [(MMD_METADATA.parent / value).resolve() for value in item.get("image_paths", [])]
+            raise ValueError(f"MFC sample not found: {sample_id}")
+        paths = [(MFC_METADATA.parent / value).resolve() for value in item.get("image_paths", [])]
         paths = paths[:4]
         if not paths or any(not path.is_file() for path in paths):
-            raise FileNotFoundError(f"MMD sample {sample_id} has missing images")
+            raise FileNotFoundError(f"MFC sample {sample_id} has missing images")
         samples.append({**item, "sample_id": str(sample_id), "paths": paths})
     return samples
 
@@ -167,27 +167,27 @@ def persist_existing_result(
     return restored
 
 
-def import_mmd_sample(
+def import_mfc_sample(
     application: DetectionApplicationService,
     sample: dict[str, Any],
     run_tag: str,
 ) -> dict[str, Any]:
     sample_id = str(sample["sample_id"])
-    evaluation, raw_result = existing_result(MMD_RESULT_DIR, sample_id)
-    conversation_id = f"demo-mmd-{sample_id}-{run_tag}"
+    evaluation, raw_result = existing_result(MFC_RESULT_DIR, sample_id)
+    conversation_id = f"demo-mfc-{sample_id}-{run_tag}"
     result = persist_existing_result(
         application,
         task_type=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
         conversation_id=conversation_id,
         text=str(sample.get("text") or ""),
         paths=list(sample["paths"]),
-        question=f"MMD 数据集样本 {sample_id}：请核查这组图文信息。",
+        question=f"MFC 数据集样本 {sample_id}：请核查这组图文信息。",
         result={**raw_result, "runtime_seconds": evaluation.get("runtime_seconds")},
     )
     expected = str(sample.get("verdict") or "")
     predicted = result.get("label")
     return {
-        "dataset": "MMD",
+        "dataset": "MFC",
         "sample_id": sample_id,
         "conversation_id": conversation_id,
         "expected": expected,
@@ -238,7 +238,7 @@ def import_ifd_sample(
     }
 
 
-def run_mmd_sample(
+def run_mfc_sample(
     application: DetectionApplicationService,
     sample: dict[str, Any],
     run_tag: str,
@@ -246,7 +246,7 @@ def run_mmd_sample(
     paths = list(sample["paths"])
     contents = [path.read_bytes() for path in paths]
     sample_id = str(sample["sample_id"])
-    conversation_id = f"demo-mmd-{sample_id}-{run_tag}"
+    conversation_id = f"demo-mfc-{sample_id}-{run_tag}"
     result = application.detect(
         adapt_detection_request(
             task=DetectionTaskType.MULTIMODAL_FACT_CHECKING,
@@ -256,7 +256,7 @@ def run_mmd_sample(
             image_content_type=image_type(paths[0]),
             image_url=None,
             webpage_url=None,
-            question=f"MMD 数据集样本 {sample_id}：请核查这组图文信息。",
+            question=f"MFC 数据集样本 {sample_id}：请核查这组图文信息。",
             language="zh",
             history="[]",
             conversation_id=conversation_id,
@@ -268,7 +268,7 @@ def run_mmd_sample(
     expected = str(sample.get("verdict") or "")
     predicted = result.get("label")
     return {
-        "dataset": "MMD",
+        "dataset": "MFC",
         "sample_id": sample_id,
         "conversation_id": conversation_id,
         "expected": expected,
@@ -334,7 +334,7 @@ def main(argv: list[str] | None = None) -> int:
     records = []
 
     jobs = [
-        *(('mmd', item) for item in load_mmd_samples([str(value) for value in args.mmd_ids])),
+        *(('mfc', item) for item in load_mfc_samples([str(value) for value in args.mfc_ids])),
         *(('ifd', item) for item in load_ifd_samples([str(value) for value in args.ifd_ids])),
     ]
     for index, (kind, sample) in enumerate(jobs, start=1):
@@ -343,22 +343,22 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if args.reuse_existing_results:
                 record = (
-                    import_mmd_sample(application, sample, run_tag)
-                    if kind == "mmd"
+                    import_mfc_sample(application, sample, run_tag)
+                    if kind == "mfc"
                     else import_ifd_sample(application, sample, run_tag)
                 )
             else:
                 record = (
-                    run_mmd_sample(application, sample, run_tag)
-                    if kind == "mmd"
+                    run_mfc_sample(application, sample, run_tag)
+                    if kind == "mfc"
                     else run_ifd_sample(application, sample, run_tag)
                 )
         except Exception as exc:
             record = {
-                "dataset": "MMD" if kind == "mmd" else "OpenFake",
+                "dataset": "MFC" if kind == "mfc" else "OpenFake",
                 "sample_id": sample_id,
                 "conversation_id": f"demo-{kind}-{sample_id}-{run_tag}",
-                "expected": sample.get("verdict") if kind == "mmd" else sample.get("label"),
+                "expected": sample.get("verdict") if kind == "mfc" else sample.get("label"),
                 "predicted": None,
                 "correct": False,
                 "error": f"{type(exc).__name__}: {exc}",

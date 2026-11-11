@@ -84,29 +84,29 @@ class DetectionReportBuilder:
 
     def _findings(self, payload: dict[str, Any]) -> list[AnalysisFinding]:
         findings: list[AnalysisFinding] = []
-        mmd = payload.get("mmd_detection")
-        if isinstance(mmd, dict):
+        mfc = payload.get("mfc_detection") or payload.get("mmd_detection")
+        if isinstance(mfc, dict):
             explanation = (
-                mmd.get("user_answer")
-                if isinstance(mmd.get("user_answer"), dict)
-                else mmd.get("explanation")
-                if isinstance(mmd.get("explanation"), dict)
-                else mmd.get("user_explanation")
-                if isinstance(mmd.get("user_explanation"), dict)
+                mfc.get("user_answer")
+                if isinstance(mfc.get("user_answer"), dict)
+                else mfc.get("explanation")
+                if isinstance(mfc.get("explanation"), dict)
+                else mfc.get("user_explanation")
+                if isinstance(mfc.get("user_explanation"), dict)
                 else {}
             )
             findings.append(
                 AnalysisFinding(
-                    analyzer="mmd_single_agent",
-                    label=str(mmd.get("label") or mmd.get("verdict") or payload.get("label") or ""),
+                    analyzer="mfc_single_agent",
+                    label=str(mfc.get("label") or mfc.get("verdict") or payload.get("label") or ""),
                     summary=str(
                         explanation.get("analysis")
                         or explanation.get("summary")
                         or payload.get("summary")
                         or ""
                     ),
-                    confidence=mmd.get("confidence"),
-                    raw=mmd,
+                    confidence=mfc.get("confidence"),
+                    raw=mfc,
                 )
             )
         image = payload.get("image_verdict")
@@ -124,15 +124,15 @@ class DetectionReportBuilder:
 
     def _limitations(self, payload: dict[str, Any]) -> list[str]:
         values: list[str] = []
-        mmd = payload.get("mmd_detection")
-        if isinstance(mmd, dict):
+        mfc = payload.get("mfc_detection")
+        if isinstance(mfc, dict):
             explanation = (
-                mmd.get("user_answer")
-                if isinstance(mmd.get("user_answer"), dict)
-                else mmd.get("explanation")
-                if isinstance(mmd.get("explanation"), dict)
-                else mmd.get("user_explanation")
-                if isinstance(mmd.get("user_explanation"), dict)
+                mfc.get("user_answer")
+                if isinstance(mfc.get("user_answer"), dict)
+                else mfc.get("explanation")
+                if isinstance(mfc.get("explanation"), dict)
+                else mfc.get("user_explanation")
+                if isinstance(mfc.get("user_explanation"), dict)
                 else {}
             )
             for item in explanation.get("notes", explanation.get("limitations", [])) or []:
